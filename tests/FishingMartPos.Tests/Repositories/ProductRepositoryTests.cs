@@ -29,15 +29,21 @@ public class ProductRepositoryTests
         IProductRepository repository = new ProductRepository(factory);
         const string barcode = "8800000020001";
 
-        await repository.DeactivateAsync(barcode);
+        try
+        {
+            await repository.DeactivateAsync(barcode);
 
-        using var connection = factory.CreateOpenConnection();
-        string useYn = await connection.QuerySingleAsync<string>(
-            "SELECT use_yn FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
-        Assert.Equal("N", useYn);
-
-        // 정리: 다른 테스트(GetActive 등)에 영향 주지 않도록 원복
-        await connection.ExecuteAsync(
-            "UPDATE product_tb SET use_yn = 'Y' WHERE barcode = @Barcode", new { Barcode = barcode });
+            using var connection = factory.CreateOpenConnection();
+            string useYn = await connection.QuerySingleAsync<string>(
+                "SELECT use_yn FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
+            Assert.Equal("N", useYn);
+        }
+        finally
+        {
+            // 정리: 다른 테스트(GetActive 등)에 영향 주지 않도록 원복
+            using var connection = factory.CreateOpenConnection();
+            await connection.ExecuteAsync(
+                "UPDATE product_tb SET use_yn = 'Y' WHERE barcode = @Barcode", new { Barcode = barcode });
+        }
     }
 }
