@@ -152,14 +152,26 @@ public class PosViewModelTests
     {
         var vm = CreateViewModel(out _, out _);
         await vm.LoadAsync();
-        vm.VisibleProducts[0].AddCommand.Execute(null);
 
-        // Enter some cash input to verify it gets cleared
+        // No cart line is selected yet (SelectedBarcode is null), so these
+        // digit presses hit the cash-input branch of PressKey rather than
+        // the quantity-buffer branch.
         vm.PressKeyCommand.Execute("1");
         vm.PressKeyCommand.Execute("0");
         vm.PressKeyCommand.Execute("0");
         vm.PressKeyCommand.Execute("0");
         vm.PressKeyCommand.Execute("0");
+
+        // Prove the cash input was genuinely entered before reset.
+        Assert.Equal("10,000원", vm.CashInputStr);
+
+        // Add a cart line afterwards so the post-reset "cart is cleared"
+        // assertions below actually verify something (selecting this line
+        // doesn't affect the already-entered CashInput).
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        var raisedProperties = new List<string>();
+        vm.PropertyChanged += (_, e) => raisedProperties.Add(e.PropertyName!);
 
         vm.ResetOrderCommand.Execute(null);
 
@@ -167,5 +179,7 @@ public class PosViewModelTests
         Assert.Equal("0원", vm.TotalAmountStr);
         Assert.Equal("0원", vm.CashInputStr);
         Assert.Equal("0원", vm.ChangeStr);
+        Assert.Contains("CashInputStr", raisedProperties);
+        Assert.Contains("ChangeStr", raisedProperties);
     }
 }
