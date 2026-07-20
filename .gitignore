@@ -1,0 +1,16 @@
+## .NET
+bin/
+obj/
+*.user
+
+## Local secrets (never commit real DB credentials)
+appsettings.Local.json
+**/appsettings.Local.json
+
+## VS / Rider
+.vs/
+.idea/
+*.suo
+
+## OS
+Thumbs.db
