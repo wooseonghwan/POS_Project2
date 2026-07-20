@@ -154,9 +154,18 @@ public class PosViewModelTests
         await vm.LoadAsync();
         vm.VisibleProducts[0].AddCommand.Execute(null);
 
+        // Enter some cash input to verify it gets cleared
+        vm.PressKeyCommand.Execute("1");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+
         vm.ResetOrderCommand.Execute(null);
 
         Assert.Empty(vm.CartLines);
         Assert.Equal("0원", vm.TotalAmountStr);
+        Assert.Equal("0원", vm.CashInputStr);
+        Assert.Equal("0원", vm.ChangeStr);
     }
 }

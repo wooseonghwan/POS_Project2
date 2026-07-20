@@ -220,6 +220,8 @@ public sealed partial class PosViewModel : ObservableObject
         QtyBuffer = string.Empty;
         CashInput = string.Empty;
         RefreshCartLines();
+        OnPropertyChanged(nameof(CashInputStr));
+        OnPropertyChanged(nameof(ChangeStr));
     }
 
     [RelayCommand]
