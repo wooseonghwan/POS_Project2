@@ -1,23 +1,26 @@
-﻿using System.Text;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using FishingMartPos.Navigation;
 
 namespace FishingMartPos;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : Window, INotifyPropertyChanged
 {
-    public MainWindow()
+    private readonly INavigationService _navigation;
+
+    public MainWindow(INavigationService navigation)
     {
         InitializeComponent();
+        _navigation = navigation;
+        _navigation.CurrentViewModelChanged += (_, _) => OnPropertyChanged(nameof(CurrentContent));
+        DataContext = this;
     }
+
+    public object? CurrentContent => _navigation.CurrentViewModel;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

@@ -1,12 +1,22 @@
-﻿<Window x:Class="FishingMartPos.MainWindow"
+<Window x:Class="FishingMartPos.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FishingMartPos"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-
-    </Grid>
+        xmlns:views="clr-namespace:FishingMartPos.Views"
+        xmlns:vm="clr-namespace:FishingMartPos.ViewModels"
+        Title="대원낚시 POS시스템" Width="1024" Height="768"
+        Background="{DynamicResource OuterBackground}">
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+            <views:LoginView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MainMenuViewModel}">
+            <views:MainMenuView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
+            <views:PlaceholderView />
+        </DataTemplate>
+    </Window.Resources>
+    <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
+        <ContentControl x:Name="CurrentViewHost" Content="{Binding CurrentContent}" />
+    </Border>
 </Window>
