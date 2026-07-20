@@ -27,4 +27,11 @@ public sealed class ProductRepository : IProductRepository
         var result = await connection.QueryAsync<Product>(sql);
         return result.ToList();
     }
+
+    public async Task DeactivateAsync(string barcode)
+    {
+        using var connection = _connectionFactory.CreateOpenConnection();
+        const string sql = "UPDATE product_tb SET use_yn = 'N' WHERE barcode = @Barcode";
+        await connection.ExecuteAsync(sql, new { Barcode = barcode });
+    }
 }
