@@ -18,10 +18,18 @@ public class MainMenuViewModelTests
         var staffRepository = new FishingMartPos.Tests.Fakes.FakeStaffRepository(
             new Dictionary<string, Staff>());
         var terminals = new[] { new PosTerminal { PosCode = "1", PosName = "POS1" } };
+        var posViewModel = new PosViewModel(
+            new FishingMartPos.Tests.Fakes.FakeProductRepository(Array.Empty<Product>()),
+            new FishingMartPos.Tests.Fakes.FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+            new FishingMartPos.Tests.Fakes.FakeSalesRepository(),
+            new FishingMartPos.Tests.Fakes.FakeHeldOrderRepository(),
+            new FishingMartPos.Tests.Fakes.FakeDelayProvider(),
+            session);
 
         var vm = new MainMenuViewModel(session, navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals)
+            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, () => Task.FromResult(posViewModel)),
+            PosViewModelFactory = () => Task.FromResult(posViewModel),
         };
         return (vm, session, navigation);
     }
@@ -35,14 +43,13 @@ public class MainMenuViewModelTests
     }
 
     [Fact]
-    public void GoToSales_NavigatesToPlaceholderWithSalesTitle()
+    public async Task GoToSales_NavigatesToPosViewModel()
     {
         var (vm, _, navigation) = Create();
 
-        vm.GoToSalesCommand.Execute(null);
+        await vm.GoToSalesCommand.ExecuteAsync(null);
 
-        var target = Assert.IsType<PlaceholderViewModel>(navigation.CurrentViewModel);
-        Assert.Equal("판매", target.Title);
+        Assert.IsType<PosViewModel>(navigation.CurrentViewModel);
     }
 
     [Fact]

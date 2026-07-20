@@ -12,6 +12,7 @@ public sealed partial class LoginViewModel : ObservableObject
     private readonly IStaffRepository _staffRepository;
     private readonly ICurrentSession _session;
     private readonly INavigationService _navigation;
+    private readonly Func<Task<PosViewModel>> _posViewModelFactory;
 
     [ObservableProperty]
     private string _pin = string.Empty;
@@ -32,13 +33,15 @@ public sealed partial class LoginViewModel : ObservableObject
         IStaffRepository staffRepository,
         ICurrentSession session,
         INavigationService navigation,
-        IReadOnlyList<PosTerminal> terminals)
+        IReadOnlyList<PosTerminal> terminals,
+        Func<Task<PosViewModel>> posViewModelFactory)
     {
         _staffRepository = staffRepository;
         _session = session;
         _navigation = navigation;
         Terminals = terminals;
         _selectedTerminal = terminals[0];
+        _posViewModelFactory = posViewModelFactory;
     }
 
     [RelayCommand]
@@ -94,7 +97,8 @@ public sealed partial class LoginViewModel : ObservableObject
 
         var mainMenuViewModel = new MainMenuViewModel(_session, _navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals)
+            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory),
+            PosViewModelFactory = _posViewModelFactory,
         };
         _navigation.NavigateTo(mainMenuViewModel);
     }

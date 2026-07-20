@@ -33,6 +33,11 @@ public partial class App : Application
         services.AddSingleton<IPosTerminalRepository, PosTerminalRepository>();
         services.AddSingleton<ICurrentSession, CurrentSession>();
         services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<IProductRepository, ProductRepository>();
+        services.AddSingleton<ICodeRepository, CodeRepository>();
+        services.AddSingleton<ISalesRepository, SalesRepository>();
+        services.AddSingleton<IHeldOrderRepository, HeldOrderRepository>();
+        services.AddSingleton<IDelayProvider, DelayProvider>();
         _services = services.BuildServiceProvider();
 
         var terminalRepository = _services.GetRequiredService<IPosTerminalRepository>();
@@ -41,9 +46,21 @@ public partial class App : Application
         var staffRepository = _services.GetRequiredService<IStaffRepository>();
         var session = _services.GetRequiredService<ICurrentSession>();
         var navigation = _services.GetRequiredService<INavigationService>();
+        var productRepository = _services.GetRequiredService<IProductRepository>();
+        var codeRepository = _services.GetRequiredService<ICodeRepository>();
+        var salesRepository = _services.GetRequiredService<ISalesRepository>();
+        var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
+        var delayProvider = _services.GetRequiredService<IDelayProvider>();
+
+        async Task<PosViewModel> CreatePosViewModelAsync()
+        {
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session);
+            await vm.LoadAsync();
+            return vm;
+        }
 
         LoginViewModel CreateLoginViewModel() =>
-            new(staffRepository, session, navigation, terminals);
+            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync);
 
         navigation.NavigateTo(CreateLoginViewModel());
 

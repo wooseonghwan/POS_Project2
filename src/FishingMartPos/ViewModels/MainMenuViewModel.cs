@@ -24,8 +24,15 @@ public sealed partial class MainMenuViewModel : ObservableObject
     /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 LoginViewModel 팩토리 — 로그아웃 시 사용.</summary>
     public Func<LoginViewModel>? LoginViewModelFactory { get; init; }
 
+    /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 PosViewModel 팩토리 — "판매" 진입 시 사용.</summary>
+    public Func<Task<PosViewModel>>? PosViewModelFactory { get; init; }
+
     [RelayCommand]
-    private void GoToSales() => _navigation.NavigateTo(new PlaceholderViewModel("판매"));
+    private async Task GoToSales()
+    {
+        var posViewModel = await PosViewModelFactory!.Invoke();
+        _navigation.NavigateTo(posViewModel);
+    }
 
     [RelayCommand]
     private void GoToSalesReport() => _navigation.NavigateTo(new PlaceholderViewModel("매출"));

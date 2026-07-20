@@ -15,6 +15,9 @@
         <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
             <views:PlaceholderView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PosViewModel}">
+            <views:PosView />
+        </DataTemplate>
     </Window.Resources>
     <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
         <ContentControl x:Name="CurrentViewHost" Content="{Binding CurrentContent}" />
