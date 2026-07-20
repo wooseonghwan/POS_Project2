@@ -42,6 +42,12 @@ public static class AppColors
             ["MenuIconInventory"] = (0.55, 0.09, 250, 1.0),
             ["MenuIconSettingsDot"] = (0.55, 0.09, 340, 1.0),
             ["MenuIconSettingsTrack"] = (0.7, 0.01, 250, 1.0),
+            ["ProductSwatch0"] = (0.55, 0.09, 195, 1.0),
+            ["ProductSwatch1"] = (0.55, 0.09, 250, 1.0),
+            ["ProductSwatch2"] = (0.55, 0.09, 30, 1.0),
+            ["ProductSwatch3"] = (0.55, 0.09, 340, 1.0),
+            ["ProductSwatch4"] = (0.55, 0.09, 150, 1.0),
+            ["ProductSwatch5"] = (0.55, 0.09, 80, 1.0),
         };
 
         var brushes = new Dictionary<string, Brush>(map.Count);
