@@ -191,7 +191,8 @@
                             <Button Content="－" Width="30" Command="{Binding DecSelectedCommand}" />
                             <Button Content="＋" Width="30" Margin="4,0,0,0" Command="{Binding IncSelectedCommand}" />
                         </StackPanel>
-                        <Button Content="삭제" Margin="0,4,0,0" Command="{Binding RemoveSelectedCommand}" />
+                        <Button Content="삭제" Margin="0,4,0,0" Background="{DynamicResource ErrorBorder}" Foreground="White"
+                                Command="{Binding RemoveSelectedCommand}" />
                     </StackPanel>
 
                     <UniformGrid Grid.Column="1" Columns="3" Rows="4" Margin="8">
