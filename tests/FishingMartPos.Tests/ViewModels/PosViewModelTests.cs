@@ -174,6 +174,27 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public async Task PressKey_Cls_WhenNoLineSelectedEvenIfCartHasItems_ClearsCashInputWithoutConfirm()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // selected
+        vm.Categories[1].SelectCommand.Execute(null);
+        vm.VisibleProducts[0].AddCommand.Execute(null); // now selected, replacing product 1
+        vm.RemoveSelectedCommand.Execute(null); // removes product 2, cart still has product 1, nothing selected
+        Assert.Single(vm.CartLines);
+        Assert.Null(vm.SelectedBarcode);
+        vm.PressKeyCommand.Execute("5");
+        vm.PressKeyCommand.Execute("0");
+
+        vm.PressKeyCommand.Execute("CLS");
+
+        Assert.False(vm.IsClearAllConfirmVisible);
+        Assert.Single(vm.CartLines);
+        Assert.Equal("0원", vm.CashInputStr);
+    }
+
+    [Fact]
     public async Task ConfirmClearAll_RemovesEveryLineFromCartRegardlessOfSelection()
     {
         var vm = CreateViewModel(out _, out _);

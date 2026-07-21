@@ -186,17 +186,9 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private void PressKey(string key)
     {
-        if (key == "CLS")
+        if (key == "CLS" && SelectedBarcode is not null)
         {
-            if (_cart.Lines.Count > 0)
-            {
-                IsClearAllConfirmVisible = true;
-                return;
-            }
-
-            CashInput = string.Empty;
-            OnPropertyChanged(nameof(CashInputStr));
-            OnPropertyChanged(nameof(ChangeStr));
+            IsClearAllConfirmVisible = true;
             return;
         }
 
@@ -216,7 +208,11 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
-        if (key == "<")
+        if (key == "CLS")
+        {
+            CashInput = string.Empty;
+        }
+        else if (key == "<")
         {
             CashInput = CashInput.Length > 0 ? CashInput[..^1] : string.Empty;
         }
