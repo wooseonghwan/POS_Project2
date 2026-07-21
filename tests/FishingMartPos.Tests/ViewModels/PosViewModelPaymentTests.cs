@@ -117,4 +117,28 @@ public class PosViewModelPaymentTests
         Assert.Equal(2, restored.Qty);
         Assert.Empty(vm.HeldOrders);
     }
+
+    [Fact]
+    public async Task HoldOrder_WhenAlreadyOneHeld_ShowsMessageAndKeepsCurrentCartIntact()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        Assert.Single(vm.HeldOrders);
+
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+
+        Assert.Single(vm.HeldOrders);
+        var restoredCartLine = Assert.Single(vm.CartLines);
+        Assert.Equal(1, restoredCartLine.Qty);
+        Assert.Equal("보류는 1건만 가능합니다", Assert.Single(toastValues));
+    }
 }

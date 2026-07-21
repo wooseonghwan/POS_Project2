@@ -38,6 +38,9 @@ public sealed partial class PosViewModel : ObservableObject
     private string? _toastMessage;
 
     [ObservableProperty]
+    private bool _isToastWarning;
+
+    [ObservableProperty]
     private bool _isHeldListVisible;
 
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
@@ -255,6 +258,7 @@ public sealed partial class PosViewModel : ObservableObject
 
         await _salesRepository.CreateSaleAsync(header, lines);
 
+        IsToastWarning = false;
         ToastMessage = toastLabel;
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));
         ToastMessage = null;
@@ -265,6 +269,15 @@ public sealed partial class PosViewModel : ObservableObject
     private async Task HoldOrder()
     {
         if (_cart.Lines.Count == 0) return;
+
+        if (HeldOrders.Count > 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "보류는 1건만 가능합니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
 
         var lines = _cart.Lines
             .Select(l => new HeldOrderLine { Barcode = l.Barcode, ProductName = l.Name, Qty = l.Qty, UnitPrice = l.Price })
