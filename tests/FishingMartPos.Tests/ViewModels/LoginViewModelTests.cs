@@ -30,18 +30,21 @@ public class LoginViewModelTests
 
         return new LoginViewModel(
             repository, session, navigation, terminals,
-            CreateDummyPosViewModelFactory(session),
+            CreateDummyPosViewModelFactory(session, navigation),
             CreateDummyInventoryViewModelFactory(session, navigation));
     }
 
-    private static Func<Task<PosViewModel>> CreateDummyPosViewModelFactory(ICurrentSession session) =>
-        () => Task.FromResult(new PosViewModel(
+    private static Func<MainMenuViewModel, Task<PosViewModel>> CreateDummyPosViewModelFactory(
+        ICurrentSession session, INavigationService navigation) =>
+        mainMenu => Task.FromResult(new PosViewModel(
             new FakeProductRepository(Array.Empty<Product>()),
             new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
             new FakeSalesRepository(),
             new FakeHeldOrderRepository(),
             new FakeDelayProvider(),
-            session));
+            session,
+            navigation,
+            mainMenu));
 
     private static Func<MainMenuViewModel, Task<InventoryViewModel>> CreateDummyInventoryViewModelFactory(
         ICurrentSession session, INavigationService navigation) =>

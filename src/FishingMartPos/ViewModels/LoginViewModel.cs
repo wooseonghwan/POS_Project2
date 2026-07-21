@@ -12,7 +12,7 @@ public sealed partial class LoginViewModel : ObservableObject
     private readonly IStaffRepository _staffRepository;
     private readonly ICurrentSession _session;
     private readonly INavigationService _navigation;
-    private readonly Func<Task<PosViewModel>> _posViewModelFactory;
+    private readonly Func<MainMenuViewModel, Task<PosViewModel>> _posViewModelFactory;
     private readonly Func<MainMenuViewModel, Task<InventoryViewModel>> _inventoryViewModelFactory;
 
     [ObservableProperty]
@@ -35,7 +35,7 @@ public sealed partial class LoginViewModel : ObservableObject
         ICurrentSession session,
         INavigationService navigation,
         IReadOnlyList<PosTerminal> terminals,
-        Func<Task<PosViewModel>> posViewModelFactory,
+        Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory,
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory)
     {
         _staffRepository = staffRepository;

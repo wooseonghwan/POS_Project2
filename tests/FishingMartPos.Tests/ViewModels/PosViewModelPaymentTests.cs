@@ -1,4 +1,5 @@
 using FishingMartPos.Models;
+using FishingMartPos.Navigation;
 using FishingMartPos.Services;
 using FishingMartPos.Tests.Fakes;
 using FishingMartPos.ViewModels;
@@ -25,10 +26,12 @@ public class PosViewModelPaymentTests
         session.SignIn(
             new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
             new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var mainMenuViewModel = new MainMenuViewModel(session, navigation);
 
         return new PosViewModel(
             new FakeProductRepository(new[] { Bait1 }), new FakeCodeRepository(codes),
-            sales, held, new FakeDelayProvider(), session);
+            sales, held, new FakeDelayProvider(), session, navigation, mainMenuViewModel);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FishingMartPos.Domain;
 using FishingMartPos.Models;
+using FishingMartPos.Navigation;
 using FishingMartPos.Repositories;
 using FishingMartPos.Services;
 using FishingMartPos.Theme;
@@ -17,6 +18,8 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly IHeldOrderRepository _heldOrderRepository;
     private readonly IDelayProvider _delay;
     private readonly ICurrentSession _session;
+    private readonly INavigationService _navigation;
+    private readonly MainMenuViewModel _mainMenuViewModel;
     private readonly Cart _cart = new();
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
@@ -48,7 +51,9 @@ public sealed partial class PosViewModel : ObservableObject
         ISalesRepository salesRepository,
         IHeldOrderRepository heldOrderRepository,
         IDelayProvider delay,
-        ICurrentSession session)
+        ICurrentSession session,
+        INavigationService navigation,
+        MainMenuViewModel mainMenuViewModel)
     {
         _productRepository = productRepository;
         _codeRepository = codeRepository;
@@ -56,6 +61,8 @@ public sealed partial class PosViewModel : ObservableObject
         _heldOrderRepository = heldOrderRepository;
         _delay = delay;
         _session = session;
+        _navigation = navigation;
+        _mainMenuViewModel = mainMenuViewModel;
     }
 
     public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
@@ -273,6 +280,9 @@ public sealed partial class PosViewModel : ObservableObject
 
     [RelayCommand]
     private void HideHeldList() => IsHeldListVisible = false;
+
+    [RelayCommand]
+    private void GoToMainMenu() => _navigation.NavigateTo(_mainMenuViewModel);
 
     private async Task RecallOrder(long holdNo)
     {

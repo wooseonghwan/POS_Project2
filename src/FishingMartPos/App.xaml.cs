@@ -52,9 +52,9 @@ public partial class App : Application
         var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
         var delayProvider = _services.GetRequiredService<IDelayProvider>();
 
-        async Task<PosViewModel> CreatePosViewModelAsync()
+        async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu);
             await vm.LoadAsync();
             return vm;
         }

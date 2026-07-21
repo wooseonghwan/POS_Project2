@@ -24,9 +24,11 @@ public class MainMenuViewModelTests
             new FishingMartPos.Tests.Fakes.FakeSalesRepository(),
             new FishingMartPos.Tests.Fakes.FakeHeldOrderRepository(),
             new FishingMartPos.Tests.Fakes.FakeDelayProvider(),
-            session);
+            session,
+            navigation,
+            new MainMenuViewModel(session, navigation));
 
-        Func<Task<PosViewModel>> posViewModelFactory = () => Task.FromResult(posViewModel);
+        Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory = _ => Task.FromResult(posViewModel);
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory = mainMenu =>
             Task.FromResult(new InventoryViewModel(
                 new FishingMartPos.Tests.Fakes.FakeProductRepository(Array.Empty<Product>()),

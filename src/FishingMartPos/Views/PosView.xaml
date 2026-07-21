@@ -32,12 +32,15 @@
 
                     <Grid Grid.Row="0" Margin="8,6">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding HeldOrders.Count, StringFormat='보류 {0}건'}"
+                        <Button Grid.Column="0" Content="메뉴" Padding="10,4" Margin="0,0,8,0" FontSize="11"
+                                Command="{Binding GoToMainMenuCommand}" />
+                        <TextBlock Grid.Column="1" Text="{Binding HeldOrders.Count, StringFormat='보류 {0}건'}"
                                    VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource MutedText}" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
                             <Button Content="보류" Padding="10,4" Margin="0,0,4,0" FontSize="11"
                                     Command="{Binding HoldOrderCommand}" />
                             <Button Content="보류목록" Padding="10,4" FontSize="11"

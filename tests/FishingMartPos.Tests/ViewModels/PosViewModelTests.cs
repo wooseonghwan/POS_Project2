@@ -1,4 +1,5 @@
 using FishingMartPos.Models;
+using FishingMartPos.Navigation;
 using FishingMartPos.Services;
 using FishingMartPos.Tests.Fakes;
 using FishingMartPos.ViewModels;
@@ -17,7 +18,14 @@ public class PosViewModelTests
         Barcode = "F1", MajorCd = "FISH", MinorCd = "TACKLE", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 50
     };
 
-    private static PosViewModel CreateViewModel(out FakeSalesRepository sales, out FakeHeldOrderRepository held)
+    private static PosViewModel CreateViewModel(out FakeSalesRepository sales, out FakeHeldOrderRepository held) =>
+        CreateViewModel(out sales, out held, out _, out _);
+
+    private static PosViewModel CreateViewModel(
+        out FakeSalesRepository sales,
+        out FakeHeldOrderRepository held,
+        out INavigationService navigation,
+        out MainMenuViewModel mainMenuViewModel)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -33,6 +41,8 @@ public class PosViewModelTests
         session.SignIn(
             new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
             new PosTerminal { PosCode = "1", PosName = "POS1" });
+        navigation = new NavigationService();
+        mainMenuViewModel = new MainMenuViewModel(session, navigation);
 
         return new PosViewModel(
             new FakeProductRepository(new[] { Bait1, Float1 }),
@@ -40,7 +50,9 @@ public class PosViewModelTests
             sales,
             held,
             new FakeDelayProvider(),
-            session);
+            session,
+            navigation,
+            mainMenuViewModel);
     }
 
     [Fact]
@@ -181,5 +193,16 @@ public class PosViewModelTests
         Assert.Equal("0원", vm.ChangeStr);
         Assert.Contains("CashInputStr", raisedProperties);
         Assert.Contains("ChangeStr", raisedProperties);
+    }
+
+    [Fact]
+    public async Task GoToMainMenu_NavigatesToInjectedMainMenuViewModel()
+    {
+        var vm = CreateViewModel(out _, out _, out var navigation, out var mainMenuViewModel);
+        await vm.LoadAsync();
+
+        vm.GoToMainMenuCommand.Execute(null);
+
+        Assert.Same(mainMenuViewModel, navigation.CurrentViewModel);
     }
 }
