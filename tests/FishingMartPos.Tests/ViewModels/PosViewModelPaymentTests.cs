@@ -119,6 +119,66 @@ public class PosViewModelPaymentTests
     }
 
     [Fact]
+    public async Task Recall_WhenCartHasItems_ShowsConfirmationWithoutRecallingYet()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.IncSelectedCommand.Execute(null); // qty=2
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        var heldItem = Assert.Single(vm.HeldOrders);
+
+        vm.VisibleProducts[0].AddCommand.Execute(null); // fresh cart item, qty=1
+
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)heldItem.RecallCommand).ExecuteAsync(null);
+
+        Assert.True(vm.IsRecallConfirmVisible);
+        Assert.Single(vm.HeldOrders);
+        var untouchedLine = Assert.Single(vm.CartLines);
+        Assert.Equal(1, untouchedLine.Qty);
+    }
+
+    [Fact]
+    public async Task ConfirmReplaceCart_ClearsCurrentCartAndAppliesHeldOrderInstead()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.IncSelectedCommand.Execute(null); // qty=2
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        var heldItem = Assert.Single(vm.HeldOrders);
+        vm.VisibleProducts[0].AddCommand.Execute(null); // fresh cart item, qty=1
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)heldItem.RecallCommand).ExecuteAsync(null);
+
+        await vm.ConfirmReplaceCartCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsRecallConfirmVisible);
+        Assert.Empty(vm.HeldOrders);
+        var restored = Assert.Single(vm.CartLines);
+        Assert.Equal(2, restored.Qty);
+    }
+
+    [Fact]
+    public async Task CancelReplaceCart_KeepsCurrentCartAndHeldOrderUntouched()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.IncSelectedCommand.Execute(null); // qty=2
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        var heldItem = Assert.Single(vm.HeldOrders);
+        vm.VisibleProducts[0].AddCommand.Execute(null); // fresh cart item, qty=1
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)heldItem.RecallCommand).ExecuteAsync(null);
+
+        vm.CancelReplaceCartCommand.Execute(null);
+
+        Assert.False(vm.IsRecallConfirmVisible);
+        Assert.Single(vm.HeldOrders);
+        var untouchedLine = Assert.Single(vm.CartLines);
+        Assert.Equal(1, untouchedLine.Qty);
+    }
+
+    [Fact]
     public async Task HoldOrder_UpToTwo_BothSucceed()
     {
         var vm = CreateViewModel(out _, out var held);

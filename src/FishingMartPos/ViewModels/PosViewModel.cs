@@ -43,6 +43,9 @@ public sealed partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private bool _isHeldListVisible;
 
+    [ObservableProperty]
+    private bool _isRecallConfirmVisible;
+
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
@@ -297,7 +300,40 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private void GoToMainMenu() => _navigation.NavigateTo(_mainMenuViewModel);
 
+    private long? _pendingRecallHoldNo;
+
     private async Task RecallOrder(long holdNo)
+    {
+        if (_cart.Lines.Count > 0)
+        {
+            _pendingRecallHoldNo = holdNo;
+            IsRecallConfirmVisible = true;
+            return;
+        }
+
+        await ApplyRecallAsync(holdNo);
+    }
+
+    [RelayCommand]
+    private async Task ConfirmReplaceCart()
+    {
+        if (_pendingRecallHoldNo is not long holdNo) return;
+        _pendingRecallHoldNo = null;
+        IsRecallConfirmVisible = false;
+
+        _cart.Clear();
+        SelectedBarcode = null;
+        await ApplyRecallAsync(holdNo);
+    }
+
+    [RelayCommand]
+    private void CancelReplaceCart()
+    {
+        _pendingRecallHoldNo = null;
+        IsRecallConfirmVisible = false;
+    }
+
+    private async Task ApplyRecallAsync(long holdNo)
     {
         var lines = await _heldOrderRepository.GetLinesAsync(holdNo);
         foreach (var line in lines)
