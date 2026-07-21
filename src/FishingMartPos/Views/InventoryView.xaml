@@ -1,0 +1,134 @@
+<UserControl x:Class="FishingMartPos.Views.InventoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </UserControl.Resources>
+    <Grid Background="{DynamicResource MenuBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 상단 헤더 -->
+        <Border Grid.Row="0" Background="White" BorderBrush="{DynamicResource HeaderBorder}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0" Height="42">
+                <TextBlock Text="재고관리" FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TitleText}" VerticalAlignment="Center"
+                           HorizontalAlignment="Left" />
+                <Button Content="메인메뉴로" Padding="12,5" FontSize="12" FontWeight="Bold"
+                        Background="{DynamicResource LogoutButtonBackground}"
+                        Foreground="{DynamicResource MutedText}"
+                        BorderBrush="{DynamicResource InputBorder}" BorderThickness="1"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding GoToMainMenuCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- 검색 / 카테고리 필터 -->
+        <Grid Grid.Row="1" Margin="16,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="180" />
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Padding="8,6" FontSize="13"
+                     BorderBrush="{DynamicResource InputBorder}" BorderThickness="1"
+                     Background="White" />
+            <ComboBox Grid.Column="1" Margin="10,0,0,0"
+                      ItemsSource="{Binding CategoryOptions}"
+                      SelectedItem="{Binding SelectedCategoryOption}"
+                      DisplayMemberPath="Name"
+                      Padding="8,6" FontSize="13" />
+        </Grid>
+
+        <!-- 목록 -->
+        <Border Grid.Row="2" Margin="16,0,16,16" Background="White"
+                BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="12,8" Background="{DynamicResource HeaderButtonBackground}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="60" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1.5*" />
+                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="0.8*" />
+                        <ColumnDefinition Width="60" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="사진" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="대분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="소분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Text="POS분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="4" Text="상품명" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                    <TextBlock Grid.Column="5" Text="바코드" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="6" Text="단가" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="7" Text="재고" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="8" Text="삭제" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                </Grid>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="12,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="1.5*" />
+                                        <ColumnDefinition Width="1*" />
+                                        <ColumnDefinition Width="0.8*" />
+                                        <ColumnDefinition Width="60" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="{Binding Swatch}" Width="32" Height="32" CornerRadius="2" />
+                                    <TextBlock Grid.Column="1" Text="{Binding MajorName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MinorName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="3" Text="{Binding PosCatName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="4" Text="{Binding Name}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource TitleText}" />
+                                    <TextBlock Grid.Column="5" Text="{Binding Barcode}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MutedText}" />
+                                    <TextBlock Grid.Column="6" Text="{Binding PriceStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="7" Text="{Binding StockQtyStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <Button Grid.Column="8" Content="삭제" FontSize="11" Padding="8,4"
+                                            HorizontalAlignment="Center"
+                                            Command="{Binding DeleteCommand}"
+                                            Visibility="{Binding CanDelete, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- 삭제 확인 모달 -->
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsDeleteConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding PendingDeleteName, StringFormat='{}{0} 상품을 삭제하시겠습니까?'}"
+                               FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,0,0,16" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelDeleteCommand}" />
+                        <Button Content="삭제" Padding="16,6" Background="{DynamicResource ErrorBorder}" Foreground="White"
+                                Command="{Binding ConfirmDeleteCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
