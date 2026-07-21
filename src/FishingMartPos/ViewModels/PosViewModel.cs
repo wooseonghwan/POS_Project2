@@ -50,9 +50,6 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isDeleteHeldConfirmVisible;
 
     [ObservableProperty]
-    private bool _isClearAllConfirmVisible;
-
-    [ObservableProperty]
     private bool _isResetOrderConfirmVisible;
 
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
@@ -189,20 +186,9 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private void PressKey(string key)
     {
-        if (key == "CLS" && SelectedBarcode is not null)
-        {
-            IsClearAllConfirmVisible = true;
-            return;
-        }
-
         if (SelectedBarcode is not null)
         {
-            if (key == "<")
-            {
-                QtyBuffer = string.Empty;
-                _cart.SetQty(SelectedBarcode, 1);
-            }
-            else if (QtyBuffer.Length < 3)
+            if (QtyBuffer.Length < 3)
             {
                 QtyBuffer += key;
                 _cart.SetQty(SelectedBarcode, Math.Max(1, int.Parse(QtyBuffer)));
@@ -211,36 +197,12 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
-        if (key == "CLS")
-        {
-            CashInput = string.Empty;
-        }
-        else if (key == "<")
-        {
-            CashInput = CashInput.Length > 0 ? CashInput[..^1] : string.Empty;
-        }
-        else if (CashInput.Length < 9)
+        if (CashInput.Length < 9)
         {
             CashInput += key;
         }
         OnPropertyChanged(nameof(CashInputStr));
         OnPropertyChanged(nameof(ChangeStr));
-    }
-
-    [RelayCommand]
-    private void ConfirmClearAll()
-    {
-        IsClearAllConfirmVisible = false;
-        _cart.Clear();
-        SelectedBarcode = null;
-        QtyBuffer = string.Empty;
-        RefreshCartLines();
-    }
-
-    [RelayCommand]
-    private void CancelClearAll()
-    {
-        IsClearAllConfirmVisible = false;
     }
 
     [RelayCommand]

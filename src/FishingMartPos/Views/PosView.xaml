@@ -183,7 +183,6 @@
                     <Grid Grid.Column="0" Margin="10,6">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <StackPanel Grid.Row="0">
@@ -194,19 +193,7 @@
                             <TextBlock Text="남은금액" FontSize="10" Foreground="{DynamicResource MutedText}" Margin="0,4,0,0" />
                             <TextBlock Text="{Binding ChangeStr}" FontSize="15" FontWeight="Black" />
                         </StackPanel>
-                        <Grid Grid.Row="1" Margin="0,4,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Content="－" Margin="0,0,2.5,0" FontSize="14" FontWeight="Bold" Command="{Binding DecSelectedCommand}"
-                                    Background="{DynamicResource LogoutButtonBackground}" Foreground="{DynamicResource PosSmallButtonText}"
-                                    BorderBrush="{DynamicResource InputBorder}" />
-                            <Button Grid.Column="1" Content="＋" Margin="2.5,0,0,0" FontSize="14" FontWeight="Bold" Command="{Binding IncSelectedCommand}"
-                                    Background="{DynamicResource LogoutButtonBackground}" Foreground="{DynamicResource PosSmallButtonText}"
-                                    BorderBrush="{DynamicResource InputBorder}" />
-                        </Grid>
-                        <Button Grid.Row="2" Content="삭제" Margin="0,4,0,0" FontSize="12" FontWeight="Bold" HorizontalAlignment="Stretch"
+                        <Button Grid.Row="1" Content="삭제" Margin="0,4,0,0" FontSize="12" FontWeight="Bold" HorizontalAlignment="Stretch"
                                 Background="{DynamicResource CartDeleteBackground}" Foreground="{DynamicResource CartDeleteText}"
                                 BorderBrush="{DynamicResource CartDeleteBorder}"
                                 Command="{Binding RemoveSelectedCommand}" />
@@ -232,9 +219,9 @@
                         <Button Content="7" Command="{Binding PressKeyCommand}" CommandParameter="7" />
                         <Button Content="8" Command="{Binding PressKeyCommand}" CommandParameter="8" />
                         <Button Content="9" Command="{Binding PressKeyCommand}" CommandParameter="9" />
-                        <Button Content="1개" FontSize="14" Command="{Binding PressKeyCommand}" CommandParameter="&lt;" Background="{DynamicResource KeypadSpecialBackground}" />
+                        <Button Content="－" Command="{Binding DecSelectedCommand}" Background="{DynamicResource KeypadSpecialBackground}" />
                         <Button Content="0" Command="{Binding PressKeyCommand}" CommandParameter="0" />
-                        <Button Content="전체삭제" FontSize="13" Command="{Binding PressKeyCommand}" CommandParameter="CLS" Background="{DynamicResource KeypadSpecialBackground}" />
+                        <Button Content="＋" Command="{Binding IncSelectedCommand}" Background="{DynamicResource KeypadSpecialBackground}" />
                     </UniformGrid>
                 </Grid>
 
@@ -334,25 +321,6 @@
                         <Button Content="삭제" Padding="16,6" Background="{DynamicResource CartDeleteBackground}"
                                 Foreground="{DynamicResource CartDeleteText}" BorderBrush="{DynamicResource CartDeleteBorder}"
                                 Command="{Binding ConfirmDeleteHeldOrderCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-        </Grid>
-
-        <!-- 전체삭제 확인 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
-              Visibility="{Binding IsClearAllConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
-                    Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="담긴 상품을 전체 삭제하시겠습니까?"
-                               FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TitleText}"
-                               TextWrapping="Wrap" MaxWidth="280" TextAlignment="Center" Margin="0,0,0,16" />
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="아니오" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelClearAllCommand}" />
-                        <Button Content="예" Padding="16,6" Background="{DynamicResource CartDeleteBackground}"
-                                Foreground="{DynamicResource CartDeleteText}" BorderBrush="{DynamicResource CartDeleteBorder}"
-                                Command="{Binding ConfirmClearAllCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
