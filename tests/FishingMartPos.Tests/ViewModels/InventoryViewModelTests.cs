@@ -150,4 +150,47 @@ public class InventoryViewModelTests
 
         Assert.Same(mainMenu, navigation.CurrentViewModel);
     }
+
+    [Fact]
+    public async Task DeleteCommand_ShowsConfirmationModalWithProductName()
+    {
+        var (vm, _, _, _) = CreateAdmin();
+        await vm.LoadAsync();
+        var row = vm.Rows.Single(r => r.Barcode == "B1");
+
+        row.DeleteCommand.Execute(null);
+
+        Assert.True(vm.IsDeleteConfirmVisible);
+        Assert.Equal("지렁이", vm.PendingDeleteName);
+    }
+
+    [Fact]
+    public async Task ConfirmDelete_DeactivatesProductAndRemovesRowAndClosesModal()
+    {
+        var (vm, products, _, _) = CreateAdmin();
+        await vm.LoadAsync();
+        var row = vm.Rows.Single(r => r.Barcode == "B1");
+        row.DeleteCommand.Execute(null);
+
+        await vm.ConfirmDeleteCommand.ExecuteAsync(null);
+
+        Assert.Contains("B1", products.DeactivatedBarcodes);
+        Assert.DoesNotContain(vm.Rows, r => r.Barcode == "B1");
+        Assert.False(vm.IsDeleteConfirmVisible);
+    }
+
+    [Fact]
+    public async Task CancelDelete_LeavesRowIntactAndClosesModal()
+    {
+        var (vm, products, _, _) = CreateAdmin();
+        await vm.LoadAsync();
+        var row = vm.Rows.Single(r => r.Barcode == "B1");
+        row.DeleteCommand.Execute(null);
+
+        vm.CancelDeleteCommand.Execute(null);
+
+        Assert.Empty(products.DeactivatedBarcodes);
+        Assert.Contains(vm.Rows, r => r.Barcode == "B1");
+        Assert.False(vm.IsDeleteConfirmVisible);
+    }
 }

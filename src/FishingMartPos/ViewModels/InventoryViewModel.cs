@@ -31,6 +31,14 @@ public sealed partial class InventoryViewModel : ObservableObject
     [ObservableProperty]
     private CategoryFilterOptionViewModel? _selectedCategoryOption;
 
+    [ObservableProperty]
+    private bool _isDeleteConfirmVisible;
+
+    [ObservableProperty]
+    private string? _pendingDeleteName;
+
+    private string? _pendingDeleteBarcode;
+
     public ObservableCollection<CategoryFilterOptionViewModel> CategoryOptions { get; } = new();
     public ObservableCollection<InventoryRowViewModel> Rows { get; } = new();
 
@@ -117,9 +125,31 @@ public sealed partial class InventoryViewModel : ObservableObject
 
     private void RequestDelete(Product product)
     {
-        // Task 3에서 확인모달 로직으로 대체된다.
+        if (!IsAdmin) return;
+        _pendingDeleteBarcode = product.Barcode;
+        PendingDeleteName = product.Name;
+        IsDeleteConfirmVisible = true;
     }
 
     [RelayCommand]
     private void GoToMainMenu() => _navigation.NavigateTo(_mainMenuViewModel);
+
+    [RelayCommand]
+    private async Task ConfirmDelete()
+    {
+        if (_pendingDeleteBarcode is null) return;
+
+        await _productRepository.DeactivateAsync(_pendingDeleteBarcode);
+        _allProducts = _allProducts.Where(p => p.Barcode != _pendingDeleteBarcode).ToList();
+        CancelDelete();
+        RefreshRows();
+    }
+
+    [RelayCommand]
+    private void CancelDelete()
+    {
+        _pendingDeleteBarcode = null;
+        PendingDeleteName = null;
+        IsDeleteConfirmVisible = false;
+    }
 }
