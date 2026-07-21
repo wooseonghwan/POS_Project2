@@ -46,6 +46,9 @@ public sealed partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private bool _isRecallConfirmVisible;
 
+    [ObservableProperty]
+    private bool _isDeleteHeldConfirmVisible;
+
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
@@ -346,6 +349,32 @@ public sealed partial class PosViewModel : ObservableObject
         IsHeldListVisible = false;
     }
 
+    private long? _pendingDeleteHoldNo;
+
+    private void RequestDeleteHeldOrder(long holdNo)
+    {
+        _pendingDeleteHoldNo = holdNo;
+        IsDeleteHeldConfirmVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmDeleteHeldOrder()
+    {
+        if (_pendingDeleteHoldNo is not long holdNo) return;
+        _pendingDeleteHoldNo = null;
+        IsDeleteHeldConfirmVisible = false;
+
+        await _heldOrderRepository.DeleteAsync(holdNo);
+        await RefreshHeldOrdersAsync();
+    }
+
+    [RelayCommand]
+    private void CancelDeleteHeldOrder()
+    {
+        _pendingDeleteHoldNo = null;
+        IsDeleteHeldConfirmVisible = false;
+    }
+
     private async Task RefreshHeldOrdersAsync()
     {
         var held = await _heldOrderRepository.GetHeldAsync(_session.CurrentTerminal?.PosCode ?? string.Empty);
@@ -359,6 +388,7 @@ public sealed partial class PosViewModel : ObservableObject
                 HeldAtStr = item.HeldAt.ToString("HH:mm:ss"),
                 TotalStr = CurrencyFormat.Format(item.Total),
                 RecallCommand = new AsyncRelayCommand(() => RecallOrder(capturedHoldNo)),
+                DeleteCommand = new RelayCommand(() => RequestDeleteHeldOrder(capturedHoldNo)),
             });
         }
     }

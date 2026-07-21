@@ -8,4 +8,5 @@ public sealed class HeldOrderSummaryViewModel
     public required string HeldAtStr { get; init; }
     public required string TotalStr { get; init; }
     public required ICommand RecallCommand { get; init; }
+    public required ICommand DeleteCommand { get; init; }
 }

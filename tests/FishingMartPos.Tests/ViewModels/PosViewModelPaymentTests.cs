@@ -99,6 +99,45 @@ public class PosViewModelPaymentTests
     }
 
     [Fact]
+    public async Task DeleteHeldOrder_ShowsConfirmationThenRemovesFromHeldListWithoutTouchingCart()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        var heldItem = Assert.Single(vm.HeldOrders);
+        vm.VisibleProducts[0].AddCommand.Execute(null); // unrelated cart in progress
+
+        heldItem.DeleteCommand.Execute(null);
+
+        Assert.True(vm.IsDeleteHeldConfirmVisible);
+        Assert.Single(vm.HeldOrders);
+
+        await vm.ConfirmDeleteHeldOrderCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsDeleteHeldConfirmVisible);
+        Assert.Empty(vm.HeldOrders);
+        var untouchedLine = Assert.Single(vm.CartLines);
+        Assert.Equal(1, untouchedLine.Qty);
+    }
+
+    [Fact]
+    public async Task CancelDeleteHeldOrder_KeepsHeldOrderInList()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        var heldItem = Assert.Single(vm.HeldOrders);
+
+        heldItem.DeleteCommand.Execute(null);
+        vm.CancelDeleteHeldOrderCommand.Execute(null);
+
+        Assert.False(vm.IsDeleteHeldConfirmVisible);
+        Assert.Single(vm.HeldOrders);
+    }
+
+    [Fact]
     public async Task HoldOrder_ThenRecall_RestoresCartAndRemovesFromHeldList()
     {
         var vm = CreateViewModel(out _, out var held);

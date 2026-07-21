@@ -270,7 +270,7 @@
         <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsHeldListVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
-                    Padding="20" Width="360" MaxHeight="400" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    Padding="20" Width="420" MaxHeight="400" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel>
                     <Grid Margin="0,0,0,10">
                         <TextBlock Text="보류 목록" FontSize="16" FontWeight="Bold" />
@@ -281,12 +281,18 @@
                             <DataTemplate>
                                 <Grid Margin="0,4">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding HeldAtStr}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="0" Text="{Binding TotalStr}" HorizontalAlignment="Right" Margin="0,0,80,0" VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Content="불러오기" Command="{Binding RecallCommand}" />
+                                    <TextBlock Grid.Column="0" Text="{Binding HeldAtStr}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding TotalStr}" HorizontalAlignment="Right" Margin="0,0,12,0" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button Content="불러오기" Command="{Binding RecallCommand}" />
+                                        <Button Content="삭제" Margin="6,0,0,0" Command="{Binding DeleteCommand}"
+                                                Background="{DynamicResource CartDeleteBackground}" Foreground="{DynamicResource CartDeleteText}"
+                                                BorderBrush="{DynamicResource CartDeleteBorder}" />
+                                    </StackPanel>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -309,6 +315,25 @@
                         <Button Content="교체" Padding="16,6" Background="{DynamicResource CartDeleteBackground}"
                                 Foreground="{DynamicResource CartDeleteText}" BorderBrush="{DynamicResource CartDeleteBorder}"
                                 Command="{Binding ConfirmReplaceCartCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 보류 삭제 확인 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsDeleteHeldConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="이 보류 건을 삭제하시겠습니까?"
+                               FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TitleText}"
+                               TextWrapping="Wrap" MaxWidth="280" TextAlignment="Center" Margin="0,0,0,16" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelDeleteHeldOrderCommand}" />
+                        <Button Content="삭제" Padding="16,6" Background="{DynamicResource CartDeleteBackground}"
+                                Foreground="{DynamicResource CartDeleteText}" BorderBrush="{DynamicResource CartDeleteBorder}"
+                                Command="{Binding ConfirmDeleteHeldOrderCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
