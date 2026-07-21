@@ -119,13 +119,30 @@ public class PosViewModelPaymentTests
     }
 
     [Fact]
-    public async Task HoldOrder_WhenAlreadyOneHeld_ShowsMessageAndKeepsCurrentCartIntact()
+    public async Task HoldOrder_UpToTwo_BothSucceed()
+    {
+        var vm = CreateViewModel(out _, out var held);
+        await vm.LoadAsync();
+
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        Assert.Single(vm.HeldOrders);
+
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        Assert.Equal(2, vm.HeldOrders.Count);
+    }
+
+    [Fact]
+    public async Task HoldOrder_WhenAlreadyTwoHeld_ShowsMessageAndKeepsCurrentCartIntact()
     {
         var vm = CreateViewModel(out _, out var held);
         await vm.LoadAsync();
         vm.VisibleProducts[0].AddCommand.Execute(null);
         await vm.HoldOrderCommand.ExecuteAsync(null);
-        Assert.Single(vm.HeldOrders);
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.HoldOrderCommand.ExecuteAsync(null);
+        Assert.Equal(2, vm.HeldOrders.Count);
 
         vm.VisibleProducts[0].AddCommand.Execute(null);
         var toastValues = new List<string?>();
@@ -136,9 +153,9 @@ public class PosViewModelPaymentTests
         };
         await vm.HoldOrderCommand.ExecuteAsync(null);
 
-        Assert.Single(vm.HeldOrders);
+        Assert.Equal(2, vm.HeldOrders.Count);
         var restoredCartLine = Assert.Single(vm.CartLines);
         Assert.Equal(1, restoredCartLine.Qty);
-        Assert.Equal("보류는 1건만 가능합니다", Assert.Single(toastValues));
+        Assert.Equal("보류는 2건만 가능합니다", Assert.Single(toastValues));
     }
 }

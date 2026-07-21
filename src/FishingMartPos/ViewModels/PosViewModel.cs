@@ -270,10 +270,10 @@ public sealed partial class PosViewModel : ObservableObject
     {
         if (_cart.Lines.Count == 0) return;
 
-        if (HeldOrders.Count > 0)
+        if (HeldOrders.Count >= 2)
         {
             IsToastWarning = true;
-            ToastMessage = "보류는 1건만 가능합니다";
+            ToastMessage = "보류는 2건만 가능합니다";
             await _delay.Delay(TimeSpan.FromMilliseconds(1200));
             ToastMessage = null;
             return;
