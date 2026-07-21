@@ -72,7 +72,7 @@
                                             <Setter Property="Background" Value="White" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource MenuTileHoverBackground}" />
+                                                    <Setter Property="Background" Value="{DynamicResource CartRowSelectedBackground}" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -114,17 +114,17 @@
                 <ItemsControl Grid.Row="0" ItemsSource="{Binding Categories}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel />
+                            <UniformGrid Columns="4" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Content="{Binding Name}" Command="{Binding SelectCommand}"
-                                    Padding="12,10" FontSize="14" FontWeight="Bold" BorderThickness="0,0,1,1"
+                                    Padding="4,10" FontSize="14" FontWeight="Bold" BorderThickness="0,0,1,1"
                                     BorderBrush="{DynamicResource MenuTileBorder}">
                                 <Button.Style>
                                     <Style TargetType="Button">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderButtonBackground}" />
+                                        <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
                                         <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsActive}" Value="True">
@@ -188,26 +188,42 @@
                         <TextBlock Text="남은금액" FontSize="10" Foreground="{DynamicResource MutedText}" Margin="0,4,0,0" />
                         <TextBlock Text="{Binding ChangeStr}" FontSize="15" FontWeight="Black" />
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                            <Button Content="－" Width="30" Command="{Binding DecSelectedCommand}" />
-                            <Button Content="＋" Width="30" Margin="4,0,0,0" Command="{Binding IncSelectedCommand}" />
+                            <Button Content="－" Width="30" FontSize="14" FontWeight="Bold" Command="{Binding DecSelectedCommand}"
+                                    Background="{DynamicResource LogoutButtonBackground}" Foreground="{DynamicResource PosSmallButtonText}"
+                                    BorderBrush="{DynamicResource InputBorder}" />
+                            <Button Content="＋" Width="30" Margin="4,0,0,0" FontSize="14" FontWeight="Bold" Command="{Binding IncSelectedCommand}"
+                                    Background="{DynamicResource LogoutButtonBackground}" Foreground="{DynamicResource PosSmallButtonText}"
+                                    BorderBrush="{DynamicResource InputBorder}" />
                         </StackPanel>
-                        <Button Content="삭제" Margin="0,4,0,0" Background="{DynamicResource ErrorBorder}" Foreground="White"
+                        <Button Content="삭제" Margin="0,4,0,0" FontSize="12" FontWeight="Bold"
+                                Background="{DynamicResource CartDeleteBackground}" Foreground="{DynamicResource CartDeleteText}"
+                                BorderBrush="{DynamicResource CartDeleteBorder}"
                                 Command="{Binding RemoveSelectedCommand}" />
                     </StackPanel>
 
                     <UniformGrid Grid.Column="1" Columns="3" Rows="4" Margin="8">
-                        <Button Content="1" Command="{Binding PressKeyCommand}" CommandParameter="1" Margin="3" />
-                        <Button Content="2" Command="{Binding PressKeyCommand}" CommandParameter="2" Margin="3" />
-                        <Button Content="3" Command="{Binding PressKeyCommand}" CommandParameter="3" Margin="3" />
-                        <Button Content="4" Command="{Binding PressKeyCommand}" CommandParameter="4" Margin="3" />
-                        <Button Content="5" Command="{Binding PressKeyCommand}" CommandParameter="5" Margin="3" />
-                        <Button Content="6" Command="{Binding PressKeyCommand}" CommandParameter="6" Margin="3" />
-                        <Button Content="7" Command="{Binding PressKeyCommand}" CommandParameter="7" Margin="3" />
-                        <Button Content="8" Command="{Binding PressKeyCommand}" CommandParameter="8" Margin="3" />
-                        <Button Content="9" Command="{Binding PressKeyCommand}" CommandParameter="9" Margin="3" />
-                        <Button Content="&lt;" Command="{Binding PressKeyCommand}" CommandParameter="&lt;" Margin="3" Background="{DynamicResource KeypadSpecialBackground}" />
-                        <Button Content="0" Command="{Binding PressKeyCommand}" CommandParameter="0" Margin="3" />
-                        <Button Content="CLS" Command="{Binding PressKeyCommand}" CommandParameter="CLS" Margin="3" Background="{DynamicResource KeypadSpecialBackground}" />
+                        <UniformGrid.Resources>
+                            <Style TargetType="Button">
+                                <Setter Property="Margin" Value="3" />
+                                <Setter Property="FontSize" Value="17" />
+                                <Setter Property="FontWeight" Value="Bold" />
+                                <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
+                                <Setter Property="Foreground" Value="{DynamicResource KeypadText}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource InputBorder}" />
+                            </Style>
+                        </UniformGrid.Resources>
+                        <Button Content="1" Command="{Binding PressKeyCommand}" CommandParameter="1" />
+                        <Button Content="2" Command="{Binding PressKeyCommand}" CommandParameter="2" />
+                        <Button Content="3" Command="{Binding PressKeyCommand}" CommandParameter="3" />
+                        <Button Content="4" Command="{Binding PressKeyCommand}" CommandParameter="4" />
+                        <Button Content="5" Command="{Binding PressKeyCommand}" CommandParameter="5" />
+                        <Button Content="6" Command="{Binding PressKeyCommand}" CommandParameter="6" />
+                        <Button Content="7" Command="{Binding PressKeyCommand}" CommandParameter="7" />
+                        <Button Content="8" Command="{Binding PressKeyCommand}" CommandParameter="8" />
+                        <Button Content="9" Command="{Binding PressKeyCommand}" CommandParameter="9" />
+                        <Button Content="&lt;" Command="{Binding PressKeyCommand}" CommandParameter="&lt;" Background="{DynamicResource KeypadSpecialBackground}" />
+                        <Button Content="0" Command="{Binding PressKeyCommand}" CommandParameter="0" />
+                        <Button Content="CLS" Command="{Binding PressKeyCommand}" CommandParameter="CLS" Background="{DynamicResource KeypadSpecialBackground}" />
                     </UniformGrid>
                 </Grid>
 
@@ -225,13 +241,15 @@
                     </UniformGrid>
                     <Button Grid.Row="1" Content="돈통열기" IsEnabled="False" Margin="3" />
                     <UniformGrid Grid.Row="2" Columns="4" Margin="0,6,0,0">
-                        <Button Content="초기화" Command="{Binding ResetOrderCommand}" Margin="3" />
-                        <Button Content="현금결제" Command="{Binding PayCashCommand}" Margin="3"
-                                Background="{DynamicResource Accent}" Foreground="White" />
-                        <Button Content="카드결제1" Command="{Binding PayCard1Command}" Margin="3"
-                                Background="{DynamicResource Accent}" Foreground="White" />
-                        <Button Content="카드결제2" Command="{Binding PayCard2Command}" Margin="3"
-                                Background="{DynamicResource AccentDark}" Foreground="White" />
+                        <Button Content="초기화" Command="{Binding ResetOrderCommand}" Margin="3" FontSize="15" FontWeight="Bold"
+                                Background="{DynamicResource NeutralButtonBackground}" Foreground="{DynamicResource MutedText}"
+                                BorderBrush="{DynamicResource NeutralButtonBorder}" />
+                        <Button Content="현금결제" Command="{Binding PayCashCommand}" Margin="3" FontSize="15" FontWeight="Bold"
+                                Background="{DynamicResource Accent}" Foreground="White" BorderBrush="{DynamicResource AccentDark}" />
+                        <Button Content="카드결제1" Command="{Binding PayCard1Command}" Margin="3" FontSize="15" FontWeight="Bold"
+                                Background="{DynamicResource Accent}" Foreground="White" BorderBrush="{DynamicResource AccentDark}" />
+                        <Button Content="카드결제2" Command="{Binding PayCard2Command}" Margin="3" FontSize="15" FontWeight="Bold"
+                                Background="{DynamicResource AccentDark}" Foreground="White" BorderBrush="{DynamicResource AccentDark}" />
                     </UniformGrid>
                 </Grid>
             </Grid>

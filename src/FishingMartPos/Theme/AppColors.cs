@@ -48,6 +48,13 @@ public static class AppColors
             ["ProductSwatch3"] = (0.55, 0.09, 340, 1.0),
             ["ProductSwatch4"] = (0.55, 0.09, 150, 1.0),
             ["ProductSwatch5"] = (0.55, 0.09, 80, 1.0),
+            ["CartRowSelectedBackground"] = (0.95, 0.04, 195, 1.0),
+            ["PosSmallButtonText"] = (0.35, 0.02, 250, 1.0),
+            ["CartDeleteBorder"] = (0.65, 0.07, 25, 1.0),
+            ["CartDeleteBackground"] = (0.94, 0.03, 25, 1.0),
+            ["CartDeleteText"] = (0.4, 0.1, 25, 1.0),
+            ["NeutralButtonBorder"] = (0.75, 0.01, 250, 1.0),
+            ["NeutralButtonBackground"] = (0.94, 0.006, 250, 1.0),
         };
 
         var brushes = new Dictionary<string, Brush>(map.Count);

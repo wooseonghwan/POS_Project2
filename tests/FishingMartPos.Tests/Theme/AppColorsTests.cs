@@ -33,10 +33,10 @@ public class AppColorsTests
     }
 
     [Fact]
-    public void ContainsAllThirtyFiveNamedColors()
+    public void ContainsAllFortyTwoNamedColors()
     {
         var brushes = AppColors.BuildBrushes();
 
-        Assert.Equal(35, brushes.Count);
+        Assert.Equal(42, brushes.Count);
     }
 }
