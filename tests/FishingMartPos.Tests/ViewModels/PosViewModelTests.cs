@@ -159,16 +159,51 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public async Task PressKey_Cls_WhenLineSelected_RemovesLineFromCart()
+    public async Task PressKey_Cls_WhenCartHasItems_ShowsConfirmationWithoutClearingYet()
     {
         var vm = CreateViewModel(out _, out _);
         await vm.LoadAsync();
         vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.Categories[1].SelectCommand.Execute(null);
+        vm.VisibleProducts[0].AddCommand.Execute(null);
 
         vm.PressKeyCommand.Execute("CLS");
 
+        Assert.True(vm.IsClearAllConfirmVisible);
+        Assert.Equal(2, vm.CartLines.Count);
+    }
+
+    [Fact]
+    public async Task ConfirmClearAll_RemovesEveryLineFromCartRegardlessOfSelection()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.Categories[1].SelectCommand.Execute(null);
+        vm.VisibleProducts[0].AddCommand.Execute(null); // selection now on product 2
+
+        vm.PressKeyCommand.Execute("CLS");
+        vm.ConfirmClearAllCommand.Execute(null);
+
+        Assert.False(vm.IsClearAllConfirmVisible);
         Assert.Empty(vm.CartLines);
         Assert.Null(vm.SelectedBarcode);
+    }
+
+    [Fact]
+    public async Task CancelClearAll_KeepsAllCartLinesIntact()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.Categories[1].SelectCommand.Execute(null);
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        vm.PressKeyCommand.Execute("CLS");
+        vm.CancelClearAllCommand.Execute(null);
+
+        Assert.False(vm.IsClearAllConfirmVisible);
+        Assert.Equal(2, vm.CartLines.Count);
     }
 
     [Fact]

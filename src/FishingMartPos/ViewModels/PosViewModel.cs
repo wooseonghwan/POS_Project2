@@ -49,6 +49,9 @@ public sealed partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDeleteHeldConfirmVisible;
 
+    [ObservableProperty]
+    private bool _isClearAllConfirmVisible;
+
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
@@ -183,15 +186,23 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private void PressKey(string key)
     {
+        if (key == "CLS")
+        {
+            if (_cart.Lines.Count > 0)
+            {
+                IsClearAllConfirmVisible = true;
+                return;
+            }
+
+            CashInput = string.Empty;
+            OnPropertyChanged(nameof(CashInputStr));
+            OnPropertyChanged(nameof(ChangeStr));
+            return;
+        }
+
         if (SelectedBarcode is not null)
         {
-            if (key == "CLS")
-            {
-                _cart.Remove(SelectedBarcode);
-                SelectedBarcode = null;
-                QtyBuffer = string.Empty;
-            }
-            else if (key == "<")
+            if (key == "<")
             {
                 QtyBuffer = string.Empty;
                 _cart.SetQty(SelectedBarcode, 1);
@@ -205,11 +216,7 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
-        if (key == "CLS")
-        {
-            CashInput = string.Empty;
-        }
-        else if (key == "<")
+        if (key == "<")
         {
             CashInput = CashInput.Length > 0 ? CashInput[..^1] : string.Empty;
         }
@@ -219,6 +226,22 @@ public sealed partial class PosViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(CashInputStr));
         OnPropertyChanged(nameof(ChangeStr));
+    }
+
+    [RelayCommand]
+    private void ConfirmClearAll()
+    {
+        IsClearAllConfirmVisible = false;
+        _cart.Clear();
+        SelectedBarcode = null;
+        QtyBuffer = string.Empty;
+        RefreshCartLines();
+    }
+
+    [RelayCommand]
+    private void CancelClearAll()
+    {
+        IsClearAllConfirmVisible = false;
     }
 
     [RelayCommand]

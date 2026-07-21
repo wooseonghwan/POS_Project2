@@ -339,6 +339,25 @@
             </Border>
         </Grid>
 
+        <!-- 전체삭제 확인 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsClearAllConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="담긴 상품을 전체 삭제하시겠습니까?"
+                               FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TitleText}"
+                               TextWrapping="Wrap" MaxWidth="280" TextAlignment="Center" Margin="0,0,0,16" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="아니오" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelClearAllCommand}" />
+                        <Button Content="예" Padding="16,6" Background="{DynamicResource CartDeleteBackground}"
+                                Foreground="{DynamicResource CartDeleteText}" BorderBrush="{DynamicResource CartDeleteBorder}"
+                                Command="{Binding ConfirmClearAllCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- 결제완료 토스트 -->
         <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding ToastMessage, Converter={StaticResource NullToVisibilityConverter}}">
