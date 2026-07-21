@@ -121,6 +121,25 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public async Task DecSelected_WhenQtyIsOne_ShowsWarningToastAndKeepsQtyAtOne()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // qty=1, selected
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.DecSelectedCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, vm.CartLines[0].Qty);
+        Assert.Equal("최소 수량은 1개입니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
     public async Task RemoveSelected_DeletesLine()
     {
         var vm = CreateViewModel(out _, out _);

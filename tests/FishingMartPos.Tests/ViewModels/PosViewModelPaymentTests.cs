@@ -88,14 +88,21 @@ public class PosViewModelPaymentTests
     }
 
     [Fact]
-    public async Task HoldOrder_WithEmptyCart_DoesNothing()
+    public async Task HoldOrder_WithEmptyCart_ShowsWarningToast()
     {
         var vm = CreateViewModel(out _, out var held);
         await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
 
         await vm.HoldOrderCommand.ExecuteAsync(null);
 
         Assert.Empty(vm.HeldOrders);
+        Assert.Equal("보류할 상품이 존재하지 않습니다", Assert.Single(toastValues));
     }
 
     [Fact]

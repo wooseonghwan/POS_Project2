@@ -167,9 +167,20 @@ public sealed partial class PosViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void DecSelected()
+    private async Task DecSelected()
     {
         if (SelectedBarcode is null) return;
+
+        var line = CartLines.FirstOrDefault(l => l.Barcode == SelectedBarcode);
+        if (line is not null && line.Qty <= 1)
+        {
+            IsToastWarning = true;
+            ToastMessage = "최소 수량은 1개입니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
         _cart.Decrement(SelectedBarcode);
         RefreshCartLines();
     }
@@ -278,7 +289,14 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private async Task HoldOrder()
     {
-        if (_cart.Lines.Count == 0) return;
+        if (_cart.Lines.Count == 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "보류할 상품이 존재하지 않습니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
 
         if (HeldOrders.Count >= 2)
         {
