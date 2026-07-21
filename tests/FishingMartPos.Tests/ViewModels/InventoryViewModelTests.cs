@@ -142,6 +142,18 @@ public class InventoryViewModelTests
     }
 
     [Fact]
+    public async Task StaffSession_DeleteCommandDoesNotOpenConfirmModal()
+    {
+        var (vm, _) = CreateStaff();
+        await vm.LoadAsync();
+        var row = vm.Rows.First();
+
+        row.DeleteCommand.Execute(null);
+
+        Assert.False(vm.IsDeleteConfirmVisible);
+    }
+
+    [Fact]
     public void GoToMainMenu_NavigatesToInjectedMainMenuViewModel()
     {
         var (vm, _, navigation, mainMenu) = CreateAdmin();
