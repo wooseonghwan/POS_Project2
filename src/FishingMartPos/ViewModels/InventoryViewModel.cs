@@ -12,11 +12,6 @@ namespace FishingMartPos.ViewModels;
 
 public sealed partial class InventoryViewModel : ObservableObject
 {
-    private static readonly string[] SwatchKeys =
-    {
-        "ProductSwatch0", "ProductSwatch1", "ProductSwatch2", "ProductSwatch3", "ProductSwatch4", "ProductSwatch5",
-    };
-    private static readonly Brush[] Swatches = BuildSwatches();
     private const string AllCategoriesCode = "";
 
     private readonly IProductRepository _productRepository;
@@ -110,9 +105,9 @@ public sealed partial class InventoryViewModel : ObservableObject
                 MajorName = _majorNames.TryGetValue(captured.MajorCd, out var majorName) ? majorName : captured.MajorCd,
                 MinorName = _minorNames.TryGetValue(captured.MinorCd, out var minorName) ? minorName : captured.MinorCd,
                 PosCatName = _posCatNames.TryGetValue(captured.PosCatCd, out var posCatName) ? posCatName : captured.PosCatCd,
-                PriceStr = Format(captured.Price),
+                PriceStr = CurrencyFormat.Format(captured.Price),
                 StockQtyStr = captured.StockQty.ToString("N0"),
-                Swatch = Swatches[swatchIndex % Swatches.Length],
+                Swatch = SwatchCycler.ForIndex(swatchIndex),
                 CanDelete = isAdmin,
                 DeleteCommand = new RelayCommand(() => RequestDelete(captured)),
             });
@@ -127,12 +122,4 @@ public sealed partial class InventoryViewModel : ObservableObject
 
     [RelayCommand]
     private void GoToMainMenu() => _navigation.NavigateTo(_mainMenuViewModel);
-
-    private static string Format(decimal amount) => amount.ToString("N0") + "원";
-
-    private static Brush[] BuildSwatches()
-    {
-        var all = AppColors.BuildBrushes();
-        return SwatchKeys.Select(key => all[key]).ToArray();
-    }
 }

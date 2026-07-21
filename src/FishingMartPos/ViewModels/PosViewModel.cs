@@ -12,12 +12,6 @@ namespace FishingMartPos.ViewModels;
 
 public sealed partial class PosViewModel : ObservableObject
 {
-    private static readonly string[] SwatchKeys =
-    {
-        "ProductSwatch0", "ProductSwatch1", "ProductSwatch2", "ProductSwatch3", "ProductSwatch4", "ProductSwatch5",
-    };
-    private static readonly Brush[] Swatches = BuildSwatches();
-
     private readonly IProductRepository _productRepository;
     private readonly ICodeRepository _codeRepository;
     private readonly ISalesRepository _salesRepository;
@@ -65,10 +59,10 @@ public sealed partial class PosViewModel : ObservableObject
         _session = session;
     }
 
-    public string TotalAmountStr => Format(_cart.Total);
+    public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
     public string TotalQtyStr => _cart.TotalQty.ToString("N0");
-    public string CashInputStr => CashInput.Length == 0 ? "0원" : Format(decimal.Parse(CashInput));
-    public string ChangeStr => Format(Math.Max(0, CashAmount - _cart.Total));
+    public string CashInputStr => CashInput.Length == 0 ? "0원" : CurrencyFormat.Format(decimal.Parse(CashInput));
+    public string ChangeStr => CurrencyFormat.Format(Math.Max(0, CashAmount - _cart.Total));
     private decimal CashAmount => CashInput.Length == 0 ? 0 : decimal.Parse(CashInput);
 
     public async Task LoadAsync()
@@ -121,9 +115,9 @@ public sealed partial class PosViewModel : ObservableObject
             {
                 Barcode = captured.Barcode,
                 Name = captured.Name,
-                PriceStr = Format(captured.Price),
+                PriceStr = CurrencyFormat.Format(captured.Price),
                 Initial = captured.Name.Length > 0 ? captured.Name[..1] : "?",
-                Swatch = Swatches[swatchIndex % Swatches.Length],
+                Swatch = SwatchCycler.ForIndex(swatchIndex),
                 AddCommand = new RelayCommand(() => AddToCart(captured)),
             });
             swatchIndex++;
@@ -305,7 +299,7 @@ public sealed partial class PosViewModel : ObservableObject
             {
                 HoldNo = item.HoldNo,
                 HeldAtStr = item.HeldAt.ToString("HH:mm:ss"),
-                TotalStr = Format(item.Total),
+                TotalStr = CurrencyFormat.Format(item.Total),
                 RecallCommand = new AsyncRelayCommand(() => RecallOrder(capturedHoldNo)),
             });
         }
@@ -322,21 +316,13 @@ public sealed partial class PosViewModel : ObservableObject
                 Barcode = barcode,
                 Name = line.Name,
                 Qty = line.Qty,
-                PriceStr = Format(line.Price),
-                LineTotalStr = Format(line.LineTotal),
+                PriceStr = CurrencyFormat.Format(line.Price),
+                LineTotalStr = CurrencyFormat.Format(line.LineTotal),
                 IsSelected = barcode == SelectedBarcode,
                 SelectCommand = SelectCartLineCommand,
             });
         }
         OnPropertyChanged(nameof(TotalAmountStr));
         OnPropertyChanged(nameof(TotalQtyStr));
-    }
-
-    private static string Format(decimal amount) => amount.ToString("N0") + "원";
-
-    private static Brush[] BuildSwatches()
-    {
-        var all = AppColors.BuildBrushes();
-        return SwatchKeys.Select(key => all[key]).ToArray();
     }
 }
