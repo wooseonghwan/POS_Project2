@@ -52,6 +52,9 @@ public sealed partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private bool _isClearAllConfirmVisible;
 
+    [ObservableProperty]
+    private bool _isResetOrderConfirmVisible;
+
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
@@ -250,6 +253,26 @@ public sealed partial class PosViewModel : ObservableObject
         RefreshCartLines();
         OnPropertyChanged(nameof(CashInputStr));
         OnPropertyChanged(nameof(ChangeStr));
+    }
+
+    [RelayCommand]
+    private void RequestResetOrder()
+    {
+        if (_cart.Lines.Count == 0 && CashInput.Length == 0) return;
+        IsResetOrderConfirmVisible = true;
+    }
+
+    [RelayCommand]
+    private void ConfirmResetOrder()
+    {
+        IsResetOrderConfirmVisible = false;
+        ResetOrder();
+    }
+
+    [RelayCommand]
+    private void CancelResetOrder()
+    {
+        IsResetOrderConfirmVisible = false;
     }
 
     [RelayCommand]

@@ -307,6 +307,59 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public async Task RequestResetOrder_WithItemsInCart_ShowsConfirmationWithoutResettingYet()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        vm.RequestResetOrderCommand.Execute(null);
+
+        Assert.True(vm.IsResetOrderConfirmVisible);
+        Assert.Single(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task ConfirmResetOrder_ClearsCartAndCashInput()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.RequestResetOrderCommand.Execute(null);
+
+        vm.ConfirmResetOrderCommand.Execute(null);
+
+        Assert.False(vm.IsResetOrderConfirmVisible);
+        Assert.Empty(vm.CartLines);
+        Assert.Equal("0원", vm.CashInputStr);
+    }
+
+    [Fact]
+    public async Task CancelResetOrder_KeepsCartIntact()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        vm.RequestResetOrderCommand.Execute(null);
+
+        vm.CancelResetOrderCommand.Execute(null);
+
+        Assert.False(vm.IsResetOrderConfirmVisible);
+        Assert.Single(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task RequestResetOrder_WhenNothingToReset_DoesNotShowConfirmation()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+
+        vm.RequestResetOrderCommand.Execute(null);
+
+        Assert.False(vm.IsResetOrderConfirmVisible);
+    }
+
+    [Fact]
     public async Task GoToMainMenu_NavigatesToInjectedMainMenuViewModel()
     {
         var vm = CreateViewModel(out _, out _, out var navigation, out var mainMenuViewModel);
