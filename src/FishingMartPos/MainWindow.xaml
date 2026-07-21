@@ -18,6 +18,9 @@
         <DataTemplate DataType="{x:Type vm:PosViewModel}">
             <views:PosView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
+            <views:InventoryView />
+        </DataTemplate>
     </Window.Resources>
     <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
         <ContentControl x:Name="CurrentViewHost" Content="{Binding CurrentContent}" />

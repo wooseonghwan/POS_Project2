@@ -13,6 +13,7 @@ public sealed partial class LoginViewModel : ObservableObject
     private readonly ICurrentSession _session;
     private readonly INavigationService _navigation;
     private readonly Func<Task<PosViewModel>> _posViewModelFactory;
+    private readonly Func<MainMenuViewModel, Task<InventoryViewModel>> _inventoryViewModelFactory;
 
     [ObservableProperty]
     private string _pin = string.Empty;
@@ -34,7 +35,8 @@ public sealed partial class LoginViewModel : ObservableObject
         ICurrentSession session,
         INavigationService navigation,
         IReadOnlyList<PosTerminal> terminals,
-        Func<Task<PosViewModel>> posViewModelFactory)
+        Func<Task<PosViewModel>> posViewModelFactory,
+        Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory)
     {
         _staffRepository = staffRepository;
         _session = session;
@@ -42,6 +44,7 @@ public sealed partial class LoginViewModel : ObservableObject
         Terminals = terminals;
         _selectedTerminal = terminals[0];
         _posViewModelFactory = posViewModelFactory;
+        _inventoryViewModelFactory = inventoryViewModelFactory;
     }
 
     [RelayCommand]
@@ -97,8 +100,9 @@ public sealed partial class LoginViewModel : ObservableObject
 
         var mainMenuViewModel = new MainMenuViewModel(_session, _navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory),
             PosViewModelFactory = _posViewModelFactory,
+            InventoryViewModelFactory = _inventoryViewModelFactory,
         };
         _navigation.NavigateTo(mainMenuViewModel);
     }

@@ -28,7 +28,10 @@ public class LoginViewModelTests
             new PosTerminal { PosCode = "2", PosName = "POS2" },
         };
 
-        return new LoginViewModel(repository, session, navigation, terminals, CreateDummyPosViewModelFactory(session));
+        return new LoginViewModel(
+            repository, session, navigation, terminals,
+            CreateDummyPosViewModelFactory(session),
+            CreateDummyInventoryViewModelFactory(session, navigation));
     }
 
     private static Func<Task<PosViewModel>> CreateDummyPosViewModelFactory(ICurrentSession session) =>
@@ -39,6 +42,15 @@ public class LoginViewModelTests
             new FakeHeldOrderRepository(),
             new FakeDelayProvider(),
             session));
+
+    private static Func<MainMenuViewModel, Task<InventoryViewModel>> CreateDummyInventoryViewModelFactory(
+        ICurrentSession session, INavigationService navigation) =>
+        mainMenu => Task.FromResult(new InventoryViewModel(
+            new FakeProductRepository(Array.Empty<Product>()),
+            new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+            session,
+            navigation,
+            mainMenu));
 
     [Fact]
     public void PressingDigits_BuildsPinString()

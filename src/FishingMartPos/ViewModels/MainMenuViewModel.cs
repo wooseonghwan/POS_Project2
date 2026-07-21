@@ -27,6 +27,9 @@ public sealed partial class MainMenuViewModel : ObservableObject
     /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 PosViewModel 팩토리 — "판매" 진입 시 사용.</summary>
     public Func<Task<PosViewModel>>? PosViewModelFactory { get; init; }
 
+    /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 InventoryViewModel 팩토리 — "재고" 진입 시 사용. 자신(this)을 넘겨줘 InventoryViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
+    public Func<MainMenuViewModel, Task<InventoryViewModel>>? InventoryViewModelFactory { get; init; }
+
     [RelayCommand]
     private async Task GoToSales()
     {
@@ -38,7 +41,11 @@ public sealed partial class MainMenuViewModel : ObservableObject
     private void GoToSalesReport() => _navigation.NavigateTo(new PlaceholderViewModel("매출"));
 
     [RelayCommand]
-    private void GoToInventory() => _navigation.NavigateTo(new PlaceholderViewModel("재고"));
+    private async Task GoToInventory()
+    {
+        var inventoryViewModel = await InventoryViewModelFactory!.Invoke(this);
+        _navigation.NavigateTo(inventoryViewModel);
+    }
 
     [RelayCommand]
     private void GoToSettings() => _navigation.NavigateTo(new PlaceholderViewModel("환경설정"));

@@ -26,10 +26,20 @@ public class MainMenuViewModelTests
             new FishingMartPos.Tests.Fakes.FakeDelayProvider(),
             session);
 
+        Func<Task<PosViewModel>> posViewModelFactory = () => Task.FromResult(posViewModel);
+        Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory = mainMenu =>
+            Task.FromResult(new InventoryViewModel(
+                new FishingMartPos.Tests.Fakes.FakeProductRepository(Array.Empty<Product>()),
+                new FishingMartPos.Tests.Fakes.FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+                session,
+                navigation,
+                mainMenu));
+
         var vm = new MainMenuViewModel(session, navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, () => Task.FromResult(posViewModel)),
-            PosViewModelFactory = () => Task.FromResult(posViewModel),
+            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory),
+            PosViewModelFactory = posViewModelFactory,
+            InventoryViewModelFactory = inventoryViewModelFactory,
         };
         return (vm, session, navigation);
     }
@@ -64,14 +74,13 @@ public class MainMenuViewModelTests
     }
 
     [Fact]
-    public void GoToInventory_NavigatesToPlaceholderWithInventoryTitle()
+    public async Task GoToInventory_NavigatesToInventoryViewModel()
     {
         var (vm, _, navigation) = Create();
 
-        vm.GoToInventoryCommand.Execute(null);
+        await vm.GoToInventoryCommand.ExecuteAsync(null);
 
-        var target = Assert.IsType<PlaceholderViewModel>(navigation.CurrentViewModel);
-        Assert.Equal("재고", target.Title);
+        Assert.IsType<InventoryViewModel>(navigation.CurrentViewModel);
     }
 
     [Fact]
