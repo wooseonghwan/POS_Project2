@@ -232,9 +232,9 @@
                         <Button Content="7" Command="{Binding PressKeyCommand}" CommandParameter="7" />
                         <Button Content="8" Command="{Binding PressKeyCommand}" CommandParameter="8" />
                         <Button Content="9" Command="{Binding PressKeyCommand}" CommandParameter="9" />
-                        <Button Content="&lt;" Command="{Binding PressKeyCommand}" CommandParameter="&lt;" Background="{DynamicResource KeypadSpecialBackground}" />
+                        <Button Content="1개" FontSize="14" Command="{Binding PressKeyCommand}" CommandParameter="&lt;" Background="{DynamicResource KeypadSpecialBackground}" />
                         <Button Content="0" Command="{Binding PressKeyCommand}" CommandParameter="0" />
-                        <Button Content="CLS" Command="{Binding PressKeyCommand}" CommandParameter="CLS" Background="{DynamicResource KeypadSpecialBackground}" />
+                        <Button Content="전체삭제" FontSize="13" Command="{Binding PressKeyCommand}" CommandParameter="CLS" Background="{DynamicResource KeypadSpecialBackground}" />
                     </UniformGrid>
                 </Grid>
 

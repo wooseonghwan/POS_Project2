@@ -145,6 +145,61 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public async Task PressKey_Less_WhenLineSelected_SetsQtyToOne()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // 선택 상태가 됨, qty=1
+        vm.IncSelectedCommand.Execute(null);
+        vm.IncSelectedCommand.Execute(null); // qty=3
+
+        vm.PressKeyCommand.Execute("<");
+
+        Assert.Equal(1, vm.CartLines[0].Qty);
+    }
+
+    [Fact]
+    public async Task PressKey_Cls_WhenLineSelected_RemovesLineFromCart()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        vm.PressKeyCommand.Execute("CLS");
+
+        Assert.Empty(vm.CartLines);
+        Assert.Null(vm.SelectedBarcode);
+    }
+
+    [Fact]
+    public async Task PressKey_Less_WhenNoLineSelected_RemovesLastCashDigit()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.PressKeyCommand.Execute("1");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+
+        vm.PressKeyCommand.Execute("<");
+
+        Assert.Equal("10원", vm.CashInputStr);
+    }
+
+    [Fact]
+    public async Task PressKey_Cls_WhenNoLineSelected_ClearsCashInput()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.PressKeyCommand.Execute("1");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+
+        vm.PressKeyCommand.Execute("CLS");
+
+        Assert.Equal("0원", vm.CashInputStr);
+    }
+
+    [Fact]
     public async Task PressKey_WhenNoLineSelected_BuildsCashInput()
     {
         var vm = CreateViewModel(out _, out _);

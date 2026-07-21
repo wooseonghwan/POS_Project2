@@ -187,14 +187,14 @@ public sealed partial class PosViewModel : ObservableObject
         {
             if (key == "CLS")
             {
+                _cart.Remove(SelectedBarcode);
+                SelectedBarcode = null;
                 QtyBuffer = string.Empty;
-                _cart.SetQty(SelectedBarcode, 1);
             }
             else if (key == "<")
             {
-                QtyBuffer = QtyBuffer.Length > 0 ? QtyBuffer[..^1] : string.Empty;
-                int qty = QtyBuffer.Length > 0 ? int.Parse(QtyBuffer) : 1;
-                _cart.SetQty(SelectedBarcode, qty);
+                QtyBuffer = string.Empty;
+                _cart.SetQty(SelectedBarcode, 1);
             }
             else if (QtyBuffer.Length < 3)
             {
