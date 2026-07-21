@@ -139,30 +139,32 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <ItemsControl Grid.Row="1" ItemsSource="{Binding VisibleProducts}" Background="{DynamicResource MenuBackground}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Columns="4" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Command="{Binding AddCommand}" Margin="6" Padding="8" Background="White"
-                                    BorderBrush="{DynamicResource InputBorder}" BorderThickness="1">
-                                <StackPanel>
-                                    <Border Background="{Binding Swatch}" Height="32" CornerRadius="2" Margin="0,0,0,4">
-                                        <TextBlock Text="{Binding Initial}" Foreground="White" FontWeight="Bold" FontSize="14"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" TextAlignment="Center"
-                                               Foreground="{DynamicResource TitleText}" />
-                                    <TextBlock Text="{Binding PriceStr}" FontSize="16" FontWeight="Black" TextAlignment="Center"
-                                               Foreground="{DynamicResource Accent}" />
-                                </StackPanel>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="{DynamicResource MenuBackground}">
+                    <ItemsControl ItemsSource="{Binding VisibleProducts}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding AddCommand}" Margin="6" Padding="8" Width="112" Background="White"
+                                        BorderBrush="{DynamicResource InputBorder}" BorderThickness="1">
+                                    <StackPanel>
+                                        <Border Background="{Binding Swatch}" Height="32" CornerRadius="2" Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Initial}" Foreground="White" FontWeight="Bold" FontSize="14"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" TextAlignment="Center"
+                                                   Foreground="{DynamicResource TitleText}" />
+                                        <TextBlock Text="{Binding PriceStr}" FontSize="16" FontWeight="Black" TextAlignment="Center"
+                                                   Foreground="{DynamicResource Accent}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
         </Grid>
 
