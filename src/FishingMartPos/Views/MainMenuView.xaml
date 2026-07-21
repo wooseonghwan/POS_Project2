@@ -36,23 +36,76 @@
             <UniformGrid Columns="2" Rows="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="460" Height="300">
                 <Button Command="{Binding GoToSalesCommand}" Margin="10" Background="White"
                         BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
-                    <TextBlock Text="판매" FontSize="16" FontWeight="Bold"
-                               Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <Canvas Width="48" Height="48" Margin="0,0,0,14">
+                            <Border Width="48" Height="48" CornerRadius="6" BorderThickness="3"
+                                    BorderBrush="{DynamicResource Accent}" Background="Transparent" />
+                            <Rectangle Width="36" Height="3" Fill="{DynamicResource Accent}"
+                                       Canvas.Left="6" Canvas.Top="10" />
+                            <Rectangle Width="36" Height="3" Fill="{DynamicResource Accent}"
+                                       Canvas.Left="6" Canvas.Top="18" />
+                            <Rectangle Width="36" Height="3" Fill="{DynamicResource Accent}"
+                                       Canvas.Left="6" Canvas.Top="26" />
+                        </Canvas>
+                        <TextBlock Text="판매" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    </StackPanel>
                 </Button>
                 <Button Command="{Binding GoToSalesReportCommand}" Margin="10" Background="White"
                         BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
-                    <TextBlock Text="매출" FontSize="16" FontWeight="Bold"
-                               Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <Canvas Width="48" Height="36" Margin="0,0,0,14">
+                            <Rectangle Width="9" Height="14" Fill="{DynamicResource MenuIconSales}"
+                                       Canvas.Left="0" Canvas.Top="22" RadiusX="2" RadiusY="2" />
+                            <Rectangle Width="9" Height="25" Fill="{DynamicResource MenuIconSales}"
+                                       Canvas.Left="14" Canvas.Top="11" RadiusX="2" RadiusY="2" />
+                            <Rectangle Width="9" Height="36" Fill="{DynamicResource MenuIconSales}"
+                                       Canvas.Left="28" Canvas.Top="0" RadiusX="2" RadiusY="2" />
+                            <Rectangle Width="9" Height="20" Fill="{DynamicResource MenuIconSales}"
+                                       Canvas.Left="42" Canvas.Top="16" RadiusX="2" RadiusY="2" />
+                        </Canvas>
+                        <TextBlock Text="매출" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    </StackPanel>
                 </Button>
                 <Button Command="{Binding GoToInventoryCommand}" Margin="10" Background="White"
                         BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
-                    <TextBlock Text="재고" FontSize="16" FontWeight="Bold"
-                               Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <Canvas Width="48" Height="40" Margin="0,0,0,14">
+                            <Border Width="48" Height="30" CornerRadius="4" BorderThickness="3"
+                                    BorderBrush="{DynamicResource MenuIconInventory}" Background="Transparent"
+                                    Canvas.Left="0" Canvas.Top="10" />
+                            <Border Width="32" Height="14" CornerRadius="4,4,0,0" BorderThickness="3,3,3,0"
+                                    BorderBrush="{DynamicResource MenuIconInventory}" Background="Transparent"
+                                    Canvas.Left="8" Canvas.Top="0" />
+                        </Canvas>
+                        <TextBlock Text="재고" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    </StackPanel>
                 </Button>
                 <Button Command="{Binding GoToSettingsCommand}" Margin="10" Background="White"
                         BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
-                    <TextBlock Text="환경설정" FontSize="16" FontWeight="Bold"
-                               Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <Canvas Width="48" Height="40" Margin="0,0,0,14">
+                            <Rectangle Width="48" Height="3" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource MenuIconSettingsTrack}"
+                                       Canvas.Left="0" Canvas.Top="0" />
+                            <Ellipse Width="14" Height="14" Fill="{DynamicResource MenuIconSettingsDot}"
+                                     Canvas.Left="28" Canvas.Top="-6" />
+                            <Rectangle Width="48" Height="3" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource MenuIconSettingsTrack}"
+                                       Canvas.Left="0" Canvas.Top="18" />
+                            <Ellipse Width="14" Height="14" Fill="{DynamicResource MenuIconSettingsDot}"
+                                     Canvas.Left="10" Canvas.Top="12" />
+                            <Rectangle Width="48" Height="3" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource MenuIconSettingsTrack}"
+                                       Canvas.Left="0" Canvas.Top="37" />
+                            <Ellipse Width="14" Height="14" Fill="{DynamicResource MenuIconSettingsDot}"
+                                     Canvas.Left="20" Canvas.Top="31" />
+                        </Canvas>
+                        <TextBlock Text="환경설정" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    </StackPanel>
                 </Button>
             </UniformGrid>
         </Grid>
