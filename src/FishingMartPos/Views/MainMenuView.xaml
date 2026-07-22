@@ -88,7 +88,8 @@
                     </StackPanel>
                 </Button>
                 <Button Command="{Binding GoToSettingsCommand}" Margin="10" Background="White"
-                        BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
+                        BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1"
+                        Visibility="{Binding IsAdmin, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                         <Canvas Width="48" Height="40" Margin="0,0,0,14">
                             <Rectangle Width="48" Height="3" RadiusX="2" RadiusY="2"

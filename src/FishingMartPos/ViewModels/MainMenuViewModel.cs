@@ -35,6 +35,9 @@ public sealed partial class MainMenuViewModel : ObservableObject
     /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 SalesReportViewModel 팩토리 — "매출" 진입 시 사용(ADMIN 전용). 자신(this)을 넘겨줘 SalesReportViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
     public Func<MainMenuViewModel, Task<SalesReportViewModel>>? SalesReportViewModelFactory { get; init; }
 
+    /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 SettingsViewModel 팩토리 — "환경설정" 진입 시 사용(ADMIN 전용). 자신(this)을 넘겨줘 SettingsViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
+    public Func<MainMenuViewModel, Task<SettingsViewModel>>? SettingsViewModelFactory { get; init; }
+
     [RelayCommand]
     private async Task GoToSales()
     {
@@ -58,7 +61,12 @@ public sealed partial class MainMenuViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void GoToSettings() => _navigation.NavigateTo(new PlaceholderViewModel("환경설정"));
+    private async Task GoToSettings()
+    {
+        if (!IsAdmin) return;
+        var settingsViewModel = await SettingsViewModelFactory!.Invoke(this);
+        _navigation.NavigateTo(settingsViewModel);
+    }
 
     [RelayCommand]
     private void Logout()

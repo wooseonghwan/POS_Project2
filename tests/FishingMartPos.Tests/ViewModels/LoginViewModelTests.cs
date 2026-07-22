@@ -32,7 +32,8 @@ public class LoginViewModelTests
             repository, session, navigation, terminals,
             CreateDummyPosViewModelFactory(session, navigation),
             CreateDummyInventoryViewModelFactory(session, navigation),
-            CreateDummySalesReportViewModelFactory(session, navigation));
+            CreateDummySalesReportViewModelFactory(session, navigation),
+            CreateDummySettingsViewModelFactory(navigation));
     }
 
     private static Func<MainMenuViewModel, Task<PosViewModel>> CreateDummyPosViewModelFactory(
@@ -60,11 +61,13 @@ public class LoginViewModelTests
         ICurrentSession session, INavigationService navigation) =>
         mainMenu => Task.FromResult(new SalesReportViewModel(new FakeSalesRepository(), navigation, mainMenu));
 
+    private static Func<MainMenuViewModel, Task<SettingsViewModel>> CreateDummySettingsViewModelFactory(
+        INavigationService navigation) =>
+        mainMenu => Task.FromResult(new SettingsViewModel(navigation, mainMenu));
+
     [Fact]
     public void PressingDigits_BuildsPinString()
     {
-        // 4자리를 다 채우면 자동 제출이 동기적으로(Fake는 즉시 완료) 실행되어 Pin이 초기화되므로,
-        // 자동 제출 트리거 전인 3자리까지만 눌러 입력 누적 자체를 검증한다.
         var vm = CreateViewModel(out _, out _);
 
         vm.PressKeyCommand.Execute("1");
@@ -107,7 +110,7 @@ public class LoginViewModelTests
         vm.PressKeyCommand.Execute("0");
         vm.PressKeyCommand.Execute("0");
         vm.PressKeyCommand.Execute("0");
-        await Task.Delay(50); // 4번째 입력 시 내부적으로 비동기 제출이 걸리므로 완료를 기다린다
+        await Task.Delay(50);
 
         Assert.True(session.IsSignedIn);
         Assert.Equal("ADMIN1", session.CurrentStaff?.StaffCode);

@@ -38,13 +38,16 @@ public class MainMenuViewModelTests
                 mainMenu));
         Func<MainMenuViewModel, Task<SalesReportViewModel>> salesReportViewModelFactory = mainMenu =>
             Task.FromResult(new SalesReportViewModel(new FakeSalesRepository(), navigation, mainMenu));
+        Func<MainMenuViewModel, Task<SettingsViewModel>> settingsViewModelFactory = mainMenu =>
+            Task.FromResult(new SettingsViewModel(navigation, mainMenu));
 
         var vm = new MainMenuViewModel(session, navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory, settingsViewModelFactory),
             PosViewModelFactory = posViewModelFactory,
             InventoryViewModelFactory = inventoryViewModelFactory,
             SalesReportViewModelFactory = salesReportViewModelFactory,
+            SettingsViewModelFactory = settingsViewModelFactory,
         };
         return (vm, session, navigation);
     }
@@ -107,14 +110,32 @@ public class MainMenuViewModelTests
     }
 
     [Fact]
-    public void GoToSettings_NavigatesToPlaceholderWithSettingsTitle()
+    public async Task GoToSettings_AsAdmin_NavigatesToSettingsViewModel()
     {
         var (vm, _, navigation) = Create();
 
-        vm.GoToSettingsCommand.Execute(null);
+        await vm.GoToSettingsCommand.ExecuteAsync(null);
 
-        var target = Assert.IsType<PlaceholderViewModel>(navigation.CurrentViewModel);
-        Assert.Equal("환경설정", target.Title);
+        Assert.IsType<SettingsViewModel>(navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task GoToSettings_AsStaff_DoesNothing()
+    {
+        var session = new CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "STAFF1", StaffName = "직원", Role = "STAFF", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var vm = new MainMenuViewModel(session, navigation)
+        {
+            SettingsViewModelFactory = mainMenu => Task.FromResult(new SettingsViewModel(navigation, mainMenu)),
+        };
+
+        await vm.GoToSettingsCommand.ExecuteAsync(null);
+
+        Assert.Null(navigation.CurrentViewModel);
+        Assert.False(vm.IsAdmin);
     }
 
     [Fact]

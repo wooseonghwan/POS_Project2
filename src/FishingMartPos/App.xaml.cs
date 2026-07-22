@@ -55,6 +55,9 @@ public partial class App : Application
         var codeRepository = _services.GetRequiredService<ICodeRepository>();
         var salesRepository = _services.GetRequiredService<ISalesRepository>();
         var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
+        var printerConfigRepository = _services.GetRequiredService<IPrinterConfigRepository>();
+        var receiptConfigRepository = _services.GetRequiredService<IReceiptConfigRepository>();
+        var systemInfoRepository = _services.GetRequiredService<ISystemInfoRepository>();
         var delayProvider = _services.GetRequiredService<IDelayProvider>();
         var photoPicker = _services.GetRequiredService<IPhotoPicker>();
         var photoStorage = _services.GetRequiredService<IProductPhotoStorage>();
@@ -82,8 +85,58 @@ public partial class App : Application
             return vm;
         }
 
+        async Task<StaffListViewModel> CreateStaffListViewModelAsync(SettingsViewModel settings)
+        {
+            var vm = new StaffListViewModel(staffRepository, navigation, settings);
+            vm.StaffFormViewModelFactory = (list, staff) =>
+                Task.FromResult(new StaffFormViewModel(staffRepository, delayProvider, navigation, list, staff));
+            await vm.LoadAsync();
+            return vm;
+        }
+
+        async Task<PrinterSettingsViewModel> CreatePrinterSettingsViewModelAsync(SettingsViewModel settings)
+        {
+            var vm = new PrinterSettingsViewModel(printerConfigRepository, session, delayProvider, navigation, settings);
+            await vm.LoadAsync();
+            return vm;
+        }
+
+        async Task<ReceiptSettingsViewModel> CreateReceiptSettingsViewModelAsync(SettingsViewModel settings)
+        {
+            var vm = new ReceiptSettingsViewModel(receiptConfigRepository, session, delayProvider, navigation, settings);
+            await vm.LoadAsync();
+            return vm;
+        }
+
+        async Task<SystemInfoViewModel> CreateSystemInfoViewModelAsync(SettingsViewModel settings)
+        {
+            var vm = new SystemInfoViewModel(systemInfoRepository, session, navigation, settings);
+            await vm.LoadAsync();
+            return vm;
+        }
+
+        async Task<CodeManageViewModel> CreateCodeManageViewModelAsync(SettingsViewModel settings)
+        {
+            var vm = new CodeManageViewModel(codeRepository, productRepository, navigation, settings);
+            await vm.LoadAsync();
+            return vm;
+        }
+
+        Task<SettingsViewModel> CreateSettingsViewModelAsync(MainMenuViewModel mainMenu)
+        {
+            var vm = new SettingsViewModel(navigation, mainMenu)
+            {
+                StaffListViewModelFactory = CreateStaffListViewModelAsync,
+                PrinterSettingsViewModelFactory = CreatePrinterSettingsViewModelAsync,
+                ReceiptSettingsViewModelFactory = CreateReceiptSettingsViewModelAsync,
+                SystemInfoViewModelFactory = CreateSystemInfoViewModelAsync,
+                CodeManageViewModelFactory = CreateCodeManageViewModelAsync,
+            };
+            return Task.FromResult(vm);
+        }
+
         LoginViewModel CreateLoginViewModel() =>
-            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync);
+            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync);
 
         navigation.NavigateTo(CreateLoginViewModel());
 
