@@ -24,6 +24,9 @@
         <DataTemplate DataType="{x:Type vm:InventoryFormViewModel}">
             <views:InventoryFormView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SalesReportViewModel}">
+            <views:SalesReportView />
+        </DataTemplate>
     </Window.Resources>
     <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
         <ContentControl x:Name="CurrentViewHost" Content="{Binding CurrentContent}" />

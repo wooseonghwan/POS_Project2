@@ -1,0 +1,182 @@
+<UserControl x:Class="FishingMartPos.Views.SalesReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </UserControl.Resources>
+    <Grid Background="{DynamicResource MenuBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 상단 헤더 -->
+        <Border Grid.Row="0" Background="White" BorderBrush="{DynamicResource HeaderBorder}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0" Height="42">
+                <TextBlock Text="매출관리" FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TitleText}" VerticalAlignment="Center"
+                           HorizontalAlignment="Left" />
+                <Button Content="메인메뉴로" Padding="12,5" FontSize="12" FontWeight="Bold"
+                        Background="{DynamicResource LogoutButtonBackground}"
+                        Foreground="{DynamicResource MutedText}"
+                        BorderBrush="{DynamicResource InputBorder}" BorderThickness="1"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding GoToMainMenuCommand}" />
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="1" Margin="16" >
+            <!-- 탭 -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Button Content="일일매출" Padding="18,9" FontSize="13" FontWeight="Bold" Margin="0,0,8,0"
+                        Command="{Binding SelectDailyTabCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="{DynamicResource HeaderButtonBackground}" />
+                            <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDailyTab}" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="월간매출" Padding="18,9" FontSize="13" FontWeight="Bold"
+                        Command="{Binding SelectMonthlyTabCommand}">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="{DynamicResource HeaderButtonBackground}" />
+                            <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDailyTab}" Value="False">
+                                    <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+
+            <!-- 기간 필터 -->
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="12,10" Margin="0,0,0,12">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="기간" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}"
+                               VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <DatePicker SelectedDate="{Binding DateFrom, Mode=TwoWay}"
+                                SelectedDateChanged="DatePicker_SelectedDateChanged"
+                                FontSize="12" Padding="6,4" />
+                    <TextBlock Text="~" FontSize="12" Foreground="{DynamicResource MutedText}"
+                               VerticalAlignment="Center" Margin="8,0" />
+                    <DatePicker SelectedDate="{Binding DateTo, Mode=TwoWay}"
+                                SelectedDateChanged="DatePicker_SelectedDateChanged"
+                                FontSize="12" Padding="6,4" />
+                </StackPanel>
+            </Border>
+
+            <!-- 요약 타일 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="총매출액" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding TotalAmountStr}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource Accent}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="현금" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding TotalCashStr}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="4" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="카드결제1" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding TotalCard1Str}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="6" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="카드결제2" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding TotalCard2Str}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- 상세 테이블 -->
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
+                <StackPanel>
+                    <Grid Margin="16,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="0.8*" />
+                            <ColumnDefinition Width="1.1*" />
+                            <ColumnDefinition Width="1.1*" />
+                            <ColumnDefinition Width="1.1*" />
+                            <ColumnDefinition Width="1.1*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="날짜" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Grid.Column="1" Text="건수" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="2" Text="현금" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="카드결제1" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="카드결제2" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="5" Text="합계" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                    </Grid>
+
+                    <TextBlock Text="조회된 매출이 없습니다" FontSize="13" Foreground="{DynamicResource MutedText}"
+                               HorizontalAlignment="Center" Margin="0,24">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasRows}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding HasRows, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="16,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.4*" />
+                                            <ColumnDefinition Width="0.8*" />
+                                            <ColumnDefinition Width="1.1*" />
+                                            <ColumnDefinition Width="1.1*" />
+                                            <ColumnDefinition Width="1.1*" />
+                                            <ColumnDefinition Width="1.1*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TitleText}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding CountStr}" FontSize="12" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="2" Text="{Binding CashStr}" FontSize="12" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Card1Str}" FontSize="12" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="4" Text="{Binding Card2Str}" FontSize="12" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="5" Text="{Binding AmountStr}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>
