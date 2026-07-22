@@ -7,6 +7,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:ZeroCountToVisibilityConverter x:Key="ZeroCountToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -265,6 +266,9 @@
                         <TextBlock Text="보류 목록" FontSize="16" FontWeight="Bold" />
                         <Button Content="닫기" HorizontalAlignment="Right" Command="{Binding HideHeldListCommand}" />
                     </Grid>
+                    <TextBlock Text="보류된 주문이 없습니다" FontSize="13" Foreground="{DynamicResource MutedText}"
+                               HorizontalAlignment="Center" Margin="0,12"
+                               Visibility="{Binding HeldOrders.Count, Converter={StaticResource ZeroCountToVisibilityConverter}}" />
                     <ItemsControl ItemsSource="{Binding HeldOrders}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
