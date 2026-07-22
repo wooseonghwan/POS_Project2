@@ -35,6 +35,9 @@ public partial class App : Application
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IProductRepository, ProductRepository>();
         services.AddSingleton<ICodeRepository, CodeRepository>();
+        services.AddSingleton<IPrinterConfigRepository, PrinterConfigRepository>();
+        services.AddSingleton<IReceiptConfigRepository, ReceiptConfigRepository>();
+        services.AddSingleton<ISystemInfoRepository, SystemInfoRepository>();
         services.AddSingleton<ISalesRepository, SalesRepository>();
         services.AddSingleton<IHeldOrderRepository, HeldOrderRepository>();
         services.AddSingleton<IDelayProvider, DelayProvider>();
