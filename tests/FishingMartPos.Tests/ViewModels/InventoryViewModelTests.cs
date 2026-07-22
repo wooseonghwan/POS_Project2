@@ -205,4 +205,53 @@ public class InventoryViewModelTests
         Assert.Contains(vm.Rows, r => r.Barcode == "B1");
         Assert.False(vm.IsDeleteConfirmVisible);
     }
+
+    [Fact]
+    public async Task GoToAddProduct_InvokesFactoryWithNullProductAndNavigates()
+    {
+        var (vm, _, navigation, _) = CreateAdmin();
+        await vm.LoadAsync();
+        Product? capturedProduct = new Product { Barcode = "SENTINEL", MajorCd = "X", MinorCd = "X", PosCatCd = "X", Name = "sentinel", Price = 1, StockQty = 0 };
+        InventoryFormViewModel? formVm = null;
+        vm.InventoryFormViewModelFactory = (inv, product) =>
+        {
+            capturedProduct = product;
+            formVm = new InventoryFormViewModel(
+                new FakeProductRepository(Array.Empty<Product>()),
+                new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+                new FakePhotoPicker(), new FakeProductPhotoStorage(), navigation, inv, product);
+            return Task.FromResult(formVm);
+        };
+
+        await vm.GoToAddProductCommand.ExecuteAsync(null);
+
+        Assert.Null(capturedProduct);
+        Assert.Same(formVm, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task RowEditCommand_InvokesFactoryWithThatProductAndNavigates()
+    {
+        var (vm, _, navigation, _) = CreateAdmin();
+        await vm.LoadAsync();
+        Product? capturedProduct = null;
+        InventoryFormViewModel? formVm = null;
+        vm.InventoryFormViewModelFactory = (inv, product) =>
+        {
+            capturedProduct = product;
+            formVm = new InventoryFormViewModel(
+                new FakeProductRepository(Array.Empty<Product>()),
+                new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+                new FakePhotoPicker(), new FakeProductPhotoStorage(), navigation, inv, product);
+            return Task.FromResult(formVm);
+        };
+        var row = vm.Rows.Single(r => r.Barcode == "B1");
+
+        row.EditCommand.Execute(null);
+        await Task.Delay(1);
+
+        Assert.NotNull(capturedProduct);
+        Assert.Equal("B1", capturedProduct!.Barcode);
+        Assert.Same(formVm, navigation.CurrentViewModel);
+    }
 }

@@ -43,6 +43,9 @@ public sealed partial class InventoryViewModel : ObservableObject
 
     public bool IsAdmin => _session.CurrentStaff?.IsAdmin ?? false;
 
+    /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 InventoryFormViewModel 팩토리 — "+ 상품등록"/행별 "수정" 진입 시 사용. product가 null이면 등록 모드, 있으면 수정 모드.</summary>
+    public Func<InventoryViewModel, Product?, Task<InventoryFormViewModel>>? InventoryFormViewModelFactory { get; set; }
+
     public InventoryViewModel(
         IProductRepository productRepository,
         ICodeRepository codeRepository,
@@ -117,6 +120,7 @@ public sealed partial class InventoryViewModel : ObservableObject
                 Swatch = SwatchCycler.ForIndex(swatchIndex),
                 CanDelete = isAdmin,
                 DeleteCommand = new RelayCommand(() => RequestDelete(captured)),
+                EditCommand = new AsyncRelayCommand(() => GoToEditProduct(captured)),
             });
             swatchIndex++;
         }
@@ -132,6 +136,21 @@ public sealed partial class InventoryViewModel : ObservableObject
 
     [RelayCommand]
     private void GoToMainMenu() => _navigation.NavigateTo(_mainMenuViewModel);
+
+    [RelayCommand]
+    private async Task GoToAddProduct()
+    {
+        var formVm = await InventoryFormViewModelFactory!.Invoke(this, null);
+        await formVm.LoadAsync();
+        _navigation.NavigateTo(formVm);
+    }
+
+    private async Task GoToEditProduct(Product product)
+    {
+        var formVm = await InventoryFormViewModelFactory!.Invoke(this, product);
+        await formVm.LoadAsync();
+        _navigation.NavigateTo(formVm);
+    }
 
     [RelayCommand]
     private async Task ConfirmDelete()

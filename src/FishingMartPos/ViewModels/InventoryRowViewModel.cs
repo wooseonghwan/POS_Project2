@@ -15,4 +15,5 @@ public sealed class InventoryRowViewModel
     public required Brush Swatch { get; init; }
     public required bool CanDelete { get; init; }
     public required ICommand DeleteCommand { get; init; }
+    public required ICommand EditCommand { get; init; }
 }
