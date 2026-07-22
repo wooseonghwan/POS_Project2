@@ -267,23 +267,38 @@ public class InventoryFormViewModelTests
         var (vm, _, codes, _, _, _, _) = CreateForAdd();
         await vm.LoadAsync();
         var unusedCode = new CodeItem { Code = "UNUSED", Name = "미사용", SortNo = 9 };
+
+        // Add the code to the repository first so there's something to delete
+        await codes.AddAsync("MAJOR", "UNUSED", "미사용");
         vm.MajorCodes.Add(unusedCode);
 
         await vm.DeleteMajorCodeCommand.ExecuteAsync(unusedCode);
 
+        // Verify removed from local list
         Assert.DoesNotContain(vm.MajorCodes, c => c.Code == "UNUSED");
+
+        // Verify removed from repository
+        var majorCodesInRepo = await codes.GetByGroupAsync("MAJOR");
+        Assert.DoesNotContain(majorCodesInRepo, c => c.Code == "UNUSED");
     }
 
     [Fact]
     public async Task DeleteMajorCode_WhenUsedByExistingProduct_ShowsErrorAndKeepsCode()
     {
-        var (vm, _, _, _, _, _, _) = CreateForAdd(); // 샘플 상품이 MajorCd="FISH" 사용 중
+        var (vm, _, codes, _, _, _, _) = CreateForAdd(); // 샘플 상품이 MajorCd="FISH" 사용 중
         await vm.LoadAsync();
         var usedCode = vm.MajorCodes.Single(c => c.Code == "FISH");
 
         await vm.DeleteMajorCodeCommand.ExecuteAsync(usedCode);
 
+        // Verify error message was set
         Assert.NotNull(vm.ErrorMessage);
+
+        // Verify kept in local list
         Assert.Contains(vm.MajorCodes, c => c.Code == "FISH");
+
+        // Verify kept in repository (delete should not have been called)
+        var majorCodesInRepo = await codes.GetByGroupAsync("MAJOR");
+        Assert.Contains(majorCodesInRepo, c => c.Code == "FISH");
     }
 }
