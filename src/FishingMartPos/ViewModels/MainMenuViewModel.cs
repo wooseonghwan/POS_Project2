@@ -21,6 +21,8 @@ public sealed partial class MainMenuViewModel : ObservableObject
 
     public string PosLabel => _session.CurrentTerminal?.PosName ?? string.Empty;
 
+    public bool IsAdmin => _session.CurrentStaff?.IsAdmin ?? false;
+
     /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 LoginViewModel 팩토리 — 로그아웃 시 사용.</summary>
     public Func<LoginViewModel>? LoginViewModelFactory { get; init; }
 
@@ -30,6 +32,9 @@ public sealed partial class MainMenuViewModel : ObservableObject
     /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 InventoryViewModel 팩토리 — "재고" 진입 시 사용. 자신(this)을 넘겨줘 InventoryViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
     public Func<MainMenuViewModel, Task<InventoryViewModel>>? InventoryViewModelFactory { get; init; }
 
+    /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 SalesReportViewModel 팩토리 — "매출" 진입 시 사용(ADMIN 전용). 자신(this)을 넘겨줘 SalesReportViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
+    public Func<MainMenuViewModel, Task<SalesReportViewModel>>? SalesReportViewModelFactory { get; init; }
+
     [RelayCommand]
     private async Task GoToSales()
     {
@@ -38,7 +43,12 @@ public sealed partial class MainMenuViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void GoToSalesReport() => _navigation.NavigateTo(new PlaceholderViewModel("매출"));
+    private async Task GoToSalesReport()
+    {
+        if (!IsAdmin) return;
+        var salesReportViewModel = await SalesReportViewModelFactory!.Invoke(this);
+        _navigation.NavigateTo(salesReportViewModel);
+    }
 
     [RelayCommand]
     private async Task GoToInventory()

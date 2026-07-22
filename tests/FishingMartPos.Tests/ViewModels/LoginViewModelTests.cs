@@ -31,7 +31,8 @@ public class LoginViewModelTests
         return new LoginViewModel(
             repository, session, navigation, terminals,
             CreateDummyPosViewModelFactory(session, navigation),
-            CreateDummyInventoryViewModelFactory(session, navigation));
+            CreateDummyInventoryViewModelFactory(session, navigation),
+            CreateDummySalesReportViewModelFactory(session, navigation));
     }
 
     private static Func<MainMenuViewModel, Task<PosViewModel>> CreateDummyPosViewModelFactory(
@@ -54,6 +55,10 @@ public class LoginViewModelTests
             session,
             navigation,
             mainMenu));
+
+    private static Func<MainMenuViewModel, Task<SalesReportViewModel>> CreateDummySalesReportViewModelFactory(
+        ICurrentSession session, INavigationService navigation) =>
+        mainMenu => Task.FromResult(new SalesReportViewModel(new FakeSalesRepository(), navigation, mainMenu));
 
     [Fact]
     public void PressingDigits_BuildsPinString()

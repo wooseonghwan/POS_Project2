@@ -14,6 +14,7 @@ public sealed partial class LoginViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly Func<MainMenuViewModel, Task<PosViewModel>> _posViewModelFactory;
     private readonly Func<MainMenuViewModel, Task<InventoryViewModel>> _inventoryViewModelFactory;
+    private readonly Func<MainMenuViewModel, Task<SalesReportViewModel>> _salesReportViewModelFactory;
 
     [ObservableProperty]
     private string _pin = string.Empty;
@@ -36,7 +37,8 @@ public sealed partial class LoginViewModel : ObservableObject
         INavigationService navigation,
         IReadOnlyList<PosTerminal> terminals,
         Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory,
-        Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory)
+        Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory,
+        Func<MainMenuViewModel, Task<SalesReportViewModel>> salesReportViewModelFactory)
     {
         _staffRepository = staffRepository;
         _session = session;
@@ -45,6 +47,7 @@ public sealed partial class LoginViewModel : ObservableObject
         _selectedTerminal = terminals[0];
         _posViewModelFactory = posViewModelFactory;
         _inventoryViewModelFactory = inventoryViewModelFactory;
+        _salesReportViewModelFactory = salesReportViewModelFactory;
     }
 
     [RelayCommand]
@@ -100,9 +103,10 @@ public sealed partial class LoginViewModel : ObservableObject
 
         var mainMenuViewModel = new MainMenuViewModel(_session, _navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory, _salesReportViewModelFactory),
             PosViewModelFactory = _posViewModelFactory,
             InventoryViewModelFactory = _inventoryViewModelFactory,
+            SalesReportViewModelFactory = _salesReportViewModelFactory,
         };
         _navigation.NavigateTo(mainMenuViewModel);
     }

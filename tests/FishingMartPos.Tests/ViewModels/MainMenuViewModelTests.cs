@@ -1,6 +1,7 @@
 using FishingMartPos.Models;
 using FishingMartPos.Navigation;
 using FishingMartPos.Services;
+using FishingMartPos.Tests.Fakes;
 using FishingMartPos.ViewModels;
 using Xunit;
 
@@ -15,15 +16,14 @@ public class MainMenuViewModelTests
             new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
             new PosTerminal { PosCode = "2", PosName = "POS2" });
         var navigation = new NavigationService();
-        var staffRepository = new FishingMartPos.Tests.Fakes.FakeStaffRepository(
-            new Dictionary<string, Staff>());
+        var staffRepository = new FakeStaffRepository(new Dictionary<string, Staff>());
         var terminals = new[] { new PosTerminal { PosCode = "1", PosName = "POS1" } };
         var posViewModel = new PosViewModel(
-            new FishingMartPos.Tests.Fakes.FakeProductRepository(Array.Empty<Product>()),
-            new FishingMartPos.Tests.Fakes.FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
-            new FishingMartPos.Tests.Fakes.FakeSalesRepository(),
-            new FishingMartPos.Tests.Fakes.FakeHeldOrderRepository(),
-            new FishingMartPos.Tests.Fakes.FakeDelayProvider(),
+            new FakeProductRepository(Array.Empty<Product>()),
+            new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+            new FakeSalesRepository(),
+            new FakeHeldOrderRepository(),
+            new FakeDelayProvider(),
             session,
             navigation,
             new MainMenuViewModel(session, navigation));
@@ -31,17 +31,20 @@ public class MainMenuViewModelTests
         Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory = _ => Task.FromResult(posViewModel);
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory = mainMenu =>
             Task.FromResult(new InventoryViewModel(
-                new FishingMartPos.Tests.Fakes.FakeProductRepository(Array.Empty<Product>()),
-                new FishingMartPos.Tests.Fakes.FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
+                new FakeProductRepository(Array.Empty<Product>()),
+                new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
                 session,
                 navigation,
                 mainMenu));
+        Func<MainMenuViewModel, Task<SalesReportViewModel>> salesReportViewModelFactory = mainMenu =>
+            Task.FromResult(new SalesReportViewModel(new FakeSalesRepository(), navigation, mainMenu));
 
         var vm = new MainMenuViewModel(session, navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory),
             PosViewModelFactory = posViewModelFactory,
             InventoryViewModelFactory = inventoryViewModelFactory,
+            SalesReportViewModelFactory = salesReportViewModelFactory,
         };
         return (vm, session, navigation);
     }
@@ -65,14 +68,32 @@ public class MainMenuViewModelTests
     }
 
     [Fact]
-    public void GoToSalesReport_NavigatesToPlaceholderWithSalesReportTitle()
+    public async Task GoToSalesReport_AsAdmin_NavigatesToSalesReportViewModel()
     {
         var (vm, _, navigation) = Create();
 
-        vm.GoToSalesReportCommand.Execute(null);
+        await vm.GoToSalesReportCommand.ExecuteAsync(null);
 
-        var target = Assert.IsType<PlaceholderViewModel>(navigation.CurrentViewModel);
-        Assert.Equal("매출", target.Title);
+        Assert.IsType<SalesReportViewModel>(navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task GoToSalesReport_AsStaff_DoesNothing()
+    {
+        var session = new CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "STAFF1", StaffName = "직원", Role = "STAFF", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var vm = new MainMenuViewModel(session, navigation)
+        {
+            SalesReportViewModelFactory = mainMenu => Task.FromResult(new SalesReportViewModel(new FakeSalesRepository(), navigation, mainMenu)),
+        };
+
+        await vm.GoToSalesReportCommand.ExecuteAsync(null);
+
+        Assert.Null(navigation.CurrentViewModel);
+        Assert.False(vm.IsAdmin);
     }
 
     [Fact]

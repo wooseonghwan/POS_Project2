@@ -72,8 +72,15 @@ public partial class App : Application
             return vm;
         }
 
+        async Task<SalesReportViewModel> CreateSalesReportViewModelAsync(MainMenuViewModel mainMenu)
+        {
+            var vm = new SalesReportViewModel(salesRepository, navigation, mainMenu);
+            await vm.LoadAsync();
+            return vm;
+        }
+
         LoginViewModel CreateLoginViewModel() =>
-            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync);
+            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync);
 
         navigation.NavigateTo(CreateLoginViewModel());
 
