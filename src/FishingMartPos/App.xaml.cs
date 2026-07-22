@@ -38,6 +38,8 @@ public partial class App : Application
         services.AddSingleton<ISalesRepository, SalesRepository>();
         services.AddSingleton<IHeldOrderRepository, HeldOrderRepository>();
         services.AddSingleton<IDelayProvider, DelayProvider>();
+        services.AddSingleton<IPhotoPicker, WpfPhotoPicker>();
+        services.AddSingleton<IProductPhotoStorage>(_ => new FileSystemProductPhotoStorage(AppContext.BaseDirectory));
         _services = services.BuildServiceProvider();
 
         var terminalRepository = _services.GetRequiredService<IPosTerminalRepository>();
@@ -51,6 +53,8 @@ public partial class App : Application
         var salesRepository = _services.GetRequiredService<ISalesRepository>();
         var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
         var delayProvider = _services.GetRequiredService<IDelayProvider>();
+        var photoPicker = _services.GetRequiredService<IPhotoPicker>();
+        var photoStorage = _services.GetRequiredService<IProductPhotoStorage>();
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
@@ -62,6 +66,8 @@ public partial class App : Application
         async Task<InventoryViewModel> CreateInventoryViewModelAsync(MainMenuViewModel mainMenu)
         {
             var vm = new InventoryViewModel(productRepository, codeRepository, session, navigation, mainMenu);
+            vm.InventoryFormViewModelFactory = (inv, product) =>
+                Task.FromResult(new InventoryFormViewModel(productRepository, codeRepository, photoPicker, photoStorage, navigation, inv, product));
             await vm.LoadAsync();
             return vm;
         }
