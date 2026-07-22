@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FishingMartPos.Domain;
@@ -11,6 +12,9 @@ namespace FishingMartPos.ViewModels;
 
 public sealed partial class InventoryFormViewModel : ObservableObject
 {
+    private const long MaxPhotoSizeBytes = 5 * 1024 * 1024;
+    private static readonly string[] AllowedPhotoExtensions = { ".jpg", ".jpeg", ".png" };
+
     private readonly IProductRepository _productRepository;
     private readonly ICodeRepository _codeRepository;
     private readonly IPhotoPicker _photoPicker;
@@ -120,11 +124,27 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     private void PickPhoto()
     {
         var path = _photoPicker.PickPhoto();
-        if (path is not null)
+        if (path is null)
         {
-            _pickedPhotoFilePath = path;
-            PhotoPreviewPath = path;
+            return;
         }
+
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        if (!AllowedPhotoExtensions.Contains(extension))
+        {
+            ErrorMessage = "이미지 파일(jpg, jpeg, png)만 업로드할 수 있습니다";
+            return;
+        }
+
+        if (new FileInfo(path).Length > MaxPhotoSizeBytes)
+        {
+            ErrorMessage = "이미지 용량은 5MB 이하만 가능합니다";
+            return;
+        }
+
+        ErrorMessage = null;
+        _pickedPhotoFilePath = path;
+        PhotoPreviewPath = path;
     }
 
     [RelayCommand]

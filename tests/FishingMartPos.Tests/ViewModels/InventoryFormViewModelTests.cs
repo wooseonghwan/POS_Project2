@@ -1,3 +1,4 @@
+using System.IO;
 using FishingMartPos.Models;
 using FishingMartPos.Navigation;
 using FishingMartPos.Services;
@@ -9,6 +10,13 @@ namespace FishingMartPos.Tests.ViewModels;
 
 public class InventoryFormViewModelTests
 {
+    private static string CreateTempFile(string extension, int sizeBytes)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}{extension}");
+        File.WriteAllBytes(path, new byte[sizeBytes]);
+        return path;
+    }
+
     private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
     {
         ["MAJOR"] = new List<CodeItem> { new() { Code = "FISH", Name = "낚시용품", SortNo = 1 } },
@@ -236,15 +244,23 @@ public class InventoryFormViewModelTests
         await vm.LoadAsync();
         vm.Name = "새우";
         vm.PriceInput = "3000";
-        photoPicker.NextPickedPath = @"C:\temp\shrimp.jpg";
+        var tempPhoto = CreateTempFile(".jpg", 100);
+        try
+        {
+            photoPicker.NextPickedPath = tempPhoto;
 
-        vm.PickPhotoCommand.Execute(null);
-        await vm.SaveCommand.ExecuteAsync(null);
+            vm.PickPhotoCommand.Execute(null);
+            await vm.SaveCommand.ExecuteAsync(null);
 
-        var saved = Assert.Single(products.SavedProducts);
-        Assert.Single(photoStorage.SaveCalls);
-        Assert.Equal(saved.Barcode, photoStorage.SaveCalls[0].Barcode);
-        Assert.Equal($"ProductPhotos/{saved.Barcode}.jpg", saved.PhotoPath);
+            var saved = Assert.Single(products.SavedProducts);
+            Assert.Single(photoStorage.SaveCalls);
+            Assert.Equal(saved.Barcode, photoStorage.SaveCalls[0].Barcode);
+            Assert.Equal($"ProductPhotos/{saved.Barcode}.jpg", saved.PhotoPath);
+        }
+        finally
+        {
+            File.Delete(tempPhoto);
+        }
     }
 
     [Fact]
@@ -339,11 +355,87 @@ public class InventoryFormViewModelTests
     {
         var (vm, _, _, _, photoPicker, _, _) = CreateForAdd();
         await vm.LoadAsync();
-        photoPicker.NextPickedPath = @"C:\temp\shrimp.jpg";
+        var tempPhoto = CreateTempFile(".jpg", 100);
+        try
+        {
+            photoPicker.NextPickedPath = tempPhoto;
 
-        vm.PickPhotoCommand.Execute(null);
+            vm.PickPhotoCommand.Execute(null);
 
-        Assert.Equal(@"C:\temp\shrimp.jpg", vm.PhotoPreviewPath);
+            Assert.Equal(tempPhoto, vm.PhotoPreviewPath);
+        }
+        finally
+        {
+            File.Delete(tempPhoto);
+        }
+    }
+
+    [Fact]
+    public async Task PickPhoto_WithDisallowedExtension_ShowsErrorAndDoesNotChangePreview()
+    {
+        var (vm, _, _, _, photoPicker, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        var tempFile = CreateTempFile(".txt", 100);
+        try
+        {
+            photoPicker.NextPickedPath = tempFile;
+
+            vm.PickPhotoCommand.Execute(null);
+
+            Assert.Equal("이미지 파일(jpg, jpeg, png)만 업로드할 수 있습니다", vm.ErrorMessage);
+            Assert.Null(vm.PhotoPreviewPath);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task PickPhoto_WithFileOverSizeLimit_ShowsErrorAndDoesNotChangePreview()
+    {
+        var (vm, _, _, _, photoPicker, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        var oversizedFile = CreateTempFile(".jpg", 5 * 1024 * 1024 + 1);
+        try
+        {
+            photoPicker.NextPickedPath = oversizedFile;
+
+            vm.PickPhotoCommand.Execute(null);
+
+            Assert.Equal("이미지 용량은 5MB 이하만 가능합니다", vm.ErrorMessage);
+            Assert.Null(vm.PhotoPreviewPath);
+        }
+        finally
+        {
+            File.Delete(oversizedFile);
+        }
+    }
+
+    [Fact]
+    public async Task PickPhoto_WithValidImage_ClearsPriorErrorMessage()
+    {
+        var (vm, _, _, _, photoPicker, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        var badFile = CreateTempFile(".txt", 100);
+        var goodFile = CreateTempFile(".png", 100);
+        try
+        {
+            photoPicker.NextPickedPath = badFile;
+            vm.PickPhotoCommand.Execute(null);
+            Assert.NotNull(vm.ErrorMessage);
+
+            photoPicker.NextPickedPath = goodFile;
+            vm.PickPhotoCommand.Execute(null);
+
+            Assert.Null(vm.ErrorMessage);
+            Assert.Equal(goodFile, vm.PhotoPreviewPath);
+        }
+        finally
+        {
+            File.Delete(badFile);
+            File.Delete(goodFile);
+        }
     }
 
     [Fact]
