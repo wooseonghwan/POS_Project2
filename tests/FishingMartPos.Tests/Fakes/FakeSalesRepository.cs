@@ -13,4 +13,9 @@ public sealed class FakeSalesRepository : ISalesRepository
         CreatedSales.Add((header, lines));
         return Task.FromResult(_nextSaleNo++);
     }
+
+    public Task<IReadOnlyList<SaleHeader>> GetCompletedSalesAsync(DateTime from, DateTime to)
+    {
+        throw new NotImplementedException();
+    }
 }

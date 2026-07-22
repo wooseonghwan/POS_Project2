@@ -196,4 +196,65 @@ public class SalesRepositoryTests
                 new { Stock = stockBefore1, Barcode = barcode1 });
         }
     }
+
+    [Fact]
+    public async Task GetCompletedSalesAsync_ReturnsOnlyCompleteRowsWithinHalfOpenRange()
+    {
+        var config = AppConfig.Load(AppContext.BaseDirectory);
+        var factory = new MySqlConnectionFactory(config);
+        ISalesRepository repository = new SalesRepository(factory);
+
+        const string barcode = "8800000020001";
+        int stockBefore;
+        using (var conn = factory.CreateOpenConnection())
+        {
+            stockBefore = await conn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
+        }
+
+        var lines = new[] { new SaleDetailLine { Barcode = barcode, ProductName = "지렁이", Qty = 1, UnitPrice = 5000 } };
+        var inRangeDate = new DateTime(2026, 3, 10, 12, 0, 0);
+        var boundaryExcludedDate = new DateTime(2026, 3, 15, 0, 0, 0); // to == 이 시각이면 제외되어야 함
+        var outOfRangeDate = new DateTime(2026, 3, 20, 0, 0, 0);
+
+        long saleInRange = await repository.CreateSaleAsync(
+            new SaleHeader { PosCd = "1", SaleDt = inRangeDate, StaffCd = "ADMIN1", TotalAmt = 5000, PayType = "CASH", CashReceived = 5000, ChangeAmt = 0 },
+            lines);
+        long saleAtBoundary = await repository.CreateSaleAsync(
+            new SaleHeader { PosCd = "1", SaleDt = boundaryExcludedDate, StaffCd = "ADMIN1", TotalAmt = 7000, PayType = "CARD1" },
+            lines);
+        long saleOutOfRange = await repository.CreateSaleAsync(
+            new SaleHeader { PosCd = "1", SaleDt = outOfRangeDate, StaffCd = "ADMIN1", TotalAmt = 9000, PayType = "CARD2" },
+            lines);
+        long saleCancelled = await repository.CreateSaleAsync(
+            new SaleHeader { PosCd = "1", SaleDt = inRangeDate, StaffCd = "ADMIN1", TotalAmt = 4000, PayType = "CASH" },
+            lines);
+
+        using var verifyConn = factory.CreateOpenConnection();
+        try
+        {
+            await verifyConn.ExecuteAsync(
+                "UPDATE sales_header_tb SET status = 'CANCELLED' WHERE sale_no = @SaleNo",
+                new { SaleNo = saleCancelled });
+
+            var result = await repository.GetCompletedSalesAsync(new DateTime(2026, 3, 1), boundaryExcludedDate);
+
+            Assert.Contains(result, r => r.TotalAmt == 5000);
+            Assert.DoesNotContain(result, r => r.TotalAmt == 7000); // to 경계는 제외
+            Assert.DoesNotContain(result, r => r.TotalAmt == 9000); // 범위 밖
+            Assert.DoesNotContain(result, r => r.TotalAmt == 4000); // CANCELLED
+        }
+        finally
+        {
+            await verifyConn.ExecuteAsync(
+                "DELETE FROM sales_detail_tb WHERE sale_no IN (@A, @B, @C, @D)",
+                new { A = saleInRange, B = saleAtBoundary, C = saleOutOfRange, D = saleCancelled });
+            await verifyConn.ExecuteAsync(
+                "DELETE FROM sales_header_tb WHERE sale_no IN (@A, @B, @C, @D)",
+                new { A = saleInRange, B = saleAtBoundary, C = saleOutOfRange, D = saleCancelled });
+            await verifyConn.ExecuteAsync(
+                "UPDATE product_tb SET stock_qty = @Stock WHERE barcode = @Barcode",
+                new { Stock = stockBefore, Barcode = barcode });
+        }
+    }
 }

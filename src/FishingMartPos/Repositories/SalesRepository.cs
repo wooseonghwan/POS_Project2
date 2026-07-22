@@ -56,4 +56,18 @@ public sealed class SalesRepository : ISalesRepository
         transaction.Commit();
         return saleNo;
     }
+
+    public async Task<IReadOnlyList<SaleHeader>> GetCompletedSalesAsync(DateTime from, DateTime to)
+    {
+        using var connection = _connectionFactory.CreateOpenConnection();
+        const string sql = """
+            SELECT pos_cd AS PosCd, sale_dt AS SaleDt, staff_cd AS StaffCd, total_amt AS TotalAmt,
+                   pay_type AS PayType, cash_received AS CashReceived, change_amt AS ChangeAmt,
+                   van_approval_no AS VanApprovalNo, van_code AS VanCode
+            FROM sales_header_tb
+            WHERE sale_dt >= @From AND sale_dt < @To AND status = 'COMPLETE'
+            """;
+        var rows = await connection.QueryAsync<SaleHeader>(sql, new { From = from, To = to });
+        return rows.ToList();
+    }
 }
