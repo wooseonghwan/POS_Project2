@@ -1,0 +1,179 @@
+using FishingMartPos.Models;
+using FishingMartPos.Navigation;
+using FishingMartPos.Services;
+using FishingMartPos.Tests.Fakes;
+using FishingMartPos.ViewModels;
+using Xunit;
+
+namespace FishingMartPos.Tests.ViewModels;
+
+public class InventoryFormViewModelTests
+{
+    private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
+    {
+        ["MAJOR"] = new List<CodeItem> { new() { Code = "FISH", Name = "낚시용품", SortNo = 1 } },
+        ["MINOR"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
+        ["POSCAT"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
+    };
+
+    private static (InventoryFormViewModel vm, FakeProductRepository products, FakeCodeRepository codes, FakeProductPhotoStorage photoStorage, FakePhotoPicker photoPicker, INavigationService navigation, InventoryViewModel inventoryVm)
+        CreateForAdd()
+    {
+        var products = new FakeProductRepository(new List<Product>
+        {
+            new() { Barcode = "8800000020001", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
+        });
+        var codes = new FakeCodeRepository(SampleCodes());
+        var photoStorage = new FakeProductPhotoStorage();
+        var photoPicker = new FakePhotoPicker();
+        var session = new FishingMartPos.Services.CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var mainMenu = new MainMenuViewModel(session, navigation);
+        var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
+
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, navigation, inventoryVm, editingProduct: null);
+        return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AddMode_StartsWithEmptyForm()
+    {
+        var (vm, _, _, _, _, _, _) = CreateForAdd();
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.IsEditMode);
+        Assert.Equal(string.Empty, vm.Name);
+        Assert.Equal(string.Empty, vm.BarcodeInput);
+    }
+
+    [Fact]
+    public async Task LoadAsync_EditMode_FillsFormFromExistingProduct()
+    {
+        var products = new FakeProductRepository(new List<Product>());
+        var codes = new FakeCodeRepository(SampleCodes());
+        var photoStorage = new FakeProductPhotoStorage();
+        var photoPicker = new FakePhotoPicker();
+        var session = new FishingMartPos.Services.CurrentSession();
+        session.SignIn(new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" }, new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var mainMenu = new MainMenuViewModel(session, navigation);
+        var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
+        var editing = new Product { Barcode = "8800000020001", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 };
+
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, navigation, inventoryVm, editingProduct: editing);
+        await vm.LoadAsync();
+
+        Assert.True(vm.IsEditMode);
+        Assert.Equal("지렁이", vm.Name);
+        Assert.Equal("8800000020001", vm.BarcodeInput);
+        Assert.Equal("5000", vm.PriceInput);
+        Assert.Equal("10", vm.StockInput);
+    }
+
+    [Fact]
+    public async Task Save_WithoutName_ShowsErrorAndDoesNotSave()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.PriceInput = "1000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.ErrorMessage);
+        Assert.Empty(products.SavedProducts);
+    }
+
+    [Fact]
+    public async Task Save_WithoutPrice_ShowsErrorAndDoesNotSave()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.ErrorMessage);
+        Assert.Empty(products.SavedProducts);
+    }
+
+    [Fact]
+    public async Task Save_WithBlankBarcode_GeneratesNextBarcode()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        vm.MajorCd = "FISH";
+        vm.MinorCd = "BAIT";
+        vm.PosCatCd = "BAIT";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal("8800000020002", saved.Barcode);
+    }
+
+    [Fact]
+    public async Task Save_WithDuplicateManualBarcode_ShowsErrorAndDoesNotSave()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        vm.BarcodeInput = "8800000020001"; // 이미 존재
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.ErrorMessage);
+        Assert.Empty(products.SavedProducts);
+    }
+
+    [Fact]
+    public async Task Save_WithBlankStock_DefaultsToZero()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(0, saved.StockQty);
+    }
+
+    [Fact]
+    public async Task Save_NavigatesBackToInventoryAndRefreshesRows()
+    {
+        var (vm, _, _, _, _, navigation, inventoryVm) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Same(inventoryVm, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task PickPhoto_ThenSave_StoresPhotoAndSetsPhotoPath()
+    {
+        var (vm, products, _, photoStorage, photoPicker, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        photoPicker.NextPickedPath = @"C:\temp\shrimp.jpg";
+
+        vm.PickPhotoCommand.Execute(null);
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Single(photoStorage.SaveCalls);
+        Assert.Equal(saved.Barcode, photoStorage.SaveCalls[0].Barcode);
+        Assert.Equal($"ProductPhotos/{saved.Barcode}.jpg", saved.PhotoPath);
+    }
+}
