@@ -118,6 +118,9 @@ public sealed partial class InventoryViewModel : ObservableObject
                 PriceStr = CurrencyFormat.Format(captured.Price),
                 StockQtyStr = captured.StockQty.ToString("N0"),
                 Swatch = SwatchCycler.ForIndex(swatchIndex),
+                PhotoAbsolutePath = captured.PhotoPath is not null
+                    ? System.IO.Path.Combine(AppContext.BaseDirectory, captured.PhotoPath)
+                    : null,
                 CanDelete = isAdmin,
                 DeleteCommand = new RelayCommand(() => RequestDelete(captured)),
                 EditCommand = new AsyncRelayCommand(() => GoToEditProduct(captured)),
