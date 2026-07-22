@@ -27,6 +27,27 @@
         <DataTemplate DataType="{x:Type vm:SalesReportViewModel}">
             <views:SalesReportView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StaffListViewModel}">
+            <views:StaffListView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StaffFormViewModel}">
+            <views:StaffFormView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PrinterSettingsViewModel}">
+            <views:PrinterSettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReceiptSettingsViewModel}">
+            <views:ReceiptSettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SystemInfoViewModel}">
+            <views:SystemInfoView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CodeManageViewModel}">
+            <views:CodeManageView />
+        </DataTemplate>
     </Window.Resources>
     <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
         <ContentControl x:Name="CurrentViewHost" Content="{Binding CurrentContent}" />

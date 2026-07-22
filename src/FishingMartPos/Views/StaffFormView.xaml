@@ -1,0 +1,73 @@
+<UserControl x:Class="FishingMartPos.Views.StaffFormView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+    </UserControl.Resources>
+    <Grid Background="{DynamicResource MenuBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="White" BorderBrush="{DynamicResource HeaderBorder}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0" Height="42">
+                <TextBlock Text="{Binding HeaderText}" FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TitleText}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                <Button Content="← 직원목록으로" Padding="12,5" FontSize="12" FontWeight="Bold"
+                        Background="{DynamicResource LogoutButtonBackground}" Foreground="{DynamicResource MutedText}"
+                        BorderBrush="{DynamicResource InputBorder}" BorderThickness="1"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding CancelCommand}" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Border Margin="24,20" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="24" MaxWidth="420" HorizontalAlignment="Left">
+                <StackPanel>
+                    <Border Background="{DynamicResource CardBorder}" BorderBrush="{DynamicResource ErrorBorder}" BorderThickness="1"
+                            Padding="12,8" Margin="0,0,0,16"
+                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}">
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource ErrorIconBackground}" FontSize="12" FontWeight="Bold" />
+                    </Border>
+
+                    <TextBlock Text="직원코드" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding StaffCode, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsEditMode}" Padding="8,6" Margin="0,0,0,14" />
+
+                    <TextBlock Text="이름" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding StaffName, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14" />
+
+                    <TextBlock Text="권한" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <ComboBox ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding SelectedRole}" DisplayMemberPath="Name" Padding="8,6" Margin="0,0,0,14" />
+
+                    <CheckBox Content="사용" IsChecked="{Binding IsActive}" FontSize="13" Margin="0,0,0,14" />
+
+                    <TextBlock Text="PIN (4자리 숫자, 수정 시 비워두면 기존 유지)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding PinInput, UpdateSourceTrigger=PropertyChanged}" MaxLength="4" Padding="8,6" Margin="0,0,0,20" />
+
+                    <Button Content="{Binding SaveButtonText}" Padding="0,12" Background="{DynamicResource Accent}" Foreground="White"
+                            FontSize="14" FontWeight="Bold" Command="{Binding SaveCommand}" />
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding ToastMessage, Converter={StaticResource NullToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="48,36" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center">
+                    <Border Width="56" Height="56" Margin="0,0,0,12" Background="{DynamicResource Accent}">
+                        <TextBlock Text="✓" FontSize="28" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding ToastMessage}" FontSize="18" FontWeight="Bold"
+                               Foreground="{DynamicResource TitleText}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
