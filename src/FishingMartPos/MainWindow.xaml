@@ -12,9 +12,6 @@
         <DataTemplate DataType="{x:Type vm:MainMenuViewModel}">
             <views:MainMenuView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
-            <views:PlaceholderView />
-        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PosViewModel}">
             <views:PosView />
         </DataTemplate>
