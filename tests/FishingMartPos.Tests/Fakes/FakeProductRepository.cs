@@ -13,6 +13,7 @@ public sealed class FakeProductRepository : IProductRepository
     }
 
     public List<string> DeactivatedBarcodes { get; } = new();
+    public List<Product> SavedProducts { get; } = new();
 
     public Task<IReadOnlyList<Product>> GetActiveAsync() =>
         Task.FromResult((IReadOnlyList<Product>)_products);
@@ -21,6 +22,14 @@ public sealed class FakeProductRepository : IProductRepository
     {
         DeactivatedBarcodes.Add(barcode);
         _products.RemoveAll(p => p.Barcode == barcode);
+        return Task.CompletedTask;
+    }
+
+    public Task SaveAsync(Product product)
+    {
+        SavedProducts.Add(product);
+        _products.RemoveAll(p => p.Barcode == product.Barcode);
+        _products.Add(product);
         return Task.CompletedTask;
     }
 }

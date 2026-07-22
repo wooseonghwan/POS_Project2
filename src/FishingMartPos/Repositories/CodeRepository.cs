@@ -26,4 +26,21 @@ public sealed class CodeRepository : ICodeRepository
         var result = await connection.QueryAsync<CodeItem>(sql, new { CodeGbn = codeGbn });
         return result.ToList();
     }
+
+    public async Task AddAsync(string codeGbn, string codeCd, string codeNm)
+    {
+        using var connection = _connectionFactory.CreateOpenConnection();
+        const string sql = """
+            INSERT INTO code_tb (code_gbn, code_cd, code_nm, sort_no)
+            VALUES (@CodeGbn, @CodeCd, @CodeNm, 0)
+            """;
+        await connection.ExecuteAsync(sql, new { CodeGbn = codeGbn, CodeCd = codeCd, CodeNm = codeNm });
+    }
+
+    public async Task DeleteAsync(string codeGbn, string codeCd)
+    {
+        using var connection = _connectionFactory.CreateOpenConnection();
+        const string sql = "DELETE FROM code_tb WHERE code_gbn = @CodeGbn AND code_cd = @CodeCd";
+        await connection.ExecuteAsync(sql, new { CodeGbn = codeGbn, CodeCd = codeCd });
+    }
 }
