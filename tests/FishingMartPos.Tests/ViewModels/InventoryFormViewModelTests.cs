@@ -262,6 +262,22 @@ public class InventoryFormViewModelTests
     }
 
     [Fact]
+    public async Task AddMajorCode_WithDuplicateCode_ShowsErrorAndDoesNotAddDuplicate()
+    {
+        var (vm, _, codes, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.NewCodeCode = "FISH";
+        vm.NewCodeName = "중복코드";
+
+        await vm.AddMajorCodeCommand.ExecuteAsync(null);
+
+        Assert.Equal("이미 존재하는 코드입니다", vm.ErrorMessage);
+        Assert.Single(vm.MajorCodes, c => c.Code == "FISH");
+        var majorCodesInRepo = await codes.GetByGroupAsync("MAJOR");
+        Assert.Single(majorCodesInRepo, c => c.Code == "FISH");
+    }
+
+    [Fact]
     public async Task DeleteMajorCode_WhenUnused_RemovesFromListAndRepository()
     {
         var (vm, _, codes, _, _, _, _) = CreateForAdd();

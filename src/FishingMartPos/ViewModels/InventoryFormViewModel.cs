@@ -194,6 +194,12 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             return;
         }
 
+        if (target.Any(c => c.Code == NewCodeCode))
+        {
+            ErrorMessage = "이미 존재하는 코드입니다";
+            return;
+        }
+
         await _codeRepository.AddAsync(codeGbn, NewCodeCode, NewCodeName);
         target.Add(new CodeItem { Code = NewCodeCode, Name = NewCodeName, SortNo = 0 });
         NewCodeCode = string.Empty;
