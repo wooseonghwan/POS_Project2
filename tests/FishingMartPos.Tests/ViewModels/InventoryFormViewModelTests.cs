@@ -38,6 +38,25 @@ public class InventoryFormViewModelTests
         return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
     }
 
+    private static (InventoryFormViewModel vm, FakeProductRepository products, FakeCodeRepository codes, FakeProductPhotoStorage photoStorage, FakePhotoPicker photoPicker, INavigationService navigation, InventoryViewModel inventoryVm)
+        CreateForEdit(Product editing)
+    {
+        var products = new FakeProductRepository(new List<Product> { editing });
+        var codes = new FakeCodeRepository(SampleCodes());
+        var photoStorage = new FakeProductPhotoStorage();
+        var photoPicker = new FakePhotoPicker();
+        var session = new FishingMartPos.Services.CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var mainMenu = new MainMenuViewModel(session, navigation);
+        var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
+
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, navigation, inventoryVm, editingProduct: editing);
+        return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
+    }
+
     [Fact]
     public async Task LoadAsync_AddMode_StartsWithEmptyForm()
     {
@@ -72,6 +91,9 @@ public class InventoryFormViewModelTests
         Assert.Equal("8800000020001", vm.BarcodeInput);
         Assert.Equal("5000", vm.PriceInput);
         Assert.Equal("10", vm.StockInput);
+        Assert.Equal(editing.MajorCd, vm.MajorCd);
+        Assert.Equal(editing.MinorCd, vm.MinorCd);
+        Assert.Equal(editing.PosCatCd, vm.PosCatCd);
     }
 
     [Fact]
@@ -149,7 +171,7 @@ public class InventoryFormViewModelTests
     [Fact]
     public async Task Save_NavigatesBackToInventoryAndRefreshesRows()
     {
-        var (vm, _, _, _, _, navigation, inventoryVm) = CreateForAdd();
+        var (vm, products, _, _, _, navigation, inventoryVm) = CreateForAdd();
         await vm.LoadAsync();
         vm.Name = "새우";
         vm.PriceInput = "3000";
@@ -157,6 +179,8 @@ public class InventoryFormViewModelTests
         await vm.SaveCommand.ExecuteAsync(null);
 
         Assert.Same(inventoryVm, navigation.CurrentViewModel);
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Contains(inventoryVm.Rows, row => row.Barcode == saved.Barcode && row.Name == "새우");
     }
 
     [Fact]
@@ -175,5 +199,51 @@ public class InventoryFormViewModelTests
         Assert.Single(photoStorage.SaveCalls);
         Assert.Equal(saved.Barcode, photoStorage.SaveCalls[0].Barcode);
         Assert.Equal($"ProductPhotos/{saved.Barcode}.jpg", saved.PhotoPath);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_KeepsOriginalBarcodeAndPreservesPhotoPath()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001",
+            MajorCd = "FISH",
+            MinorCd = "BAIT",
+            PosCatCd = "BAIT",
+            Name = "지렁이",
+            Price = 5000,
+            StockQty = 10,
+            PhotoPath = "ProductPhotos/8800000020001.jpg",
+        };
+        var (vm, products, _, _, _, _, _) = CreateForEdit(editing);
+        await vm.LoadAsync();
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(editing.Barcode, saved.Barcode);
+        Assert.Equal(editing.PhotoPath, saved.PhotoPath);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_OwnUnchangedBarcode_DoesNotTriggerDuplicateError()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001",
+            MajorCd = "FISH",
+            MinorCd = "BAIT",
+            PosCatCd = "BAIT",
+            Name = "지렁이",
+            Price = 5000,
+            StockQty = 10,
+        };
+        var (vm, products, _, _, _, _, _) = CreateForEdit(editing);
+        await vm.LoadAsync();
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Null(vm.ErrorMessage);
+        Assert.Single(products.SavedProducts);
     }
 }
