@@ -19,7 +19,7 @@ public sealed partial class StaffFormViewModel : ObservableObject
 
     [ObservableProperty] private string _staffCode = string.Empty;
     [ObservableProperty] private string _staffName = string.Empty;
-    [ObservableProperty] private RoleOptionViewModel _selectedRole = new() { Code = "STAFF", Name = "직원" };
+    [ObservableProperty] private RoleOptionViewModel _selectedRole = null!;
     [ObservableProperty] private bool _isActive = true;
     [ObservableProperty] private string _pinInput = string.Empty;
     [ObservableProperty] private string? _errorMessage;
@@ -48,11 +48,14 @@ public sealed partial class StaffFormViewModel : ObservableObject
         _returnTo = returnTo;
         _editingStaffCode = editingStaff?.StaffCode;
 
+        SelectedRole = editingStaff is not null
+            ? RoleOptions.First(r => r.Code == editingStaff.Role)
+            : RoleOptions[1];
+
         if (editingStaff is not null)
         {
             StaffCode = editingStaff.StaffCode;
             StaffName = editingStaff.StaffName;
-            SelectedRole = RoleOptions.First(r => r.Code == editingStaff.Role);
             IsActive = editingStaff.UseYn == "Y";
         }
     }
