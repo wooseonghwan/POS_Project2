@@ -176,4 +176,50 @@ public sealed partial class InventoryFormViewModel : ObservableObject
 
     [RelayCommand]
     private void TogglePosCatCodeManager() => IsPosCatCodeManagerOpen = !IsPosCatCodeManagerOpen;
+
+    [RelayCommand]
+    private async Task AddMajorCode() => await AddCodeAsync("MAJOR", MajorCodes);
+
+    [RelayCommand]
+    private async Task AddMinorCode() => await AddCodeAsync("MINOR", MinorCodes);
+
+    [RelayCommand]
+    private async Task AddPosCatCode() => await AddCodeAsync("POSCAT", PosCatCodes);
+
+    private async Task AddCodeAsync(string codeGbn, ObservableCollection<CodeItem> target)
+    {
+        if (string.IsNullOrWhiteSpace(NewCodeCode) || string.IsNullOrWhiteSpace(NewCodeName))
+        {
+            ErrorMessage = "코드와 이름을 모두 입력해주세요";
+            return;
+        }
+
+        await _codeRepository.AddAsync(codeGbn, NewCodeCode, NewCodeName);
+        target.Add(new CodeItem { Code = NewCodeCode, Name = NewCodeName, SortNo = 0 });
+        NewCodeCode = string.Empty;
+        NewCodeName = string.Empty;
+        ErrorMessage = null;
+    }
+
+    [RelayCommand]
+    private async Task DeleteMajorCode(CodeItem code) => await DeleteCodeAsync("MAJOR", MajorCodes, code, p => p.MajorCd);
+
+    [RelayCommand]
+    private async Task DeleteMinorCode(CodeItem code) => await DeleteCodeAsync("MINOR", MinorCodes, code, p => p.MinorCd);
+
+    [RelayCommand]
+    private async Task DeletePosCatCode(CodeItem code) => await DeleteCodeAsync("POSCAT", PosCatCodes, code, p => p.PosCatCd);
+
+    private async Task DeleteCodeAsync(string codeGbn, ObservableCollection<CodeItem> target, CodeItem code, Func<Product, string> codeSelector)
+    {
+        if (_allProducts.Any(p => codeSelector(p) == code.Code))
+        {
+            ErrorMessage = "사용 중인 코드는 삭제할 수 없습니다";
+            return;
+        }
+
+        await _codeRepository.DeleteAsync(codeGbn, code.Code);
+        target.Remove(code);
+        ErrorMessage = null;
+    }
 }

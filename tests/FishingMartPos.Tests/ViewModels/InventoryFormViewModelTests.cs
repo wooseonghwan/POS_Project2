@@ -246,4 +246,44 @@ public class InventoryFormViewModelTests
         Assert.Null(vm.ErrorMessage);
         Assert.Single(products.SavedProducts);
     }
+
+    [Fact]
+    public async Task AddMajorCode_AddsToMajorCodesAndRepository()
+    {
+        var (vm, _, codes, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.NewCodeCode = "TACKLE";
+        vm.NewCodeName = "채비";
+
+        await vm.AddMajorCodeCommand.ExecuteAsync(null);
+
+        Assert.Contains(vm.MajorCodes, c => c.Code == "TACKLE" && c.Name == "채비");
+        Assert.Contains((await codes.GetByGroupAsync("MAJOR")), c => c.Code == "TACKLE");
+    }
+
+    [Fact]
+    public async Task DeleteMajorCode_WhenUnused_RemovesFromListAndRepository()
+    {
+        var (vm, _, codes, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        var unusedCode = new CodeItem { Code = "UNUSED", Name = "미사용", SortNo = 9 };
+        vm.MajorCodes.Add(unusedCode);
+
+        await vm.DeleteMajorCodeCommand.ExecuteAsync(unusedCode);
+
+        Assert.DoesNotContain(vm.MajorCodes, c => c.Code == "UNUSED");
+    }
+
+    [Fact]
+    public async Task DeleteMajorCode_WhenUsedByExistingProduct_ShowsErrorAndKeepsCode()
+    {
+        var (vm, _, _, _, _, _, _) = CreateForAdd(); // 샘플 상품이 MajorCd="FISH" 사용 중
+        await vm.LoadAsync();
+        var usedCode = vm.MajorCodes.Single(c => c.Code == "FISH");
+
+        await vm.DeleteMajorCodeCommand.ExecuteAsync(usedCode);
+
+        Assert.NotNull(vm.ErrorMessage);
+        Assert.Contains(vm.MajorCodes, c => c.Code == "FISH");
+    }
 }
