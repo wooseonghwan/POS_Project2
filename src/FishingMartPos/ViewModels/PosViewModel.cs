@@ -151,6 +151,24 @@ public sealed partial class PosViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ScanBarcode(string barcode)
+    {
+        if (string.IsNullOrWhiteSpace(barcode)) return;
+
+        var product = _allProducts.FirstOrDefault(p => p.Barcode == barcode);
+        if (product is null)
+        {
+            IsToastWarning = true;
+            ToastMessage = "등록되지 않은 바코드입니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
+        AddToCart(product);
+    }
+
+    [RelayCommand]
     private void SelectCartLine(string barcode)
     {
         SelectedBarcode = barcode;

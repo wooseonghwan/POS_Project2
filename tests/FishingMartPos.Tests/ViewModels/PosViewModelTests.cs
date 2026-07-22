@@ -277,4 +277,72 @@ public class PosViewModelTests
 
         Assert.Same(mainMenuViewModel, navigation.CurrentViewModel);
     }
+
+    [Fact]
+    public async Task ScanBarcode_WithKnownBarcode_AddsProductToCart()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+
+        vm.ScanBarcodeCommand.Execute("B1");
+
+        var line = Assert.Single(vm.CartLines);
+        Assert.Equal("B1", line.Barcode);
+        Assert.Equal(1, line.Qty);
+    }
+
+    [Fact]
+    public async Task ScanBarcode_SameBarcodeTwice_IncrementsQuantity()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+
+        vm.ScanBarcodeCommand.Execute("B1");
+        vm.ScanBarcodeCommand.Execute("B1");
+
+        var line = Assert.Single(vm.CartLines);
+        Assert.Equal(2, line.Qty);
+    }
+
+    [Fact]
+    public async Task ScanBarcode_ProductFromDifferentCategoryThanCurrentlyVisible_StillAddsToCart()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync(); // defaults to first category (BAIT); F1 is FLOAT
+
+        vm.ScanBarcodeCommand.Execute("F1");
+
+        var line = Assert.Single(vm.CartLines);
+        Assert.Equal("F1", line.Barcode);
+    }
+
+    [Fact]
+    public async Task ScanBarcode_WithUnknownBarcode_ShowsWarningToastAndDoesNotAddToCart()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.ScanBarcodeCommand.ExecuteAsync("NOPE");
+
+        Assert.Empty(vm.CartLines);
+        Assert.True(vm.IsToastWarning);
+        Assert.Equal("등록되지 않은 바코드입니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task ScanBarcode_WithEmptyString_DoesNothing()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+
+        vm.ScanBarcodeCommand.Execute(string.Empty);
+
+        Assert.Empty(vm.CartLines);
+    }
 }
