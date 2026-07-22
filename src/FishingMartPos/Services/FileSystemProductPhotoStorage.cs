@@ -20,6 +20,6 @@ public sealed class FileSystemProductPhotoStorage : IProductPhotoStorage
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "ProductPhotos"));
         File.Copy(sourceFilePath, destinationPath, overwrite: true);
 
-        return relativePath;
+        return relativePath.Replace('\\', '/');
     }
 }

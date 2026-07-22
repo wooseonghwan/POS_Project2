@@ -18,7 +18,7 @@ public class FileSystemProductPhotoStorageTests
             var storage = new FileSystemProductPhotoStorage(tempRoot);
             var relativePath = storage.SavePhoto("8800000020051", sourceFile);
 
-            Assert.Equal(Path.Combine("ProductPhotos", "8800000020051.jpg"), relativePath);
+            Assert.Equal("ProductPhotos/8800000020051.jpg", relativePath);
             Assert.True(File.Exists(Path.Combine(tempRoot, relativePath)));
         }
         finally
