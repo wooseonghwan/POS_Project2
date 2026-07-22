@@ -6,6 +6,12 @@ namespace FishingMartPos.Views;
 
 public partial class SalesReportView : UserControl
 {
+    // Scoped per-picker (not a single shared flag): closing one picker to enforce
+    // mutual exclusion below fires ITS OWN CalendarClosed, which must not suppress
+    // the OTHER picker's legitimate open.
+    private bool _suppressDateFromReopen;
+    private bool _suppressDateToReopen;
+
     public SalesReportView()
     {
         InitializeComponent();
@@ -21,10 +27,52 @@ public partial class SalesReportView : UserControl
 
     private void DatePicker_PreviewGotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
     {
-        if (sender is DatePicker picker)
+        if (sender is not DatePicker picker)
         {
-            Dispatcher.BeginInvoke(new System.Action(() => picker.IsDropDownOpen = true),
-                System.Windows.Threading.DispatcherPriority.Input);
+            return;
+        }
+
+        bool isDateFrom = ReferenceEquals(picker, DateFromPicker);
+
+        // Enforce "only one calendar open at a time" ourselves -- WPF does not
+        // guarantee this between two independent DatePicker instances.
+        var other = isDateFrom ? DateToPicker : DateFromPicker;
+        if (other.IsDropDownOpen)
+        {
+            other.IsDropDownOpen = false;
+        }
+
+        Dispatcher.BeginInvoke(new System.Action(() =>
+        {
+            // Checked at execution time, not schedule time: focus can re-enter the
+            // text box as a side effect of the calendar closing itself (date selected),
+            // and CalendarClosed may not have set the flag yet when this was scheduled.
+            bool suppressed = isDateFrom ? _suppressDateFromReopen : _suppressDateToReopen;
+            if (!suppressed)
+            {
+                picker.IsDropDownOpen = true;
+            }
+
+            if (isDateFrom)
+            {
+                _suppressDateFromReopen = false;
+            }
+            else
+            {
+                _suppressDateToReopen = false;
+            }
+        }), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void DatePicker_CalendarClosed(object sender, RoutedEventArgs e)
+    {
+        if (ReferenceEquals(sender, DateFromPicker))
+        {
+            _suppressDateFromReopen = true;
+        }
+        else if (ReferenceEquals(sender, DateToPicker))
+        {
+            _suppressDateToReopen = true;
         }
     }
 

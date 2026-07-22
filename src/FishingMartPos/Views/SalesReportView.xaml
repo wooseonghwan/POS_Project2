@@ -68,17 +68,19 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="기간" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}"
                                VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <DatePicker SelectedDate="{Binding DateFrom, Mode=TwoWay}"
+                    <DatePicker x:Name="DateFromPicker" SelectedDate="{Binding DateFrom, Mode=TwoWay}"
                                 SelectedDateChanged="DatePicker_SelectedDateChanged"
                                 PreviewGotKeyboardFocus="DatePicker_PreviewGotKeyboardFocus"
                                 CalendarOpened="DatePicker_CalendarOpened"
+                                CalendarClosed="DatePicker_CalendarClosed"
                                 FontSize="12" Padding="6,4" />
                     <TextBlock Text="~" FontSize="12" Foreground="{DynamicResource MutedText}"
                                VerticalAlignment="Center" Margin="8,0" />
-                    <DatePicker SelectedDate="{Binding DateTo, Mode=TwoWay}"
+                    <DatePicker x:Name="DateToPicker" SelectedDate="{Binding DateTo, Mode=TwoWay}"
                                 SelectedDateChanged="DatePicker_SelectedDateChanged"
                                 PreviewGotKeyboardFocus="DatePicker_PreviewGotKeyboardFocus"
                                 CalendarOpened="DatePicker_CalendarOpened"
+                                CalendarClosed="DatePicker_CalendarClosed"
                                 FontSize="12" Padding="6,4" />
                 </StackPanel>
             </Border>
