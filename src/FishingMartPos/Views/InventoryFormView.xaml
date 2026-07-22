@@ -150,7 +150,7 @@
                     <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14" />
 
                     <TextBlock Text="바코드 번호 (미입력 시 자동 생성)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
-                    <TextBox Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14" />
+                    <TextBox Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsEditMode}" Padding="8,6" Margin="0,0,0,14" />
 
                     <Grid Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
