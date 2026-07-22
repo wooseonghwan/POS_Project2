@@ -30,6 +30,7 @@ public sealed class FakeStaffRepository : IStaffRepository
     {
         CreatedStaff.Add((staff, pin));
         _allStaff.Add(staff);
+        _staffByPin[pin] = staff;
         return Task.CompletedTask;
     }
 
@@ -38,6 +39,36 @@ public sealed class FakeStaffRepository : IStaffRepository
         UpdatedStaff.Add((staff, newPin));
         _allStaff.RemoveAll(s => s.StaffCode == staff.StaffCode);
         _allStaff.Add(staff);
+
+        if (!string.IsNullOrWhiteSpace(newPin))
+        {
+            // PIN is changing: remove old mappings for this StaffCode, add new pin mapping
+            var keysToRemove = _staffByPin
+                .Where(kvp => kvp.Value.StaffCode == staff.StaffCode)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                _staffByPin.Remove(key);
+            }
+
+            _staffByPin[newPin] = staff;
+        }
+        else
+        {
+            // PIN didn't change: update Staff object in existing mappings
+            var keysToUpdate = _staffByPin
+                .Where(kvp => kvp.Value.StaffCode == staff.StaffCode)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in keysToUpdate)
+            {
+                _staffByPin[key] = staff;
+            }
+        }
+
         return Task.CompletedTask;
     }
 }
