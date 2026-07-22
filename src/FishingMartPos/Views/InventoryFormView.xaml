@@ -8,6 +8,7 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:PhotoPathToBitmapImageConverter x:Key="PhotoPathToBitmapImageConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
     </UserControl.Resources>
     <Grid Background="{DynamicResource MenuBackground}">
         <Grid.RowDefinitions>
@@ -44,7 +45,7 @@
                             <TextBlock Text="사진 없음" FontSize="11" Foreground="{DynamicResource MutedText}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <Image Source="{Binding PhotoPreviewPath}" Stretch="UniformToFill"
+                        <Image Source="{Binding PhotoPreviewPath, Converter={StaticResource PhotoPathToBitmapImageConverter}}" Stretch="UniformToFill"
                                Visibility="{Binding PhotoPreviewPath, Converter={StaticResource NullToVisibilityConverter}}" />
                     </Grid>
                     <Button Content="사진 선택" HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,16" Command="{Binding PickPhotoCommand}" />
@@ -183,5 +184,21 @@
                 </StackPanel>
             </Border>
         </ScrollViewer>
+
+        <!-- 저장/수정 완료 토스트 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding ToastMessage, Converter={StaticResource NullToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="48,36" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center">
+                    <Border Width="56" Height="56" Margin="0,0,0,12" Background="{DynamicResource Accent}">
+                        <TextBlock Text="✓" FontSize="28" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding ToastMessage}" FontSize="18" FontWeight="Bold"
+                               Foreground="{DynamicResource TitleText}" />
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

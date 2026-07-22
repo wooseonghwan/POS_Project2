@@ -295,7 +295,7 @@ public class InventoryViewModelTests
             formVm = new InventoryFormViewModel(
                 new FakeProductRepository(Array.Empty<Product>()),
                 new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
-                new FakePhotoPicker(), new FakeProductPhotoStorage(), navigation, inv, product);
+                new FakePhotoPicker(), new FakeProductPhotoStorage(), new FakeDelayProvider(), navigation, inv, product);
             return Task.FromResult(formVm);
         };
 
@@ -336,7 +336,7 @@ public class InventoryViewModelTests
             formVm = new InventoryFormViewModel(
                 new FakeProductRepository(Array.Empty<Product>()),
                 new FakeCodeRepository(new Dictionary<string, IReadOnlyList<CodeItem>>()),
-                new FakePhotoPicker(), new FakeProductPhotoStorage(), navigation, inv, product);
+                new FakePhotoPicker(), new FakeProductPhotoStorage(), new FakeDelayProvider(), navigation, inv, product);
             return Task.FromResult(formVm);
         };
         var row = vm.Rows.Single(r => r.Barcode == "B1");

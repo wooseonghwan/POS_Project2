@@ -67,7 +67,7 @@ public partial class App : Application
         {
             var vm = new InventoryViewModel(productRepository, codeRepository, session, navigation, mainMenu);
             vm.InventoryFormViewModelFactory = (inv, product) =>
-                Task.FromResult(new InventoryFormViewModel(productRepository, codeRepository, photoPicker, photoStorage, navigation, inv, product));
+                Task.FromResult(new InventoryFormViewModel(productRepository, codeRepository, photoPicker, photoStorage, delayProvider, navigation, inv, product));
             await vm.LoadAsync();
             return vm;
         }

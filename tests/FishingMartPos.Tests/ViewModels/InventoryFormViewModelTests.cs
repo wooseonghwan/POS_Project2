@@ -34,7 +34,7 @@ public class InventoryFormViewModelTests
         var mainMenu = new MainMenuViewModel(session, navigation);
         var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
 
-        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, navigation, inventoryVm, editingProduct: null);
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: null);
         return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
     }
 
@@ -53,7 +53,7 @@ public class InventoryFormViewModelTests
         var mainMenu = new MainMenuViewModel(session, navigation);
         var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
 
-        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, navigation, inventoryVm, editingProduct: editing);
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: editing);
         return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
     }
 
@@ -83,7 +83,7 @@ public class InventoryFormViewModelTests
         var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
         var editing = new Product { Barcode = "8800000020001", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 };
 
-        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, navigation, inventoryVm, editingProduct: editing);
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: editing);
         await vm.LoadAsync();
 
         Assert.True(vm.IsEditMode);
@@ -181,6 +181,52 @@ public class InventoryFormViewModelTests
         Assert.Same(inventoryVm, navigation.CurrentViewModel);
         var saved = Assert.Single(products.SavedProducts);
         Assert.Contains(inventoryVm.Rows, row => row.Barcode == saved.Barcode && row.Name == "새우");
+    }
+
+    [Fact]
+    public async Task Save_AddMode_ShowsSavedToast()
+    {
+        var (vm, _, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(InventoryFormViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal("저장되었습니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task Save_EditMode_ShowsUpdatedToast()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001",
+            MajorCd = "FISH",
+            MinorCd = "BAIT",
+            PosCatCd = "BAIT",
+            Name = "지렁이",
+            Price = 5000,
+            StockQty = 10,
+        };
+        var (vm, _, _, _, _, _, _) = CreateForEdit(editing);
+        await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(InventoryFormViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal("수정되었습니다", Assert.Single(toastValues));
     }
 
     [Fact]

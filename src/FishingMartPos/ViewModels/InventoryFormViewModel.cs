@@ -15,6 +15,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     private readonly ICodeRepository _codeRepository;
     private readonly IPhotoPicker _photoPicker;
     private readonly IProductPhotoStorage _photoStorage;
+    private readonly IDelayProvider _delay;
     private readonly INavigationService _navigation;
     private readonly InventoryViewModel _returnTo;
     private readonly string? _editingBarcode;
@@ -32,6 +33,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     [ObservableProperty] private string _stockInput = string.Empty;
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private string? _photoPreviewPath;
+    [ObservableProperty] private string? _toastMessage;
     [ObservableProperty] private bool _isMajorCodeManagerOpen;
     [ObservableProperty] private bool _isMinorCodeManagerOpen;
     [ObservableProperty] private bool _isPosCatCodeManagerOpen;
@@ -51,6 +53,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         ICodeRepository codeRepository,
         IPhotoPicker photoPicker,
         IProductPhotoStorage photoStorage,
+        IDelayProvider delay,
         INavigationService navigation,
         InventoryViewModel returnTo,
         Product? editingProduct)
@@ -59,6 +62,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         _codeRepository = codeRepository;
         _photoPicker = photoPicker;
         _photoStorage = photoStorage;
+        _delay = delay;
         _navigation = navigation;
         _returnTo = returnTo;
         _editingBarcode = editingProduct?.Barcode;
@@ -178,6 +182,11 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         };
 
         await _productRepository.SaveAsync(product);
+
+        ToastMessage = IsEditMode ? "수정되었습니다" : "저장되었습니다";
+        await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+        ToastMessage = null;
+
         await GoBackToInventoryAsync();
     }
 
