@@ -147,7 +147,7 @@ public class SalesReportViewModelTests
     }
 
     [Fact]
-    public async Task GoToMainMenu_NavigatesBackToMainMenu()
+    public void GoToMainMenu_NavigatesBackToMainMenu()
     {
         var (vm, _, mainMenu, navigation) = Create();
 
