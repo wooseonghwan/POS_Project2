@@ -238,13 +238,13 @@ public class InventoryViewModelTests
         var mainMenu = DummyMainMenu(session, navigation);
         var productsWithPhoto = new[]
         {
-            new Product { Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10, PhotoPath = System.IO.Path.Combine("ProductPhotos", "B1.jpg") },
+            new Product { Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10, PhotoPath = "ProductPhotos/B1.jpg" },
         };
         var vm = new InventoryViewModel(new FakeProductRepository(productsWithPhoto), new FakeCodeRepository(SampleCodes()), session, navigation, mainMenu);
         await vm.LoadAsync();
 
         var row = Assert.Single(vm.Rows);
-        Assert.EndsWith(System.IO.Path.Combine("ProductPhotos", "B1.jpg"), row.PhotoAbsolutePath);
+        Assert.EndsWith("ProductPhotos/B1.jpg", row.PhotoAbsolutePath);
     }
 
     [Fact]
