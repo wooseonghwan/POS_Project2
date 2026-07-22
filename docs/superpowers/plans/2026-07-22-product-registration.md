@@ -1469,8 +1469,7 @@ public partial class InventoryFormView : UserControl
                     <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14" />
 
                     <TextBlock Text="바코드 번호 (미입력 시 자동 생성)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
-                    <TextBox Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14"
-                              IsEnabled="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <TextBox Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14" />
 
                     <Grid Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
@@ -1496,13 +1495,9 @@ public partial class InventoryFormView : UserControl
     </Grid>
 </UserControl>
 ```
-(주의: `IsEnabled="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"`는 오타 — `BooleanToVisibilityConverter`는 `Visibility`를 반환하므로 `IsEnabled`(bool)에 쓸 수 없다. 구현 시 `IsEnabled="{Binding IsEditMode}"`로 바로 바인딩하되 **의미가 반대**(수정 모드일 때 바코드 입력을 잠그고 싶다면 `Converter`로 반전 필요)이므로, 실제로는 바코드 입력을 잠글지 여부부터 재확인한다 — 원본 설계에는 이런 제약이 없으므로 **이 IsEnabled 바인딩은 빼고 항상 입력 가능하게 둔다.** 아래 Step 4에서 이 줄을 제거한다.)
+수정 모드에서도 바코드는 항상 편집 가능하게 둔다(원본 설계에 잠금 요구사항 없음).
 
-- [ ] **Step 4: XAML 수정 — 위에서 발견한 잘못된 IsEnabled 바인딩 제거**
-
-`TextBox Text="{Binding BarcodeInput...}"` 줄에서 `IsEnabled="..."` 속성을 삭제한다(수정 모드에서도 바코드를 자유롭게 볼 수 있게 둔다 — 단, 실수로 바꿔서 저장하면 새 상품처럼 저장될 위험이 있음을 알고 있되 이번 범위에서는 막지 않는다. 별도 지시 없으면 그대로 둔다).
-
-- [ ] **Step 5: App.xaml.cs에 InventoryFormViewModel 팩토리 배선**
+- [ ] **Step 4: App.xaml.cs에 InventoryFormViewModel 팩토리 배선**
 
 `App.xaml.cs`의 `OnStartup`에 서비스 등록 추가:
 ```csharp
@@ -1526,7 +1521,7 @@ public partial class InventoryFormView : UserControl
 ```
 (기존 `CreateInventoryViewModelAsync` 정의를 통째로 교체 — `using FishingMartPos.Services;`, `using FishingMartPos.ViewModels;`는 이미 상단에 있음)
 
-- [ ] **Step 6: 스모크 테스트**
+- [ ] **Step 5: 스모크 테스트**
 
 `tests/FishingMartPos.Tests/Views/InventoryFormViewSmokeTests.cs`:
 ```csharp
@@ -1549,7 +1544,7 @@ public class InventoryFormViewSmokeTests
 }
 ```
 
-- [ ] **Step 7: 빌드 + 전체 테스트**
+- [ ] **Step 6: 빌드 + 전체 테스트**
 
 Run: `dotnet build src/FishingMartPos/FishingMartPos.csproj -c Debug`
 Expected: 빌드 성공 (실행 중인 앱 프로세스가 있으면 먼저 종료)
@@ -1557,7 +1552,7 @@ Expected: 빌드 성공 (실행 중인 앱 프로세스가 있으면 먼저 종�
 Run: `dotnet test tests/FishingMartPos.Tests/FishingMartPos.Tests.csproj`
 Expected: 모두 통과
 
-- [ ] **Step 8: 커밋**
+- [ ] **Step 7: 커밋**
 
 ```bash
 git add src/FishingMartPos/Views/InventoryFormView.xaml src/FishingMartPos/Views/InventoryFormView.xaml.cs src/FishingMartPos/App.xaml.cs src/FishingMartPos/MainWindow.xaml tests/FishingMartPos.Tests/Views/InventoryFormViewSmokeTests.cs
