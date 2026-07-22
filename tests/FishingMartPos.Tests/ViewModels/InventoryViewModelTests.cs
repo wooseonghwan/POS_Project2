@@ -46,7 +46,7 @@ public class InventoryViewModelTests
         return (vm, products, navigation, mainMenu);
     }
 
-    private static (InventoryViewModel vm, FakeProductRepository products) CreateStaff()
+    private static (InventoryViewModel vm, FakeProductRepository products, INavigationService navigation) CreateStaff()
     {
         var session = new CurrentSession();
         session.SignIn(
@@ -56,7 +56,7 @@ public class InventoryViewModelTests
         var mainMenu = DummyMainMenu(session, navigation);
         var products = new FakeProductRepository(SampleProducts());
         var vm = new InventoryViewModel(products, new FakeCodeRepository(SampleCodes()), session, navigation, mainMenu);
-        return (vm, products);
+        return (vm, products, navigation);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class InventoryViewModelTests
     [Fact]
     public async Task StaffSession_NoRowsAreDeletable()
     {
-        var (vm, _) = CreateStaff();
+        var (vm, _, _) = CreateStaff();
         await vm.LoadAsync();
 
         Assert.All(vm.Rows, r => Assert.False(r.CanDelete));
@@ -144,13 +144,69 @@ public class InventoryViewModelTests
     [Fact]
     public async Task StaffSession_DeleteCommandDoesNotOpenConfirmModal()
     {
-        var (vm, _) = CreateStaff();
+        var (vm, _, _) = CreateStaff();
         await vm.LoadAsync();
         var row = vm.Rows.First();
 
         row.DeleteCommand.Execute(null);
 
         Assert.False(vm.IsDeleteConfirmVisible);
+    }
+
+    [Fact]
+    public async Task AdminSession_AllRowsAreEditable()
+    {
+        var (vm, _, _, _) = CreateAdmin();
+        await vm.LoadAsync();
+
+        Assert.All(vm.Rows, r => Assert.True(r.CanEdit));
+    }
+
+    [Fact]
+    public async Task StaffSession_NoRowsAreEditable()
+    {
+        var (vm, _, _) = CreateStaff();
+        await vm.LoadAsync();
+
+        Assert.All(vm.Rows, r => Assert.False(r.CanEdit));
+    }
+
+    [Fact]
+    public async Task StaffSession_GoToAddProductDoesNotNavigate()
+    {
+        var (vm, _, navigation) = CreateStaff();
+        await vm.LoadAsync();
+        bool factoryInvoked = false;
+        vm.InventoryFormViewModelFactory = (inv, product) =>
+        {
+            factoryInvoked = true;
+            return Task.FromResult<InventoryFormViewModel>(null!);
+        };
+
+        await vm.GoToAddProductCommand.ExecuteAsync(null);
+
+        Assert.False(factoryInvoked);
+        Assert.Null(navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task StaffSession_RowEditCommandDoesNotNavigate()
+    {
+        var (vm, _, navigation) = CreateStaff();
+        await vm.LoadAsync();
+        bool factoryInvoked = false;
+        vm.InventoryFormViewModelFactory = (inv, product) =>
+        {
+            factoryInvoked = true;
+            return Task.FromResult<InventoryFormViewModel>(null!);
+        };
+        var row = vm.Rows.First();
+
+        row.EditCommand.Execute(null);
+        await Task.Delay(1);
+
+        Assert.False(factoryInvoked);
+        Assert.Null(navigation.CurrentViewModel);
     }
 
     [Fact]

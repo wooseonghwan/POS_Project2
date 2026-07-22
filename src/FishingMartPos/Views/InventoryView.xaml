@@ -25,7 +25,8 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Content="+ 상품등록" Padding="12,5" FontSize="12" FontWeight="Bold" Margin="0,0,8,0"
                             Background="{DynamicResource Accent}" Foreground="White" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
-                            Command="{Binding GoToAddProductCommand}" />
+                            Command="{Binding GoToAddProductCommand}"
+                            Visibility="{Binding IsAdmin, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     <Button Content="메인메뉴로" Padding="12,5" FontSize="12" FontWeight="Bold"
                             Background="{DynamicResource LogoutButtonBackground}"
                             Foreground="{DynamicResource MutedText}"
@@ -115,7 +116,8 @@
                                     <TextBlock Grid.Column="7" Text="{Binding StockQtyStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="8" Orientation="Horizontal" HorizontalAlignment="Center">
                                         <Button Content="수정" FontSize="11" Padding="8,4" Margin="0,0,4,0"
-                                                Command="{Binding EditCommand}" />
+                                                Command="{Binding EditCommand}"
+                                                Visibility="{Binding CanEdit, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                         <Button Content="삭제" FontSize="11" Padding="8,4"
                                                 Command="{Binding DeleteCommand}"
                                                 Visibility="{Binding CanDelete, Converter={StaticResource BooleanToVisibilityConverter}}" />

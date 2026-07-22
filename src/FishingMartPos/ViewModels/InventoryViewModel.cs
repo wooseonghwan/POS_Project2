@@ -122,6 +122,7 @@ public sealed partial class InventoryViewModel : ObservableObject
                     ? System.IO.Path.Combine(AppContext.BaseDirectory, captured.PhotoPath)
                     : null,
                 CanDelete = isAdmin,
+                CanEdit = isAdmin,
                 DeleteCommand = new RelayCommand(() => RequestDelete(captured)),
                 EditCommand = new AsyncRelayCommand(() => GoToEditProduct(captured)),
             });
@@ -143,6 +144,7 @@ public sealed partial class InventoryViewModel : ObservableObject
     [RelayCommand]
     private async Task GoToAddProduct()
     {
+        if (!IsAdmin) return;
         var formVm = await InventoryFormViewModelFactory!.Invoke(this, null);
         await formVm.LoadAsync();
         _navigation.NavigateTo(formVm);
@@ -150,6 +152,7 @@ public sealed partial class InventoryViewModel : ObservableObject
 
     private async Task GoToEditProduct(Product product)
     {
+        if (!IsAdmin) return;
         var formVm = await InventoryFormViewModelFactory!.Invoke(this, product);
         await formVm.LoadAsync();
         _navigation.NavigateTo(formVm);
