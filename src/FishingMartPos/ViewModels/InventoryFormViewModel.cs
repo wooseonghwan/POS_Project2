@@ -21,6 +21,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
     private string? _pickedPhotoFilePath;
+    private bool _isFormattingPrice;
 
     [ObservableProperty] private string _majorCd = string.Empty;
     [ObservableProperty] private string _minorCd = string.Empty;
@@ -30,6 +31,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     [ObservableProperty] private string _priceInput = string.Empty;
     [ObservableProperty] private string _stockInput = string.Empty;
     [ObservableProperty] private string? _errorMessage;
+    [ObservableProperty] private string? _photoPreviewPath;
     [ObservableProperty] private bool _isMajorCodeManagerOpen;
     [ObservableProperty] private bool _isMinorCodeManagerOpen;
     [ObservableProperty] private bool _isPosCatCodeManagerOpen;
@@ -68,8 +70,27 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             PosCatCd = editingProduct.PosCatCd;
             Name = editingProduct.Name;
             BarcodeInput = editingProduct.Barcode;
-            PriceInput = editingProduct.Price.ToString("0.####");
+            PriceInput = editingProduct.Price.ToString("N0");
             StockInput = editingProduct.StockQty.ToString();
+            if (editingProduct.PhotoPath is not null)
+            {
+                PhotoPreviewPath = System.IO.Path.Combine(AppContext.BaseDirectory, editingProduct.PhotoPath);
+            }
+        }
+    }
+
+    partial void OnPriceInputChanged(string value)
+    {
+        if (_isFormattingPrice) return;
+
+        string digitsOnly = new string(value.Where(char.IsDigit).ToArray());
+        string formatted = digitsOnly.Length == 0 ? string.Empty : decimal.Parse(digitsOnly).ToString("N0");
+
+        if (formatted != value)
+        {
+            _isFormattingPrice = true;
+            PriceInput = formatted;
+            _isFormattingPrice = false;
         }
     }
 
@@ -98,6 +119,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         if (path is not null)
         {
             _pickedPhotoFilePath = path;
+            PhotoPreviewPath = path;
         }
     }
 

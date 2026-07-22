@@ -7,6 +7,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
     </UserControl.Resources>
     <Grid Background="{DynamicResource MenuBackground}">
         <Grid.RowDefinitions>
@@ -37,6 +38,15 @@
                     </Border>
 
                     <TextBlock Text="상품 사진" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <Grid Width="120" Height="120" HorizontalAlignment="Left" Margin="0,0,0,10">
+                        <Border Background="{DynamicResource LoginBackground}" BorderBrush="{DynamicResource InputBorder}" BorderThickness="1"
+                                Visibility="{Binding PhotoPreviewPath, Converter={StaticResource InverseNullToVisibilityConverter}}">
+                            <TextBlock Text="사진 없음" FontSize="11" Foreground="{DynamicResource MutedText}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <Image Source="{Binding PhotoPreviewPath}" Stretch="UniformToFill"
+                               Visibility="{Binding PhotoPreviewPath, Converter={StaticResource NullToVisibilityConverter}}" />
+                    </Grid>
                     <Button Content="사진 선택" HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,16" Command="{Binding PickPhotoCommand}" />
 
                     <Grid Margin="0,0,0,14">

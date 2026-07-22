@@ -89,7 +89,7 @@ public class InventoryFormViewModelTests
         Assert.True(vm.IsEditMode);
         Assert.Equal("지렁이", vm.Name);
         Assert.Equal("8800000020001", vm.BarcodeInput);
-        Assert.Equal("5000", vm.PriceInput);
+        Assert.Equal("5,000", vm.PriceInput);
         Assert.Equal("10", vm.StockInput);
         Assert.Equal(editing.MajorCd, vm.MajorCd);
         Assert.Equal(editing.MinorCd, vm.MinorCd);
@@ -245,6 +245,84 @@ public class InventoryFormViewModelTests
 
         Assert.Null(vm.ErrorMessage);
         Assert.Single(products.SavedProducts);
+    }
+
+    [Fact]
+    public async Task LoadAsync_EditMode_WithPhotoPath_SetsPhotoPreviewPath()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001",
+            MajorCd = "FISH",
+            MinorCd = "BAIT",
+            PosCatCd = "BAIT",
+            Name = "지렁이",
+            Price = 5000,
+            StockQty = 10,
+            PhotoPath = "ProductPhotos/8800000020001.jpg",
+        };
+        var (vm, _, _, _, _, _, _) = CreateForEdit(editing);
+
+        await vm.LoadAsync();
+
+        Assert.EndsWith("ProductPhotos/8800000020001.jpg", vm.PhotoPreviewPath);
+    }
+
+    [Fact]
+    public async Task LoadAsync_EditMode_WithoutPhotoPath_LeavesPhotoPreviewPathNull()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001",
+            MajorCd = "FISH",
+            MinorCd = "BAIT",
+            PosCatCd = "BAIT",
+            Name = "지렁이",
+            Price = 5000,
+            StockQty = 10,
+        };
+        var (vm, _, _, _, _, _, _) = CreateForEdit(editing);
+
+        await vm.LoadAsync();
+
+        Assert.Null(vm.PhotoPreviewPath);
+    }
+
+    [Fact]
+    public async Task PickPhoto_SetsPhotoPreviewPathToPickedFile()
+    {
+        var (vm, _, _, _, photoPicker, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        photoPicker.NextPickedPath = @"C:\temp\shrimp.jpg";
+
+        vm.PickPhotoCommand.Execute(null);
+
+        Assert.Equal(@"C:\temp\shrimp.jpg", vm.PhotoPreviewPath);
+    }
+
+    [Fact]
+    public async Task PriceInput_WhenTypedAsPlainDigits_IsReformattedWithCommas()
+    {
+        var (vm, _, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+
+        vm.PriceInput = "1234000";
+
+        Assert.Equal("1,234,000", vm.PriceInput);
+    }
+
+    [Fact]
+    public async Task Save_WithCommaFormattedPrice_ParsesCorrectDecimalValue()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(3000m, saved.Price);
     }
 
     [Fact]
