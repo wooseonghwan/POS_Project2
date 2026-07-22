@@ -15,6 +15,15 @@ public class InventoryViewModelTests
         new Product { Barcode = "B2", MajorCd = "FISH", MinorCd = "TACKLE", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 5 },
     };
 
+    private static IReadOnlyList<Product> ManyProducts(int count) =>
+        Enumerable.Range(1, count)
+            .Select(i => new Product
+            {
+                Barcode = $"P{i:D3}", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT",
+                Name = $"상품{i:D3}", Price = 1000, StockQty = 1,
+            })
+            .ToList();
+
     private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
     {
         ["MAJOR"] = new[] { new CodeItem { Code = "FISH", Name = "낚시용품", SortNo = 1 } },
@@ -44,6 +53,17 @@ public class InventoryViewModelTests
         var products = new FakeProductRepository(SampleProducts());
         var vm = new InventoryViewModel(products, new FakeCodeRepository(SampleCodes()), session, navigation, mainMenu);
         return (vm, products, navigation, mainMenu);
+    }
+
+    private static InventoryViewModel CreateAdminWithProducts(IReadOnlyList<Product> products)
+    {
+        var session = new CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var mainMenu = DummyMainMenu(session, navigation);
+        return new InventoryViewModel(new FakeProductRepository(products), new FakeCodeRepository(SampleCodes()), session, navigation, mainMenu);
     }
 
     private static (InventoryViewModel vm, FakeProductRepository products, INavigationService navigation) CreateStaff()
@@ -327,5 +347,108 @@ public class InventoryViewModelTests
         Assert.NotNull(capturedProduct);
         Assert.Equal("B1", capturedProduct!.Barcode);
         Assert.Same(formVm, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WithMoreThanOnePageOfProducts_ShowsOnlyFirstPage()
+    {
+        var vm = CreateAdminWithProducts(ManyProducts(20));
+
+        await vm.LoadAsync();
+
+        Assert.Equal(15, vm.Rows.Count);
+        Assert.Equal("P001", vm.Rows[0].Barcode);
+        Assert.Equal(2, vm.TotalPages);
+        Assert.False(vm.CanGoToPreviousPage);
+        Assert.True(vm.CanGoToNextPage);
+    }
+
+    [Fact]
+    public async Task NextPage_ShowsRemainingProducts()
+    {
+        var vm = CreateAdminWithProducts(ManyProducts(20));
+        await vm.LoadAsync();
+
+        vm.NextPageCommand.Execute(null);
+
+        Assert.Equal(5, vm.Rows.Count);
+        Assert.Equal("P016", vm.Rows[0].Barcode);
+        Assert.True(vm.CanGoToPreviousPage);
+        Assert.False(vm.CanGoToNextPage);
+    }
+
+    [Fact]
+    public async Task NextPage_AtLastPage_DoesNothing()
+    {
+        var vm = CreateAdminWithProducts(ManyProducts(20));
+        await vm.LoadAsync();
+        vm.NextPageCommand.Execute(null);
+
+        vm.NextPageCommand.Execute(null);
+
+        Assert.Equal("P016", vm.Rows[0].Barcode);
+    }
+
+    [Fact]
+    public async Task PreviousPage_AtFirstPage_DoesNothing()
+    {
+        var vm = CreateAdminWithProducts(ManyProducts(20));
+        await vm.LoadAsync();
+
+        vm.PreviousPageCommand.Execute(null);
+
+        Assert.Equal("P001", vm.Rows[0].Barcode);
+    }
+
+    [Fact]
+    public async Task SearchText_ResetsToFirstPage()
+    {
+        var vm = CreateAdminWithProducts(ManyProducts(20));
+        await vm.LoadAsync();
+        vm.NextPageCommand.Execute(null);
+
+        vm.SearchText = "상품0";
+
+        Assert.Equal("P001", vm.Rows[0].Barcode);
+    }
+
+    [Fact]
+    public async Task SelectedCategoryOption_ResetsToFirstPage()
+    {
+        var vm = CreateAdminWithProducts(ManyProducts(20));
+        await vm.LoadAsync();
+        vm.NextPageCommand.Execute(null);
+
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+
+        Assert.Equal("P001", vm.Rows[0].Barcode);
+    }
+
+    [Fact]
+    public async Task ShowDetail_SetsDetailProductAndShowsPopup()
+    {
+        var (vm, _, _, _) = CreateAdmin();
+        await vm.LoadAsync();
+        var row = vm.Rows.Single(r => r.Barcode == "B1");
+
+        row.ShowDetailCommand.Execute(null);
+
+        Assert.True(vm.IsDetailVisible);
+        Assert.NotNull(vm.DetailProduct);
+        Assert.Equal("지렁이", vm.DetailProduct!.Name);
+        Assert.Equal("5,000원", vm.DetailProduct.PriceStr);
+    }
+
+    [Fact]
+    public async Task CloseDetail_HidesPopup()
+    {
+        var (vm, _, _, _) = CreateAdmin();
+        await vm.LoadAsync();
+        var row = vm.Rows.Single(r => r.Barcode == "B1");
+        row.ShowDetailCommand.Execute(null);
+
+        vm.CloseDetailCommand.Execute(null);
+
+        Assert.False(vm.IsDetailVisible);
     }
 }
