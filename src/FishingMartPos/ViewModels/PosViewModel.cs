@@ -292,7 +292,14 @@ public sealed partial class PosViewModel : ObservableObject
     private async Task PayAsync(string payType, string toastLabel)
     {
         if (!CanPay) return;
-        if (_cart.Lines.Count == 0) return;
+        if (_cart.Lines.Count == 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "결제할 항목이 존재하지 않습니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
 
         var header = new SaleHeader
         {
@@ -319,7 +326,14 @@ public sealed partial class PosViewModel : ObservableObject
     private async Task PayCardAsync(string payType)
     {
         if (!CanPay) return;
-        if (_cart.Lines.Count == 0) return;
+        if (_cart.Lines.Count == 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "결제할 항목이 존재하지 않습니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
 
         IsCardProcessing = true;
         IsToastWarning = false;

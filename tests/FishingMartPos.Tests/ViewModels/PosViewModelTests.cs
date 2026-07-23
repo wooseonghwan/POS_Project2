@@ -310,6 +310,42 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public async Task PayCard1_WithEmptyCart_ShowsWarningToast()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        Assert.True(vm.IsToastWarning);
+        Assert.Equal("결제할 항목이 존재하지 않습니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task PayCash_WithEmptyCart_ShowsWarningToast()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.PayCashCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsToastWarning);
+        Assert.Equal("결제할 항목이 존재하지 않습니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
     public async Task PayCard1_PassesPosCodePayTypeAndAmountToGateway()
     {
         var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
