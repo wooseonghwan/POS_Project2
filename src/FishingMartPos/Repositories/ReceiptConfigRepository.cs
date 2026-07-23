@@ -15,7 +15,7 @@ public sealed class ReceiptConfigRepository : IReceiptConfigRepository
 
     public async Task<ReceiptConfig?> GetAsync(string posCd)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT pos_cd AS PosCd, header_text AS HeaderText, footer_text AS FooterText
             FROM receipt_config_tb
@@ -27,7 +27,7 @@ public sealed class ReceiptConfigRepository : IReceiptConfigRepository
 
     public async Task SaveAsync(ReceiptConfig config)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             INSERT INTO receipt_config_tb (pos_cd, header_text, footer_text)
             VALUES (@PosCd, @HeaderText, @FooterText)

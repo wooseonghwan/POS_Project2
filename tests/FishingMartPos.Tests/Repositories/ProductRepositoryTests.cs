@@ -33,7 +33,7 @@ public class ProductRepositoryTests
         {
             await repository.DeactivateAsync(barcode);
 
-            using var connection = factory.CreateOpenConnection();
+            using var connection = await factory.CreateOpenConnectionAsync();
             string useYn = await connection.QuerySingleAsync<string>(
                 "SELECT use_yn FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
             Assert.Equal("N", useYn);
@@ -41,7 +41,7 @@ public class ProductRepositoryTests
         finally
         {
             // 정리: 다른 테스트(GetActive 등)에 영향 주지 않도록 원복
-            using var connection = factory.CreateOpenConnection();
+            using var connection = await factory.CreateOpenConnectionAsync();
             await connection.ExecuteAsync(
                 "UPDATE product_tb SET use_yn = 'Y' WHERE barcode = @Barcode", new { Barcode = barcode });
         }

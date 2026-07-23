@@ -22,7 +22,7 @@ public class ReceiptConfigRepositoryTests
     public async Task GetAsync_ReturnsNull_WhenNoRowExists()
     {
         var (repo, factory) = Create();
-        using var conn = factory.CreateOpenConnection();
+        using var conn = await factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync("DELETE FROM receipt_config_tb WHERE pos_cd = @PosCd", new { PosCd = TestPosCd });
 
         var result = await repo.GetAsync(TestPosCd);
@@ -34,7 +34,7 @@ public class ReceiptConfigRepositoryTests
     public async Task SaveAsync_ThenGetAsync_ReturnsSavedValues()
     {
         var (repo, factory) = Create();
-        using var conn = factory.CreateOpenConnection();
+        using var conn = await factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync("DELETE FROM receipt_config_tb WHERE pos_cd = @PosCd", new { PosCd = TestPosCd });
         try
         {
@@ -56,7 +56,7 @@ public class ReceiptConfigRepositoryTests
     public async Task SaveAsync_Twice_OverwritesExistingRow()
     {
         var (repo, factory) = Create();
-        using var conn = factory.CreateOpenConnection();
+        using var conn = await factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync("DELETE FROM receipt_config_tb WHERE pos_cd = @PosCd", new { PosCd = TestPosCd });
         try
         {

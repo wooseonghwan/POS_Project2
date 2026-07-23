@@ -15,7 +15,7 @@ public sealed class PrinterConfigRepository : IPrinterConfigRepository
 
     public async Task<PrinterConfig?> GetAsync(string posCd)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT pos_cd AS PosCd, printer_port AS PrinterPort, printer_name AS PrinterName,
                    CASE WHEN drawer_kick_enabled = 'Y' THEN 1 ELSE 0 END AS DrawerKickEnabled
@@ -28,7 +28,7 @@ public sealed class PrinterConfigRepository : IPrinterConfigRepository
 
     public async Task SaveAsync(PrinterConfig config)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             INSERT INTO printer_config_tb (pos_cd, printer_port, printer_name, drawer_kick_enabled)
             VALUES (@PosCd, @PrinterPort, @PrinterName, @DrawerKickEnabled)

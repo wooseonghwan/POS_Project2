@@ -15,7 +15,7 @@ public sealed class PosTerminalRepository : IPosTerminalRepository
 
     public async Task<IReadOnlyList<PosTerminal>> GetAllAsync()
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT pos_cd AS PosCode, pos_name AS PosName
             FROM pos_terminal_tb

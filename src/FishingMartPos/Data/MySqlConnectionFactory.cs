@@ -13,10 +13,10 @@ public sealed class MySqlConnectionFactory : IDbConnectionFactory
         _connectionString = config.ConnectionString;
     }
 
-    public IDbConnection CreateOpenConnection()
+    public async Task<IDbConnection> CreateOpenConnectionAsync()
     {
         var connection = new MySqlConnection(_connectionString);
-        connection.Open();
+        await connection.OpenAsync();
         return connection;
     }
 }

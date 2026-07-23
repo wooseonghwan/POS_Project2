@@ -15,7 +15,7 @@ public sealed class SystemInfoRepository : ISystemInfoRepository
 
     public async Task<SystemInfo?> GetAsync()
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT app_version AS AppVersion, db_version AS DbVersion
             FROM system_info_tb

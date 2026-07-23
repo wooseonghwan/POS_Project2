@@ -15,7 +15,7 @@ public sealed class CodeRepository : ICodeRepository
 
     public async Task<IReadOnlyList<CodeItem>> GetByGroupAsync(string codeGbn)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT code_cd AS Code, code_nm AS Name, sort_no AS SortNo
             FROM code_tb
@@ -29,7 +29,7 @@ public sealed class CodeRepository : ICodeRepository
 
     public async Task AddAsync(string codeGbn, string codeCd, string codeNm)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             INSERT INTO code_tb (code_gbn, code_cd, code_nm, sort_no)
             VALUES (@CodeGbn, @CodeCd, @CodeNm, 0)
@@ -39,7 +39,7 @@ public sealed class CodeRepository : ICodeRepository
 
     public async Task DeleteAsync(string codeGbn, string codeCd)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = "DELETE FROM code_tb WHERE code_gbn = @CodeGbn AND code_cd = @CodeCd";
         await connection.ExecuteAsync(sql, new { CodeGbn = codeGbn, CodeCd = codeCd });
     }

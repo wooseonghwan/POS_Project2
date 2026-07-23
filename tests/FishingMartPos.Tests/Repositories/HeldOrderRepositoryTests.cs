@@ -137,7 +137,7 @@ public class HeldOrderRepositoryTests
             // Simulate a row whose status has moved away from 'HELD' (e.g. after a future
             // RecallAsync/MarkRecalled operation), using a direct connection since no such
             // API exists yet.
-            using (var connection = factory.CreateOpenConnection())
+            using (var connection = await factory.CreateOpenConnectionAsync())
             {
                 await connection.ExecuteAsync(
                     "UPDATE held_order_tb SET status = 'RECALLED' WHERE hold_no = @HoldNo",

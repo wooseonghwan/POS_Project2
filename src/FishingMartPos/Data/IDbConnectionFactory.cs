@@ -4,5 +4,5 @@ namespace FishingMartPos.Data;
 
 public interface IDbConnectionFactory
 {
-    IDbConnection CreateOpenConnection();
+    Task<IDbConnection> CreateOpenConnectionAsync();
 }

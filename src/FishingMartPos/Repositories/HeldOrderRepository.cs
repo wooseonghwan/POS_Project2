@@ -15,7 +15,7 @@ public sealed class HeldOrderRepository : IHeldOrderRepository
 
     public async Task<long> HoldAsync(string posCd, string staffCd, IReadOnlyList<HeldOrderLine> lines)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         using var transaction = connection.BeginTransaction();
 
         const string insertHeaderSql = """
@@ -25,24 +25,28 @@ public sealed class HeldOrderRepository : IHeldOrderRepository
         await connection.ExecuteAsync(insertHeaderSql, new { PosCd = posCd, StaffCd = staffCd }, transaction);
         long holdNo = await connection.QuerySingleAsync<long>("SELECT LAST_INSERT_ID()", transaction: transaction);
 
-        const string insertLineSql = """
-            INSERT INTO held_order_detail_tb (hold_no, line_no, barcode, product_name, qty, unit_price)
-            VALUES (@HoldNo, @LineNo, @Barcode, @ProductName, @Qty, @UnitPrice)
-            """;
-
-        int lineNo = 1;
-        foreach (var line in lines)
+        if (lines.Count > 0)
         {
-            await connection.ExecuteAsync(insertLineSql, new
+            var lineParams = new DynamicParameters();
+            lineParams.Add("HoldNo", holdNo);
+            var valueRows = new List<string>(lines.Count);
+            int lineNo = 1;
+            foreach (var line in lines)
             {
-                HoldNo = holdNo,
-                LineNo = lineNo,
-                line.Barcode,
-                line.ProductName,
-                line.Qty,
-                line.UnitPrice,
-            }, transaction);
-            lineNo++;
+                valueRows.Add($"(@HoldNo, @LineNo{lineNo}, @Barcode{lineNo}, @ProductName{lineNo}, @Qty{lineNo}, @UnitPrice{lineNo})");
+                lineParams.Add($"LineNo{lineNo}", lineNo);
+                lineParams.Add($"Barcode{lineNo}", line.Barcode);
+                lineParams.Add($"ProductName{lineNo}", line.ProductName);
+                lineParams.Add($"Qty{lineNo}", line.Qty);
+                lineParams.Add($"UnitPrice{lineNo}", line.UnitPrice);
+                lineNo++;
+            }
+
+            string insertLineSql = $"""
+                INSERT INTO held_order_detail_tb (hold_no, line_no, barcode, product_name, qty, unit_price)
+                VALUES {string.Join(", ", valueRows)}
+                """;
+            await connection.ExecuteAsync(insertLineSql, lineParams, transaction);
         }
 
         transaction.Commit();
@@ -51,7 +55,7 @@ public sealed class HeldOrderRepository : IHeldOrderRepository
 
     public async Task<IReadOnlyList<(long HoldNo, DateTime HeldAt, decimal Total)>> GetHeldAsync(string posCd)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT h.hold_no AS HoldNo, h.held_at AS HeldAt,
                    COALESCE(SUM(d.qty * d.unit_price), 0) AS Total
@@ -68,7 +72,7 @@ public sealed class HeldOrderRepository : IHeldOrderRepository
 
     public async Task<IReadOnlyList<HeldOrderLine>> GetLinesAsync(long holdNo)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT barcode AS Barcode, product_name AS ProductName, qty AS Qty, unit_price AS UnitPrice
             FROM held_order_detail_tb
@@ -82,7 +86,7 @@ public sealed class HeldOrderRepository : IHeldOrderRepository
 
     public async Task DeleteAsync(long holdNo)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         using var transaction = connection.BeginTransaction();
         await connection.ExecuteAsync("DELETE FROM held_order_detail_tb WHERE hold_no = @HoldNo", new { HoldNo = holdNo }, transaction);
         await connection.ExecuteAsync("DELETE FROM held_order_tb WHERE hold_no = @HoldNo", new { HoldNo = holdNo }, transaction);

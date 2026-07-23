@@ -18,7 +18,7 @@ public sealed class StaffRepository : IStaffRepository
     {
         string pinHash = PinHasher.Hash(pin);
 
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT staff_cd AS StaffCode, staff_name AS StaffName, role AS Role, use_yn AS UseYn
             FROM staff_tb
@@ -31,7 +31,7 @@ public sealed class StaffRepository : IStaffRepository
 
     public async Task<IReadOnlyList<Staff>> GetAllAsync()
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT staff_cd AS StaffCode, staff_name AS StaffName, role AS Role, use_yn AS UseYn
             FROM staff_tb
@@ -45,7 +45,7 @@ public sealed class StaffRepository : IStaffRepository
     public async Task CreateAsync(Staff staff, string pin)
     {
         string pinHash = PinHasher.Hash(pin);
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             INSERT INTO staff_tb (staff_cd, staff_name, pin_hash, role, use_yn)
             VALUES (@StaffCode, @StaffName, @PinHash, @Role, @UseYn)
@@ -55,7 +55,7 @@ public sealed class StaffRepository : IStaffRepository
 
     public async Task UpdateAsync(Staff staff, string? newPin)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         if (string.IsNullOrWhiteSpace(newPin))
         {
             const string sql = """

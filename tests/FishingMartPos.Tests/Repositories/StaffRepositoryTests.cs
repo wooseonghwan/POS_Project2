@@ -56,7 +56,7 @@ public class StaffRepositoryTests
         var factory = new MySqlConnectionFactory(config);
         const string testCode = "TESTSTF";
 
-        using var conn = factory.CreateOpenConnection();
+        using var conn = await factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync("DELETE FROM staff_tb WHERE staff_cd = @Code", new { Code = testCode });
         try
         {
@@ -84,7 +84,7 @@ public class StaffRepositoryTests
         var factory = new MySqlConnectionFactory(config);
         const string testCode = "TESTSTF";
 
-        using var conn = factory.CreateOpenConnection();
+        using var conn = await factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync("DELETE FROM staff_tb WHERE staff_cd = @Code", new { Code = testCode });
         try
         {
@@ -118,7 +118,7 @@ public class StaffRepositoryTests
         var factory = new MySqlConnectionFactory(config);
         const string testCode = "TESTSTF";
 
-        using var conn = factory.CreateOpenConnection();
+        using var conn = await factory.CreateOpenConnectionAsync();
         await conn.ExecuteAsync("DELETE FROM staff_tb WHERE staff_cd = @Code", new { Code = testCode });
         try
         {

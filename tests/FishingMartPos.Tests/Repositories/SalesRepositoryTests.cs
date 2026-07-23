@@ -17,7 +17,7 @@ public class SalesRepositoryTests
         ISalesRepository repository = new SalesRepository(factory);
 
         int stockBefore;
-        using (var conn = factory.CreateOpenConnection())
+        using (var conn = await factory.CreateOpenConnectionAsync())
         {
             stockBefore = await conn.QuerySingleAsync<int>(
                 "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = "8800000020001" });
@@ -37,7 +37,7 @@ public class SalesRepositoryTests
 
         Assert.True(saleNo > 0);
 
-        using var verifyConn = factory.CreateOpenConnection();
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
         var savedHeader = await verifyConn.QuerySingleAsync<(decimal TotalAmt, string PayType)>(
             "SELECT total_amt AS TotalAmt, pay_type AS PayType FROM sales_header_tb WHERE sale_no = @SaleNo",
             new { SaleNo = saleNo });
@@ -72,7 +72,7 @@ public class SalesRepositoryTests
 
         int stockBefore1;
         int stockBefore2;
-        using (var conn = factory.CreateOpenConnection())
+        using (var conn = await factory.CreateOpenConnectionAsync())
         {
             stockBefore1 = await conn.QuerySingleAsync<int>(
                 "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode1 });
@@ -95,7 +95,7 @@ public class SalesRepositoryTests
 
         Assert.True(saleNo > 0);
 
-        using var verifyConn = factory.CreateOpenConnection();
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
         try
         {
             var savedHeader = await verifyConn.QuerySingleAsync<(decimal TotalAmt, string PayType)>(
@@ -149,7 +149,7 @@ public class SalesRepositoryTests
         int stockBefore1;
         int saleCountBefore;
         long maxSaleNoBefore;
-        using (var conn = factory.CreateOpenConnection())
+        using (var conn = await factory.CreateOpenConnectionAsync())
         {
             stockBefore1 = await conn.QuerySingleAsync<int>(
                 "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode1 });
@@ -173,7 +173,7 @@ public class SalesRepositoryTests
         {
             await Assert.ThrowsAnyAsync<Exception>(() => repository.CreateSaleAsync(header, lines));
 
-            using var verifyConn = factory.CreateOpenConnection();
+            using var verifyConn = await factory.CreateOpenConnectionAsync();
 
             int saleCountAfter = await verifyConn.QuerySingleAsync<int>("SELECT COUNT(*) FROM sales_header_tb");
             Assert.Equal(saleCountBefore, saleCountAfter);
@@ -186,7 +186,7 @@ public class SalesRepositoryTests
         {
             // 안전망: 혹시라도 커밋된 데이터가 있다면(기대와 다르게) 원상 복구한다.
             // 정상 시나리오에서는 트랜잭션이 롤백되어 새로 생긴 sale_no가 없어야 하므로 아래는 실질적으로 no-op이다.
-            using var cleanupConn = factory.CreateOpenConnection();
+            using var cleanupConn = await factory.CreateOpenConnectionAsync();
             await cleanupConn.ExecuteAsync(
                 "DELETE FROM sales_detail_tb WHERE sale_no > @MaxSaleNoBefore", new { MaxSaleNoBefore = maxSaleNoBefore });
             await cleanupConn.ExecuteAsync(
@@ -206,7 +206,7 @@ public class SalesRepositoryTests
 
         const string barcode = "8800000020001";
         int stockBefore;
-        using (var conn = factory.CreateOpenConnection())
+        using (var conn = await factory.CreateOpenConnectionAsync())
         {
             stockBefore = await conn.QuerySingleAsync<int>(
                 "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
@@ -230,7 +230,7 @@ public class SalesRepositoryTests
             new SaleHeader { PosCd = "1", SaleDt = inRangeDate, StaffCd = "ADMIN1", TotalAmt = 4000, PayType = "CASH" },
             lines);
 
-        using var verifyConn = factory.CreateOpenConnection();
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
         try
         {
             await verifyConn.ExecuteAsync(

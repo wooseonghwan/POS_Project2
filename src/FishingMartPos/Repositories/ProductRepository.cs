@@ -15,7 +15,7 @@ public sealed class ProductRepository : IProductRepository
 
     public async Task<IReadOnlyList<Product>> GetActiveAsync()
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT barcode AS Barcode, major_cd AS MajorCd, minor_cd AS MinorCd, poscat_cd AS PosCatCd,
                    name AS Name, price AS Price, stock_qty AS StockQty, photo_path AS PhotoPath
@@ -30,14 +30,14 @@ public sealed class ProductRepository : IProductRepository
 
     public async Task DeactivateAsync(string barcode)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = "UPDATE product_tb SET use_yn = 'N' WHERE barcode = @Barcode";
         await connection.ExecuteAsync(sql, new { Barcode = barcode });
     }
 
     public async Task SaveAsync(Product product)
     {
-        using var connection = _connectionFactory.CreateOpenConnection();
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             INSERT INTO product_tb (barcode, major_cd, minor_cd, poscat_cd, name, price, stock_qty, photo_path, use_yn)
             VALUES (@Barcode, @MajorCd, @MinorCd, @PosCatCd, @Name, @Price, @StockQty, @PhotoPath, 'Y')
