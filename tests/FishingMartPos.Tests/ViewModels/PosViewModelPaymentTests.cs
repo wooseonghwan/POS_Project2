@@ -31,7 +31,14 @@ public class PosViewModelPaymentTests
 
         return new PosViewModel(
             new FakeProductRepository(new[] { Bait1 }), new FakeCodeRepository(codes),
-            sales, held, new FakeDelayProvider(), session, navigation, mainMenuViewModel);
+            sales, held, new FakeDelayProvider(), session, navigation, mainMenuViewModel,
+            new FakeVanPaymentGateway(new VanApprovalResult
+            {
+                IsApproved = true,
+                ApprovalNo = "20260723120000",
+                VanCode = "KICC",
+                ResponseMessage = "카드 결제 완료",
+            }));
     }
 
     [Fact]
@@ -58,33 +65,6 @@ public class PosViewModelPaymentTests
         Assert.Equal("CASH", sale.Header.PayType);
         Assert.Equal(5000, sale.Header.TotalAmt);
         Assert.Empty(vm.CartLines);
-    }
-
-    [Fact]
-    public async Task PayCard1_RecordsCard1PayTypeWithNullVanCode()
-    {
-        var vm = CreateViewModel(out var sales, out _);
-        await vm.LoadAsync();
-        vm.VisibleProducts[0].AddCommand.Execute(null);
-
-        await vm.PayCard1Command.ExecuteAsync(null);
-
-        var sale = Assert.Single(sales.CreatedSales);
-        Assert.Equal("CARD1", sale.Header.PayType);
-        Assert.Null(sale.Header.VanCode);
-    }
-
-    [Fact]
-    public async Task PayCard2_RecordsCard2PayType()
-    {
-        var vm = CreateViewModel(out var sales, out _);
-        await vm.LoadAsync();
-        vm.VisibleProducts[0].AddCommand.Execute(null);
-
-        await vm.PayCard2Command.ExecuteAsync(null);
-
-        var sale = Assert.Single(sales.CreatedSales);
-        Assert.Equal("CARD2", sale.Header.PayType);
     }
 
     [Fact]

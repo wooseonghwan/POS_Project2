@@ -26,7 +26,14 @@ public class MainMenuViewModelTests
             new FakeDelayProvider(),
             session,
             navigation,
-            new MainMenuViewModel(session, navigation));
+            new MainMenuViewModel(session, navigation),
+            new FakeVanPaymentGateway(new VanApprovalResult
+            {
+                IsApproved = true,
+                ApprovalNo = "20260723120000",
+                VanCode = "KICC",
+                ResponseMessage = "카드 결제 완료",
+            }));
 
         Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory = _ => Task.FromResult(posViewModel);
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory = mainMenu =>

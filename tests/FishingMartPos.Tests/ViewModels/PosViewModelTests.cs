@@ -18,6 +18,14 @@ public class PosViewModelTests
         Barcode = "F1", MajorCd = "FISH", MinorCd = "TACKLE", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 50
     };
 
+    private static readonly VanApprovalResult ApprovedResult = new()
+    {
+        IsApproved = true,
+        ApprovalNo = "20260723120000",
+        VanCode = "KICC",
+        ResponseMessage = "카드 결제 완료",
+    };
+
     private static PosViewModel CreateViewModel(out FakeSalesRepository sales, out FakeHeldOrderRepository held) =>
         CreateViewModel(out sales, out held, out _, out _);
 
@@ -25,7 +33,8 @@ public class PosViewModelTests
         out FakeSalesRepository sales,
         out FakeHeldOrderRepository held,
         out INavigationService navigation,
-        out MainMenuViewModel mainMenuViewModel)
+        out MainMenuViewModel mainMenuViewModel,
+        IVanPaymentGateway? vanGateway = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -52,7 +61,8 @@ public class PosViewModelTests
             new FakeDelayProvider(),
             session,
             navigation,
-            mainMenuViewModel);
+            mainMenuViewModel,
+            vanGateway ?? new FakeVanPaymentGateway(ApprovedResult));
     }
 
     [Fact]
@@ -276,6 +286,114 @@ public class PosViewModelTests
         vm.GoToMainMenuCommand.Execute(null);
 
         Assert.Same(mainMenuViewModel, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public void CanPay_DefaultsToTrue()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        Assert.True(vm.CanPay);
+    }
+
+    [Fact]
+    public async Task PayCard1_WithEmptyCart_DoesNotCallGatewayOrCreateSale()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        Assert.Empty(vanGateway.Requests);
+        Assert.Empty(sales.CreatedSales);
+    }
+
+    [Fact]
+    public async Task PayCard1_PassesPosCodePayTypeAndAmountToGateway()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // 5,000원
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        var request = Assert.Single(vanGateway.Requests);
+        Assert.Equal("1", request.PosCode);
+        Assert.Equal("CARD1", request.PayType);
+        Assert.Equal(5000m, request.Amount);
+    }
+
+    [Fact]
+    public async Task PayCard1_WhenApproved_CreatesSaleWithVanFieldsAndResetsCart()
+    {
+        var vanGateway = new FakeVanPaymentGateway(new VanApprovalResult
+        {
+            IsApproved = true,
+            ApprovalNo = "20260723999999",
+            VanCode = "KICC",
+            ResponseMessage = "카드 결제 완료",
+        });
+        var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        var (header, _) = Assert.Single(sales.CreatedSales);
+        Assert.Equal("CARD1", header.PayType);
+        Assert.Equal("20260723999999", header.VanApprovalNo);
+        Assert.Equal("KICC", header.VanCode);
+        Assert.Empty(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task PayCard2_WhenDeclined_DoesNotCreateSaleAndKeepsCartWithWarningToast()
+    {
+        var vanGateway = new FakeVanPaymentGateway(new VanApprovalResult
+        {
+            IsApproved = false,
+            ApprovalNo = null,
+            VanCode = null,
+            ResponseMessage = "한도초과",
+        });
+        var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.PayCard2Command.ExecuteAsync(null);
+
+        Assert.Empty(sales.CreatedSales);
+        Assert.Single(vm.CartLines);
+        Assert.True(vm.IsToastWarning);
+        Assert.Contains("한도초과", toastValues);
+    }
+
+    [Fact]
+    public async Task PayCard1_TogglesIsCardProcessingDuringPaymentAndClearsItAfterward()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        var processingValues = new List<bool>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.IsCardProcessing))
+                processingValues.Add(vm.IsCardProcessing);
+        };
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        Assert.Contains(true, processingValues);
+        Assert.False(vm.IsCardProcessing);
     }
 
     [Fact]

@@ -46,7 +46,14 @@ public class LoginViewModelTests
             new FakeDelayProvider(),
             session,
             navigation,
-            mainMenu));
+            mainMenu,
+            new FakeVanPaymentGateway(new VanApprovalResult
+            {
+                IsApproved = true,
+                ApprovalNo = "20260723120000",
+                VanCode = "KICC",
+                ResponseMessage = "카드 결제 완료",
+            })));
 
     private static Func<MainMenuViewModel, Task<InventoryViewModel>> CreateDummyInventoryViewModelFactory(
         ICurrentSession session, INavigationService navigation) =>

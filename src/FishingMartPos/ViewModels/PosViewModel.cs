@@ -20,6 +20,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly ICurrentSession _session;
     private readonly INavigationService _navigation;
     private readonly MainMenuViewModel _mainMenuViewModel;
+    private readonly IVanPaymentGateway _vanGateway;
     private readonly Cart _cart = new();
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
@@ -44,6 +45,10 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isHeldListVisible;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanPay))]
+    private bool _isCardProcessing;
+
+    [ObservableProperty]
     private bool _isRecallConfirmVisible;
 
     [ObservableProperty]
@@ -65,7 +70,8 @@ public sealed partial class PosViewModel : ObservableObject
         IDelayProvider delay,
         ICurrentSession session,
         INavigationService navigation,
-        MainMenuViewModel mainMenuViewModel)
+        MainMenuViewModel mainMenuViewModel,
+        IVanPaymentGateway vanGateway)
     {
         _productRepository = productRepository;
         _codeRepository = codeRepository;
@@ -75,7 +81,10 @@ public sealed partial class PosViewModel : ObservableObject
         _session = session;
         _navigation = navigation;
         _mainMenuViewModel = mainMenuViewModel;
+        _vanGateway = vanGateway;
     }
+
+    public bool CanPay => !IsCardProcessing;
 
     public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
     public string TotalQtyStr => _cart.TotalQty.ToString("N0");
@@ -270,13 +279,19 @@ public sealed partial class PosViewModel : ObservableObject
     private async Task PayCash() => await PayAsync("CASH", "현금 결제 완료");
 
     [RelayCommand]
-    private async Task PayCard1() => await PayAsync("CARD1", "카드 결제 완료");
+    private async Task PayCard1() => await PayCardAsync("CARD1");
 
     [RelayCommand]
-    private async Task PayCard2() => await PayAsync("CARD2", "카드 결제 완료");
+    private async Task PayCard2() => await PayCardAsync("CARD2");
+
+    private List<SaleDetailLine> BuildDetailLines() =>
+        _cart.Lines
+            .Select(l => new SaleDetailLine { Barcode = l.Barcode, ProductName = l.Name, Qty = l.Qty, UnitPrice = l.Price })
+            .ToList();
 
     private async Task PayAsync(string payType, string toastLabel)
     {
+        if (!CanPay) return;
         if (_cart.Lines.Count == 0) return;
 
         var header = new SaleHeader
@@ -291,17 +306,64 @@ public sealed partial class PosViewModel : ObservableObject
             VanApprovalNo = null,
             VanCode = null,
         };
-        var lines = _cart.Lines
-            .Select(l => new SaleDetailLine { Barcode = l.Barcode, ProductName = l.Name, Qty = l.Qty, UnitPrice = l.Price })
-            .ToList();
 
-        await _salesRepository.CreateSaleAsync(header, lines);
+        await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
 
         IsToastWarning = false;
         ToastMessage = toastLabel;
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));
         ToastMessage = null;
         ResetOrder();
+    }
+
+    private async Task PayCardAsync(string payType)
+    {
+        if (!CanPay) return;
+        if (_cart.Lines.Count == 0) return;
+
+        IsCardProcessing = true;
+        IsToastWarning = false;
+        ToastMessage = "카드 결제 처리 중...";
+        try
+        {
+            var result = await _vanGateway.RequestApprovalAsync(
+                new VanApprovalRequest(_session.CurrentTerminal!.PosCode, payType, _cart.Total));
+
+            if (result.IsApproved)
+            {
+                var header = new SaleHeader
+                {
+                    PosCd = _session.CurrentTerminal!.PosCode,
+                    SaleDt = DateTime.Now,
+                    StaffCd = _session.CurrentStaff!.StaffCode,
+                    TotalAmt = _cart.Total,
+                    PayType = payType,
+                    CashReceived = null,
+                    ChangeAmt = null,
+                    VanApprovalNo = result.ApprovalNo,
+                    VanCode = result.VanCode,
+                };
+
+                await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
+
+                IsToastWarning = false;
+                ToastMessage = result.ResponseMessage;
+                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+                ToastMessage = null;
+                ResetOrder();
+            }
+            else
+            {
+                IsToastWarning = true;
+                ToastMessage = result.ResponseMessage;
+                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+                ToastMessage = null;
+            }
+        }
+        finally
+        {
+            IsCardProcessing = false;
+        }
     }
 
     [RelayCommand]
