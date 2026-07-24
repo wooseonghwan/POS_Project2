@@ -11,6 +11,11 @@ public sealed class KiccPosClient : IKiccPosClient
     private readonly int _port;
     private readonly int _baud;
 
+    static KiccPosClient()
+    {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+    }
+
     public KiccPosClient(int port, int baud)
     {
         _port = port;
@@ -45,7 +50,7 @@ public sealed class KiccPosClient : IKiccPosClient
 
         if (ret == -2) return KiccRawResponse.Failure("응답 시간 초과");
         if (ret == -3) return KiccRawResponse.Failure("고객이 결제를 취소했습니다");
-        if (ret != 0) return KiccRawResponse.Failure(Encoding.Default.GetString(err).TrimEnd('\0'));
+        if (ret != 0) return KiccRawResponse.Failure(Encoding.GetEncoding(949).GetString(err).TrimEnd('\0'));
 
         for (int attempt = 0; attempt < MaxPollAttempts; attempt++)
         {
@@ -55,7 +60,7 @@ public sealed class KiccPosClient : IKiccPosClient
             int len = KGetEvent(ref c, ref g, ref j, ref rcd, rData, rHex);
             if (len > 0)
             {
-                var text = Encoding.Default.GetString(rData).TrimEnd('\0');
+                var text = Encoding.GetEncoding(949).GetString(rData).TrimEnd('\0');
                 return rcd == 0x00 ? KiccRawResponse.Success(text) : KiccRawResponse.Failure(text);
             }
             await Task.Delay(PollIntervalMs);
