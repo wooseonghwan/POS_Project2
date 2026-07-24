@@ -5,6 +5,7 @@ using FishingMartPos.Models;
 using FishingMartPos.Navigation;
 using FishingMartPos.Repositories;
 using FishingMartPos.Services;
+using FishingMartPos.Services.Kicc;
 using FishingMartPos.Theme;
 using FishingMartPos.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,7 @@ namespace FishingMartPos;
 public partial class App : Application
 {
     private ServiceProvider? _services;
+    private IKiccPosClient? _kiccPosClient;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -40,6 +42,7 @@ public partial class App : Application
         services.AddSingleton<ISystemInfoRepository, SystemInfoRepository>();
         services.AddSingleton<ISalesRepository, SalesRepository>();
         services.AddSingleton<IHeldOrderRepository, HeldOrderRepository>();
+        services.AddSingleton<IVanConfigRepository, VanConfigRepository>();
         services.AddSingleton<IDelayProvider, DelayProvider>();
         services.AddSingleton<IVanOutcomeProvider, RandomVanOutcomeProvider>();
         // 실제 KICC 로컬 에이전트 연동 시 IVanPaymentGateway 구현체만 교체(예: KiccVanPaymentGateway)
@@ -58,17 +61,32 @@ public partial class App : Application
         var codeRepository = _services.GetRequiredService<ICodeRepository>();
         var salesRepository = _services.GetRequiredService<ISalesRepository>();
         var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
+        var vanConfigRepository = _services.GetRequiredService<IVanConfigRepository>();
         var printerConfigRepository = _services.GetRequiredService<IPrinterConfigRepository>();
         var receiptConfigRepository = _services.GetRequiredService<IReceiptConfigRepository>();
         var systemInfoRepository = _services.GetRequiredService<ISystemInfoRepository>();
         var delayProvider = _services.GetRequiredService<IDelayProvider>();
-        var vanGateway = _services.GetRequiredService<IVanPaymentGateway>();
+        IVanPaymentGateway vanGateway = _services.GetRequiredService<IVanPaymentGateway>(); // StubVanPaymentGateway (기본값)
+        IKiccPosClient? kiccPosClient = null;
+        if (config.KiccUseRealGateway)
+        {
+            var merchantRows = await vanConfigRepository.GetByPosCodeAsync(config.PosCode);
+            var merchantsByPayType = merchantRows.ToDictionary(
+                r => r.PayType,
+                r => new KiccMerchantConfig(r.PayType, r.TerminalId ?? string.Empty, r.BusinessNo ?? string.Empty));
+
+            var realClient = new KiccPosClient(config.KiccComPort, config.KiccBaudRate);
+            await realClient.ConnectAsync(); // 연결 실패해도 앱은 계속 기동 — 카드결제 시점에 자연스럽게 실패 처리됨
+            kiccPosClient = realClient;
+            vanGateway = new KiccVanPaymentGateway(realClient, merchantsByPayType);
+        }
+        _kiccPosClient = kiccPosClient;
         var photoPicker = _services.GetRequiredService<IPhotoPicker>();
         var photoStorage = _services.GetRequiredService<IProductPhotoStorage>();
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, kiccPosClient);
             await vm.LoadAsync();
             return vm;
         }
@@ -150,6 +168,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _kiccPosClient?.Disconnect();
         _services?.Dispose();
         base.OnExit(e);
     }

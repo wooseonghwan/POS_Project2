@@ -6,6 +6,7 @@ using FishingMartPos.Models;
 using FishingMartPos.Navigation;
 using FishingMartPos.Repositories;
 using FishingMartPos.Services;
+using FishingMartPos.Services.Kicc;
 using FishingMartPos.Theme;
 
 namespace FishingMartPos.ViewModels;
@@ -21,6 +22,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly MainMenuViewModel _mainMenuViewModel;
     private readonly IVanPaymentGateway _vanGateway;
+    private readonly IKiccPosClient? _kiccPosClient;
     private readonly Cart _cart = new();
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
@@ -71,7 +73,8 @@ public sealed partial class PosViewModel : ObservableObject
         ICurrentSession session,
         INavigationService navigation,
         MainMenuViewModel mainMenuViewModel,
-        IVanPaymentGateway vanGateway)
+        IVanPaymentGateway vanGateway,
+        IKiccPosClient? kiccPosClient = null)
     {
         _productRepository = productRepository;
         _codeRepository = codeRepository;
@@ -82,6 +85,7 @@ public sealed partial class PosViewModel : ObservableObject
         _navigation = navigation;
         _mainMenuViewModel = mainMenuViewModel;
         _vanGateway = vanGateway;
+        _kiccPosClient = kiccPosClient;
     }
 
     public bool CanPay => !IsCardProcessing;
@@ -378,6 +382,22 @@ public sealed partial class PosViewModel : ObservableObject
         {
             IsCardProcessing = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task OpenCashDrawer()
+    {
+        if (!CanPay) return;
+        if (_kiccPosClient is null)
+        {
+            IsToastWarning = true;
+            ToastMessage = "돈통 연동은 지원 예정입니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
+        await _kiccPosClient.RequestAsync(0xFB, 0x14, 0x0B, "");
     }
 
     [RelayCommand]

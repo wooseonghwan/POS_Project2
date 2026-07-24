@@ -1,6 +1,7 @@
 using FishingMartPos.Models;
 using FishingMartPos.Navigation;
 using FishingMartPos.Services;
+using FishingMartPos.Services.Kicc;
 using FishingMartPos.Tests.Fakes;
 using FishingMartPos.ViewModels;
 using Xunit;
@@ -34,7 +35,8 @@ public class PosViewModelTests
         out FakeHeldOrderRepository held,
         out INavigationService navigation,
         out MainMenuViewModel mainMenuViewModel,
-        IVanPaymentGateway? vanGateway = null)
+        IVanPaymentGateway? vanGateway = null,
+        IKiccPosClient? kiccPosClient = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -62,7 +64,8 @@ public class PosViewModelTests
             session,
             navigation,
             mainMenuViewModel,
-            vanGateway ?? new FakeVanPaymentGateway(ApprovedResult));
+            vanGateway ?? new FakeVanPaymentGateway(ApprovedResult),
+            kiccPosClient);
     }
 
     [Fact]
@@ -498,5 +501,38 @@ public class PosViewModelTests
         vm.ScanBarcodeCommand.Execute(string.Empty);
 
         Assert.Empty(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task OpenCashDrawer_WhenNoKiccClientConfigured_ShowsNotSupportedToast()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.OpenCashDrawerCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsToastWarning);
+        Assert.Equal("돈통 연동은 지원 예정입니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task OpenCashDrawer_WhenKiccClientConfigured_SendsCashDrawerCommand()
+    {
+        var fakeClient = new FakeKiccPosClient(KiccRawResponse.Success(""));
+        var vm = CreateViewModel(out _, out _, out _, out _, kiccPosClient: fakeClient);
+        await vm.LoadAsync();
+
+        await vm.OpenCashDrawerCommand.ExecuteAsync(null);
+
+        var req = Assert.Single(fakeClient.Requests);
+        Assert.Equal(0xFB, req.Cmd);
+        Assert.Equal(0x14, req.Gcd);
+        Assert.Equal(0x0B, req.Jcd);
     }
 }
