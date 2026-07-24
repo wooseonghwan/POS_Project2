@@ -30,4 +30,15 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Native\Kicc.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Kicc.dll</Link>
+    </None>
+    <None Include="Native\KiccPos.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>KiccPos.dll</Link>
+    </None>
+  </ItemGroup>
+
 </Project>
