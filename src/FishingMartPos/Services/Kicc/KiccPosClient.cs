@@ -36,35 +36,58 @@ public sealed class KiccPosClient : IKiccPosClient
 
     public Task<bool> ConnectAsync() => Task.Run(() =>
     {
-        var err = new byte[4096];
-        int ret = KLoad(_port, _baud, err);
-        return ret == 0;
+        try
+        {
+            var err = new byte[4096];
+            int ret = KLoad(_port, _baud, err);
+            return ret == 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     });
 
-    public void Disconnect() => KUnLoad();
+    public void Disconnect()
+    {
+        try
+        {
+            KUnLoad();
+        }
+        catch (Exception)
+        {
+        }
+    }
 
     public async Task<KiccRawResponse> RequestAsync(int cmd, int gcd, int jcd, string sendData)
     {
-        var err = new byte[4096];
-        int ret = await Task.Run(() => KReqCmd(cmd, gcd, jcd, sendData, err));
-
-        if (ret == -2) return KiccRawResponse.Failure("응답 시간 초과");
-        if (ret == -3) return KiccRawResponse.Failure("고객이 결제를 취소했습니다");
-        if (ret != 0) return KiccRawResponse.Failure(Encoding.GetEncoding(949).GetString(err).TrimEnd('\0'));
-
-        for (int attempt = 0; attempt < MaxPollAttempts; attempt++)
+        try
         {
-            int c = 0, g = 0, j = 0, rcd = 0;
-            var rData = new byte[2048];
-            var rHex = new byte[4096];
-            int len = KGetEvent(ref c, ref g, ref j, ref rcd, rData, rHex);
-            if (len > 0)
+            var err = new byte[4096];
+            int ret = await Task.Run(() => KReqCmd(cmd, gcd, jcd, sendData, err));
+
+            if (ret == -2) return KiccRawResponse.Failure("응답 시간 초과");
+            if (ret == -3) return KiccRawResponse.Failure("고객이 결제를 취소했습니다");
+            if (ret != 0) return KiccRawResponse.Failure(Encoding.GetEncoding(949).GetString(err).TrimEnd('\0'));
+
+            for (int attempt = 0; attempt < MaxPollAttempts; attempt++)
             {
-                var text = Encoding.GetEncoding(949).GetString(rData).TrimEnd('\0');
-                return rcd == 0x00 ? KiccRawResponse.Success(text) : KiccRawResponse.Failure(text);
+                int c = 0, g = 0, j = 0, rcd = 0;
+                var rData = new byte[2048];
+                var rHex = new byte[4096];
+                int len = KGetEvent(ref c, ref g, ref j, ref rcd, rData, rHex);
+                if (len > 0)
+                {
+                    var text = Encoding.GetEncoding(949).GetString(rData).TrimEnd('\0');
+                    return rcd == 0x00 ? KiccRawResponse.Success(text) : KiccRawResponse.Failure(text);
+                }
+                await Task.Delay(PollIntervalMs);
             }
-            await Task.Delay(PollIntervalMs);
+            return KiccRawResponse.Failure("응답 시간 초과");
         }
-        return KiccRawResponse.Failure("응답 시간 초과");
+        catch (Exception)
+        {
+            return KiccRawResponse.Failure("단말기 통신 오류");
+        }
     }
 }

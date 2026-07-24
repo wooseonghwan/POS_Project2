@@ -397,7 +397,22 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
-        await _kiccPosClient.RequestAsync(0xFB, 0x14, 0x0B, "");
+        IsCardProcessing = true;
+        try
+        {
+            var result = await _kiccPosClient.RequestAsync(0xFB, 0x14, 0x0B, "");
+            if (!result.IsSuccess)
+            {
+                IsToastWarning = true;
+                ToastMessage = "돈통 열기에 실패했습니다";
+                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+                ToastMessage = null;
+            }
+        }
+        finally
+        {
+            IsCardProcessing = false;
+        }
     }
 
     [RelayCommand]

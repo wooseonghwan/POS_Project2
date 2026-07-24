@@ -535,4 +535,42 @@ public class PosViewModelTests
         Assert.Equal(0x14, req.Gcd);
         Assert.Equal(0x0B, req.Jcd);
     }
+
+    [Fact]
+    public async Task OpenCashDrawer_TogglesIsCardProcessingDuringRequestAndClearsItAfterward()
+    {
+        var fakeClient = new FakeKiccPosClient(KiccRawResponse.Success(""));
+        var vm = CreateViewModel(out _, out _, out _, out _, kiccPosClient: fakeClient);
+        await vm.LoadAsync();
+        var processingValues = new List<bool>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.IsCardProcessing))
+                processingValues.Add(vm.IsCardProcessing);
+        };
+
+        await vm.OpenCashDrawerCommand.ExecuteAsync(null);
+
+        Assert.Contains(true, processingValues);
+        Assert.False(vm.IsCardProcessing);
+    }
+
+    [Fact]
+    public async Task OpenCashDrawer_WhenRequestFails_ShowsFailureWarningToast()
+    {
+        var fakeClient = new FakeKiccPosClient(KiccRawResponse.Failure("어떤 사유"));
+        var vm = CreateViewModel(out _, out _, out _, out _, kiccPosClient: fakeClient);
+        await vm.LoadAsync();
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.OpenCashDrawerCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsToastWarning);
+        Assert.Equal("돈통 열기에 실패했습니다", Assert.Single(toastValues));
+    }
 }
