@@ -60,6 +60,12 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isResetOrderConfirmVisible;
 
     [ObservableProperty]
+    private bool _isCardPaymentVisible;
+
+    [ObservableProperty]
+    private bool _isCardApprovalInProgress;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedInstallmentLabel))]
     private int _selectedInstallmentMonths;
 
@@ -294,11 +300,96 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private async Task PayCash() => await PayAsync("CASH", "현금 결제 완료");
 
-    [RelayCommand]
-    private async Task PayCard1() => await PayCardAsync("CARD1");
+    private string? _pendingCardPayType;
 
     [RelayCommand]
-    private async Task PayCard2() => await PayCardAsync("CARD2");
+    private async Task PayCard1() => await OpenCardPaymentPopupAsync("CARD1");
+
+    [RelayCommand]
+    private async Task PayCard2() => await OpenCardPaymentPopupAsync("CARD2");
+
+    private async Task OpenCardPaymentPopupAsync(string payType)
+    {
+        if (!CanPay) return;
+        if (_cart.Lines.Count == 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "결제할 항목이 존재하지 않습니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
+        _pendingCardPayType = payType;
+        SelectedInstallmentMonths = 0;
+        IsCustomInstallmentSelected = false;
+        CustomInstallmentMonthsText = string.Empty;
+        IsCardApprovalInProgress = false;
+        IsCardPaymentVisible = true;
+    }
+
+    [RelayCommand]
+    private void CancelCardPayment()
+    {
+        IsCardPaymentVisible = false;
+        _pendingCardPayType = null;
+    }
+
+    [RelayCommand]
+    private async Task RequestCardApproval()
+    {
+        if (!CanPay) return;
+        if (_pendingCardPayType is not string payType) return;
+
+        string capturedPayType = payType;
+        int installmentMonths = SelectedInstallmentMonths;
+        IsCardApprovalInProgress = true;
+        IsCardProcessing = true;
+        try
+        {
+            var result = await _vanGateway.RequestApprovalAsync(
+                new VanApprovalRequest(_session.CurrentTerminal!.PosCode, capturedPayType, _cart.Total, installmentMonths));
+
+            if (result.IsApproved)
+            {
+                var header = new SaleHeader
+                {
+                    PosCd = _session.CurrentTerminal!.PosCode,
+                    SaleDt = DateTime.Now,
+                    StaffCd = _session.CurrentStaff!.StaffCode,
+                    TotalAmt = _cart.Total,
+                    PayType = capturedPayType,
+                    CashReceived = null,
+                    ChangeAmt = null,
+                    VanApprovalNo = result.ApprovalNo,
+                    VanCode = result.VanCode,
+                    InstallmentMonths = installmentMonths,
+                };
+
+                await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
+
+                IsToastWarning = false;
+                ToastMessage = result.ResponseMessage;
+                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+                ToastMessage = null;
+                ResetOrder();
+            }
+            else
+            {
+                IsToastWarning = true;
+                ToastMessage = result.ResponseMessage;
+                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+                ToastMessage = null;
+            }
+        }
+        finally
+        {
+            IsCardProcessing = false;
+            IsCardApprovalInProgress = false;
+            IsCardPaymentVisible = false;
+            _pendingCardPayType = null;
+        }
+    }
 
     [RelayCommand]
     private void SelectInstallment(string monthsParam)
@@ -358,63 +449,6 @@ public sealed partial class PosViewModel : ObservableObject
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));
         ToastMessage = null;
         ResetOrder();
-    }
-
-    private async Task PayCardAsync(string payType)
-    {
-        if (!CanPay) return;
-        if (_cart.Lines.Count == 0)
-        {
-            IsToastWarning = true;
-            ToastMessage = "결제할 항목이 존재하지 않습니다";
-            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
-            ToastMessage = null;
-            return;
-        }
-
-        IsCardProcessing = true;
-        IsToastWarning = false;
-        ToastMessage = "카드 결제 처리 중...";
-        try
-        {
-            var result = await _vanGateway.RequestApprovalAsync(
-                new VanApprovalRequest(_session.CurrentTerminal!.PosCode, payType, _cart.Total));
-
-            if (result.IsApproved)
-            {
-                var header = new SaleHeader
-                {
-                    PosCd = _session.CurrentTerminal!.PosCode,
-                    SaleDt = DateTime.Now,
-                    StaffCd = _session.CurrentStaff!.StaffCode,
-                    TotalAmt = _cart.Total,
-                    PayType = payType,
-                    CashReceived = null,
-                    ChangeAmt = null,
-                    VanApprovalNo = result.ApprovalNo,
-                    VanCode = result.VanCode,
-                };
-
-                await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
-
-                IsToastWarning = false;
-                ToastMessage = result.ResponseMessage;
-                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
-                ToastMessage = null;
-                ResetOrder();
-            }
-            else
-            {
-                IsToastWarning = true;
-                ToastMessage = result.ResponseMessage;
-                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
-                ToastMessage = null;
-            }
-        }
-        finally
-        {
-            IsCardProcessing = false;
-        }
     }
 
     [RelayCommand]

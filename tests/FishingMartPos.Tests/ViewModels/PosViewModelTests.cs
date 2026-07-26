@@ -432,11 +432,14 @@ public class PosViewModelTests
         vm.VisibleProducts[0].AddCommand.Execute(null); // 5,000원
 
         await vm.PayCard1Command.ExecuteAsync(null);
+        Assert.Empty(vanGateway.Requests); // 팝업만 열리고 아직 게이트웨이 호출 안 됨
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
 
         var request = Assert.Single(vanGateway.Requests);
         Assert.Equal("1", request.PosCode);
         Assert.Equal("CARD1", request.PayType);
         Assert.Equal(5000m, request.Amount);
+        Assert.Equal(0, request.InstallmentMonths);
     }
 
     [Fact]
@@ -454,12 +457,16 @@ public class PosViewModelTests
         vm.VisibleProducts[0].AddCommand.Execute(null);
 
         await vm.PayCard1Command.ExecuteAsync(null);
+        vm.SelectInstallmentCommand.Execute("3");
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
 
         var (header, _) = Assert.Single(sales.CreatedSales);
         Assert.Equal("CARD1", header.PayType);
         Assert.Equal("20260723999999", header.VanApprovalNo);
         Assert.Equal("KICC", header.VanCode);
+        Assert.Equal(3, header.InstallmentMonths);
         Assert.Empty(vm.CartLines);
+        Assert.False(vm.IsCardPaymentVisible);
     }
 
     [Fact]
@@ -483,11 +490,13 @@ public class PosViewModelTests
         };
 
         await vm.PayCard2Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
 
         Assert.Empty(sales.CreatedSales);
         Assert.Single(vm.CartLines);
         Assert.True(vm.IsToastWarning);
         Assert.Contains("한도초과", toastValues);
+        Assert.False(vm.IsCardPaymentVisible);
     }
 
     [Fact]
@@ -505,6 +514,7 @@ public class PosViewModelTests
         };
 
         await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
 
         Assert.Contains(true, processingValues);
         Assert.False(vm.IsCardProcessing);
@@ -647,5 +657,56 @@ public class PosViewModelTests
 
         Assert.True(vm.IsToastWarning);
         Assert.Equal("돈통 열기에 실패했습니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task PayCard1_WithItemsInCart_OpensPopupWithoutCallingGateway()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        Assert.True(vm.IsCardPaymentVisible);
+        Assert.False(vm.IsCardApprovalInProgress);
+        Assert.Empty(vanGateway.Requests);
+        Assert.Empty(sales.CreatedSales);
+    }
+
+    [Fact]
+    public async Task CancelCardPayment_ClosesPopupWithoutCallingGatewayAndKeepsCart()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        vm.CancelCardPaymentCommand.Execute(null);
+
+        Assert.False(vm.IsCardPaymentVisible);
+        Assert.Empty(vanGateway.Requests);
+        Assert.Empty(sales.CreatedSales);
+        Assert.Single(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task PayCard1_OpeningPopupTwice_ResetsInstallmentSelectionEachTime()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCard1Command.ExecuteAsync(null);
+        vm.SelectInstallmentCommand.Execute("6");
+
+        vm.CancelCardPaymentCommand.Execute(null);
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCard2Command.ExecuteAsync(null);
+
+        Assert.Equal(0, vm.SelectedInstallmentMonths);
+        Assert.False(vm.IsCustomInstallmentSelected);
     }
 }
