@@ -177,6 +177,26 @@ public class TransactionDetailViewModelTests
     }
 
     [Fact]
+    public async Task ConfirmReceiptConversionCommand_WhenRepositoryUpdateFails_SetsStatusErrorAndDoesNotThrow()
+    {
+        var vm = CreateViewModel(CashHeaderNoReceipt(), out var sales, out _, out var cashReceipt);
+        sales.ThrowOnUpdateCashReceipt = true;
+
+        vm.ShowReceiptConversionCommand.Execute(null);
+        vm.SelectReceiptTypeCommand.Execute("PERSONAL");
+        vm.SelectReceiptMerchantCommand.Execute("CARD1");
+        var exception = await Record.ExceptionAsync(() => vm.ConfirmReceiptConversionCommand.ExecuteAsync(null));
+
+        Assert.Null(exception);
+        Assert.Single(cashReceipt.Requests);
+        Assert.Empty(sales.CashReceiptUpdates);
+        Assert.True(vm.IsStatusError);
+        Assert.False(string.IsNullOrEmpty(vm.StatusMessage));
+        Assert.Equal("NONE", vm.Header.CashReceiptType);
+        Assert.False(vm.IsConvertingToReceipt);
+    }
+
+    [Fact]
     public void CloseCommand_InvokesCloseRequestedEvent()
     {
         var vm = CreateViewModel(CardHeader(), out _, out _, out _);
