@@ -37,4 +37,14 @@ public class StubVanPaymentGatewayTests
         Assert.Null(result.VanCode);
         Assert.Contains(result.ResponseMessage, KnownDeclineMessages);
     }
+
+    [Fact]
+    public async Task RequestCancelAsync_AlwaysReturnsCancelled()
+    {
+        var gateway = new StubVanPaymentGateway(new FakeDelayProvider(), new FakeVanOutcomeProvider(isApproved: true));
+
+        var result = await gateway.RequestCancelAsync(new VanCancelRequest("1", "CARD1", 5000m, 0, "99145616", "260726"));
+
+        Assert.True(result.IsCancelled);
+    }
 }

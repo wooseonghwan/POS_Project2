@@ -10,6 +10,16 @@ public static class KiccMessageBuilder
                $"S09={installmentCode};S10={(int)amount};S15=0;S16={vat};S23={posTranNo};";
     }
 
+    public static string BuildCardCancelRequest(
+        KiccMerchantConfig merchant, decimal amount, int installmentMonths,
+        string originalApprovalNo, string originalApprovalDateYyMmDd, string posTranNo)
+    {
+        var vat = (int)Math.Round(amount / 11m, MidpointRounding.AwayFromZero);
+        string installmentCode = installmentMonths.ToString("00");
+        return $"S00=002;S01=D4;S02=40;S03={merchant.Tid};S04={merchant.BusinessNo};" +
+               $"S09={installmentCode};S10={(int)amount};S12={originalApprovalNo};S13={originalApprovalDateYyMmDd};S15=0;S16={vat};S23={posTranNo};";
+    }
+
     public static string BuildCashReceiptIssueRequest(KiccMerchantConfig merchant, decimal amount, string receiptType, string posTranNo)
     {
         var vat = (int)Math.Round(amount / 11m, MidpointRounding.AwayFromZero);

@@ -99,4 +99,39 @@ public class KiccVanPaymentGatewayTests
         var sendData = Assert.Single(client.Requests).SendData;
         Assert.Contains("S09=03;", sendData);
     }
+
+    [Fact]
+    public async Task RequestCancelAsync_WhenR04IsSuccess_ReturnsCancelled()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=0000;"));
+        var gateway = new KiccVanPaymentGateway(client, Merchants);
+
+        var result = await gateway.RequestCancelAsync(new VanCancelRequest("1", "CARD1", 5000m, 0, "99145616", "260726"));
+
+        Assert.True(result.IsCancelled);
+    }
+
+    [Fact]
+    public async Task RequestCancelAsync_WhenR04IsNotSuccess_ReturnsNotCancelled()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=1234;"));
+        var gateway = new KiccVanPaymentGateway(client, Merchants);
+
+        var result = await gateway.RequestCancelAsync(new VanCancelRequest("1", "CARD1", 5000m, 0, "99145616", "260726"));
+
+        Assert.False(result.IsCancelled);
+    }
+
+    [Fact]
+    public async Task RequestCancelAsync_SendsD4WithOriginalApprovalFields()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=0000;"));
+        var gateway = new KiccVanPaymentGateway(client, Merchants);
+
+        await gateway.RequestCancelAsync(new VanCancelRequest("1", "CARD1", 5000m, 0, "99145616", "260726"));
+
+        var sendData = Assert.Single(client.Requests).SendData;
+        Assert.Contains("S01=D4;", sendData);
+        Assert.Contains("S12=99145616;S13=260726;", sendData);
+    }
 }

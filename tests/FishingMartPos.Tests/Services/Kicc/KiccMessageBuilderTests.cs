@@ -80,4 +80,27 @@ public class KiccMessageBuilderTests
 
         Assert.Equal("S00=002;S01=B2;S02=40;S03=0788888;S09=00;S10=1004;S11=00;S12=149331691;S13=250704;S15=0;S16=91;S23=20250704132431000000;", sendData);
     }
+
+    [Fact]
+    public void BuildCardCancelRequest_UsesD4CommandCode()
+    {
+        var merchant = new KiccMerchantConfig("CARD1", "2977338", "3169055788");
+
+        var sendData = KiccMessageBuilder.BuildCardCancelRequest(merchant, 5000m, 0, "99145616", "260726", "1260726120000012");
+
+        Assert.Contains("S01=D4;", sendData);
+        Assert.Contains("S03=2977338;S04=3169055788;", sendData);
+        Assert.Contains("S12=99145616;", sendData);
+        Assert.Contains("S13=260726;", sendData);
+    }
+
+    [Fact]
+    public void BuildCardCancelRequest_WithInstallmentMonths_FormatsAsTwoDigits()
+    {
+        var merchant = new KiccMerchantConfig("CARD1", "2977338", "3169055788");
+
+        var sendData = KiccMessageBuilder.BuildCardCancelRequest(merchant, 60000m, 3, "99145616", "260726", "1260726120000012");
+
+        Assert.Contains("S09=03;", sendData);
+    }
 }

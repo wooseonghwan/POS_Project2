@@ -40,4 +40,10 @@ public sealed class StubVanPaymentGateway : IVanPaymentGateway
             ResponseMessage = DeclineMessages[_messageRandom.Next(DeclineMessages.Length)],
         };
     }
+
+    public async Task<VanCancelResult> RequestCancelAsync(VanCancelRequest request)
+    {
+        await _delay.Delay(TimeSpan.FromMilliseconds(1000));
+        return new VanCancelResult { IsCancelled = true, ResponseMessage = "카드 결제 취소 완료" };
+    }
 }
