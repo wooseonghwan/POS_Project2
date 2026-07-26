@@ -105,6 +105,7 @@ public sealed partial class SalesReportViewModel : ObservableObject
                 CashStr = CurrencyFormat.Format(g.Where(s => s.PayType == "CASH").Sum(s => s.TotalAmt)),
                 Card1Str = CurrencyFormat.Format(g.Where(s => s.PayType == "CARD1").Sum(s => s.TotalAmt)),
                 Card2Str = CurrencyFormat.Format(g.Where(s => s.PayType == "CARD2").Sum(s => s.TotalAmt)),
+                InstallmentCountStr = g.Count(s => s.InstallmentMonths > 0).ToString("N0") + "건",
                 AmountStr = CurrencyFormat.Format(g.Sum(s => s.TotalAmt)),
             })
             .ToList();

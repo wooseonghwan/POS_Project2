@@ -22,9 +22,9 @@ public class SalesReportViewModelTests
         return (vm, sales, mainMenu, navigation);
     }
 
-    private static SaleHeader Sale(DateTime saleDt, string payType, decimal amount) => new()
+    private static SaleHeader Sale(DateTime saleDt, string payType, decimal amount, int installmentMonths = 0) => new()
     {
-        PosCd = "1", SaleDt = saleDt, StaffCd = "ADMIN1", TotalAmt = amount, PayType = payType,
+        PosCd = "1", SaleDt = saleDt, StaffCd = "ADMIN1", TotalAmt = amount, PayType = payType, InstallmentMonths = installmentMonths,
     };
 
     [Fact]
@@ -154,5 +154,40 @@ public class SalesReportViewModelTests
         vm.GoToMainMenuCommand.Execute(null);
 
         Assert.Same(mainMenu, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task LoadAsync_CountsInstallmentSalesSeparatelyFromLumpSum()
+    {
+        var (vm, sales, _, _) = Create();
+        var day1 = DateTime.Today.AddDays(-1);
+        sales.SeedCompletedSales(new[]
+        {
+            Sale(day1, "CARD1", 3000, installmentMonths: 3),
+            Sale(day1, "CARD2", 2000, installmentMonths: 6),
+            Sale(day1.AddHours(1), "CASH", 5000, installmentMonths: 0),
+        });
+        vm.DateFrom = day1;
+        vm.DateTo = day1;
+
+        await vm.LoadAsync();
+
+        var row = Assert.Single(vm.Rows);
+        Assert.Equal("2건", row.InstallmentCountStr);
+    }
+
+    [Fact]
+    public async Task LoadAsync_NoInstallmentSales_ShowsZeroCount()
+    {
+        var (vm, sales, _, _) = Create();
+        var day1 = DateTime.Today.AddDays(-1);
+        sales.SeedCompletedSales(new[] { Sale(day1, "CASH", 5000) });
+        vm.DateFrom = day1;
+        vm.DateTo = day1;
+
+        await vm.LoadAsync();
+
+        var row = Assert.Single(vm.Rows);
+        Assert.Equal("0건", row.InstallmentCountStr);
     }
 }
