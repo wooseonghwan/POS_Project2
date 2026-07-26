@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:views="clr-namespace:FishingMartPos.Views"
              mc:Ignorable="d"
              Focusable="True"
              PreviewTextInput="PosView_PreviewTextInput"
@@ -249,7 +250,7 @@
 
                     <UniformGrid Grid.Row="0" Columns="3">
                         <Button Content="영수증관리" IsEnabled="False" Margin="3" />
-                        <Button Content="직전정보" IsEnabled="False" Margin="3" />
+                        <Button Content="직전정보" Command="{Binding ShowLastTransactionCommand}" Margin="3" />
                         <Button Content="영수증발행" IsEnabled="False" Margin="3" />
                     </UniformGrid>
                     <Button Grid.Row="1" Content="돈통열기" Command="{Binding OpenCashDrawerCommand}" IsEnabled="{Binding CanPay}" Margin="3" />
@@ -614,6 +615,12 @@
                     </StackPanel>
                 </Grid>
             </Border>
+        </Grid>
+
+        <!-- 직전정보 팝업 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsLastTransactionVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <views:TransactionDetailPopup DataContext="{Binding LastTransactionDetail}" />
         </Grid>
 
         <!-- 결제완료 토스트 -->

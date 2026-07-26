@@ -1,0 +1,156 @@
+<UserControl x:Class="FishingMartPos.Views.TransactionDetailPopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <Style x:Key="DetailActionButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="3" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style x:Key="DetailPickerButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="3" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+        </Style>
+    </UserControl.Resources>
+    <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+            Padding="24" Width="380" MaxHeight="540" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock Text="{Binding SaleNoStr, StringFormat='거래번호: {0}'}" FontSize="13" FontWeight="Bold" />
+                <TextBlock Text="{Binding SaleDtStr}" FontSize="12" Foreground="{DynamicResource MutedText}" Margin="0,2" />
+                <TextBlock Text="{Binding PayTypeLabelStr, StringFormat='결제구분: {0}'}" FontSize="13" Margin="0,4,0,0" />
+                <TextBlock Text="{Binding TotalAmtStr, StringFormat='결제금액: {0}'}" FontSize="15" FontWeight="Bold" Margin="0,2" />
+                <TextBlock Text="{Binding InstallmentLabelStr, StringFormat='할부: {0}'}" FontSize="12" Margin="0,2" />
+                <TextBlock Text="{Binding StatusLabelStr, StringFormat='상태: {0}'}" FontSize="12" FontWeight="Bold" Margin="0,4,0,0" />
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="180">
+                <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="0.6*" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding ProductName}" FontSize="12" />
+                                <TextBlock Grid.Column="1" Text="{Binding Qty}" FontSize="12" HorizontalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Text="{Binding LineAmt, StringFormat='{}{0:N0}원'}" FontSize="12" HorizontalAlignment="Right" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                <StackPanel Visibility="{Binding IsReceiptConversionVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="현금영수증 종류 선택" FontSize="12" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <UniformGrid Columns="2">
+                        <Button Content="개인" Command="{Binding SelectReceiptTypeCommand}" CommandParameter="PERSONAL">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource DetailPickerButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedReceiptType}" Value="PERSONAL">
+                                            <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                            <Setter Property="Foreground" Value="White" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="사업자" Command="{Binding SelectReceiptTypeCommand}" CommandParameter="BUSINESS">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource DetailPickerButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedReceiptType}" Value="BUSINESS">
+                                            <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                            <Setter Property="Foreground" Value="White" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </UniformGrid>
+                    <TextBlock Text="가맹점 선택" FontSize="12" Foreground="{DynamicResource MutedText}" Margin="0,8,0,6" />
+                    <UniformGrid Columns="2">
+                        <Button Content="대원수산" Command="{Binding SelectReceiptMerchantCommand}" CommandParameter="CARD1">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource DetailPickerButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedReceiptMerchant}" Value="CARD1">
+                                            <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                            <Setter Property="Foreground" Value="White" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="대원낚시마트" Command="{Binding SelectReceiptMerchantCommand}" CommandParameter="CARD2">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource DetailPickerButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedReceiptMerchant}" Value="CARD2">
+                                            <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                            <Setter Property="Foreground" Value="White" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </UniformGrid>
+                    <TextBlock Text="카드단말기에서 고객 전화번호(또는 사업자등록번호)를 입력해주세요" FontSize="12" FontWeight="Bold"
+                               TextWrapping="Wrap" Margin="0,8,0,0"
+                               Visibility="{Binding IsConvertingToReceipt, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                        <Button Content="취소" Command="{Binding CancelReceiptConversionCommand}" Style="{StaticResource DetailActionButtonStyle}"
+                                IsEnabled="{Binding IsConvertingToReceipt, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                        <Button Content="발급요청" Command="{Binding ConfirmReceiptConversionCommand}" Style="{StaticResource DetailActionButtonStyle}"
+                                Background="{DynamicResource Accent}" Foreground="White" />
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusMessage}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"
+                           HorizontalAlignment="Center"
+                           Visibility="{Binding StatusMessage, Converter={StaticResource NullToVisibilityConverter}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource CartDeleteBorder}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0"
+                        Visibility="{Binding IsReceiptConversionVisible, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                <Button Content="거래취소" Command="{Binding CancelCommand}" IsEnabled="{Binding CanCancel}"
+                        Background="{DynamicResource CartDeleteBackground}" Foreground="{DynamicResource CartDeleteText}"
+                        BorderBrush="{DynamicResource CartDeleteBorder}" Style="{StaticResource DetailActionButtonStyle}" />
+                <Button Content="현금영수증으로 변경하기" Command="{Binding ShowReceiptConversionCommand}" IsEnabled="{Binding CanConvertToCashReceipt}"
+                        Style="{StaticResource DetailActionButtonStyle}" />
+                <Button Content="영수증 재발행" Command="{Binding ReissueReceiptCommand}" Style="{StaticResource DetailActionButtonStyle}" />
+                <Button Content="닫기" Command="{Binding CloseCommand}" Style="{StaticResource DetailActionButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

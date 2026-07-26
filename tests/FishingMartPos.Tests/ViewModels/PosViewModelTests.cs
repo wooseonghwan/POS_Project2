@@ -910,4 +910,45 @@ public class PosViewModelTests
         Assert.Equal("20260723999999", vm.PreviewedReceipt.VanApprovalNo);
         Assert.Equal(3, vm.PreviewedReceipt.InstallmentMonths);
     }
+
+    [Fact]
+    public async Task ShowLastTransaction_WhenNoCompletedSale_ShowsWarningToast()
+    {
+        var vm = CreateViewModel(out var sales, out _, out _, out _);
+        sales.SeedLastCompletedSale(null);
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.ShowLastTransactionCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsLastTransactionVisible);
+        Assert.Equal("최근 거래가 없습니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task ShowLastTransaction_WhenCompletedSaleExists_OpensDetailPopup()
+    {
+        var vm = CreateViewModel(out var sales, out _, out _, out _);
+        var header = new SaleHeader
+        {
+            SaleNo = 5,
+            PosCd = "1",
+            SaleDt = DateTime.Now,
+            StaffCd = "ADMIN1",
+            TotalAmt = 5000m,
+            PayType = "CASH",
+        };
+        sales.SeedLastCompletedSale(header);
+        sales.SeedSaleWithLines(5, header, new List<SaleDetailLine>());
+
+        await vm.ShowLastTransactionCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsLastTransactionVisible);
+        Assert.NotNull(vm.LastTransactionDetail);
+        Assert.Equal("5", vm.LastTransactionDetail!.SaleNoStr);
+    }
 }

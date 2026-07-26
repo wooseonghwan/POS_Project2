@@ -83,6 +83,12 @@ public sealed partial class PosViewModel : ObservableObject
     private ReceiptDocument? _previewedReceipt;
 
     [ObservableProperty]
+    private bool _isLastTransactionVisible;
+
+    [ObservableProperty]
+    private TransactionDetailViewModel? _lastTransactionDetail;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedInstallmentLabel))]
     private int _selectedInstallmentMonths;
 
@@ -780,6 +786,31 @@ public sealed partial class PosViewModel : ObservableObject
             await _delay.Delay(TimeSpan.FromMilliseconds(1200));
             ToastMessage = null;
         }
+    }
+
+    [RelayCommand]
+    private async Task ShowLastTransaction()
+    {
+        var header = await _salesRepository.GetLastCompletedSaleAsync(_session.CurrentTerminal!.PosCode);
+        if (header is null)
+        {
+            IsToastWarning = true;
+            ToastMessage = "최근 거래가 없습니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
+        var result = await _salesRepository.GetSaleWithLinesAsync(header.SaleNo);
+        if (result is null) return;
+
+        var detail = new TransactionDetailViewModel(
+            result.Value.Header, result.Value.Lines, _session.CurrentTerminal!.PosCode,
+            _salesRepository, _vanGateway, _cashReceiptGateway, _receiptPrinter, _delay);
+        detail.CloseRequested += () => IsLastTransactionVisible = false;
+
+        LastTransactionDetail = detail;
+        IsLastTransactionVisible = true;
     }
 
     private ReceiptDocument BuildReceiptDocument(
