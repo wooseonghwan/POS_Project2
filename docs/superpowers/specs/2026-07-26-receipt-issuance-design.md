@@ -12,6 +12,8 @@
 
 사용자가 KICC 모듈 API 문서(`ED-721_POS연동인터페이스SPEC_일반버전_P00XX_260423.pdf`)와 실제 전문 샘플(`단말기-POS연동_전문샘플(ED-785)_250827.xlsx`)을 제공해서, D1(카드승인) 때와 달리 **추정이 아니라 실제 필드값을 확인했다**:
 
+**단, 이 필드 인코딩은 벤더 문서에서 그대로 추출한 값일 뿐, 물리 ED-721 단말기로는 아직 검증되지 않았다** — D1(카드승인)이 겪은 것과 동일한 종류의 실기 검증 공백이며, D1 쪽은 프로젝트 메모리에 이 공백이 기록되어 있지만 현금영수증(B1/B2) 쪽은 이 저장소 어디에도 기록되어 있지 않았다는 점이 다르다. 실제 단말기로 테스트하기 전까지는 이 공백을 그대로 유지한다.
+
 **B1 (현금영수증 발급) 요청 예시:**
 ```
 S00=002;S01=B1;S02=40;S03=<TID>;S09=00;S10=<금액>;S11=<00|01|10>;S15=0;S16=<부가세>;S23=<POS거래번호>;
@@ -137,7 +139,8 @@ public sealed record ReceiptLine(string ProductName, int Qty, decimal UnitPrice,
 ALTER TABLE sales_header_tb
     ADD COLUMN cash_receipt_type VARCHAR(10) NOT NULL DEFAULT 'NONE' AFTER installment_months, -- 'NONE'/'PERSONAL'/'BUSINESS'
     ADD COLUMN cash_receipt_merchant VARCHAR(10) NULL AFTER cash_receipt_type, -- 'CARD1'/'CARD2' — 어느 van_config_tb 행으로 등록했는지
-    ADD COLUMN cash_receipt_approval_no VARCHAR(40) NULL AFTER cash_receipt_merchant;
+    ADD COLUMN cash_receipt_approval_no VARCHAR(40) NULL AFTER cash_receipt_merchant,
+    ADD COLUMN cash_receipt_approval_date VARCHAR(6) NULL AFTER cash_receipt_approval_no; -- YYMMDD(R07 앞 6자리) — 향후 B2 취소에 필요
 ```
 
 ### 화면 흐름

@@ -346,6 +346,8 @@ public sealed partial class PosViewModel : ObservableObject
 
         SelectedCashReceiptType = "NONE";
         SelectedCashReceiptMerchant = null;
+        IsCashReceiptRequestInProgress = false;
+        _pendingCashReceiptResult = null;
         IsCashConfirmVisible = true;
     }
 
@@ -359,9 +361,16 @@ public sealed partial class PosViewModel : ObservableObject
             if (SelectedCashReceiptMerchant is not string merchant) return;
 
             IsCashReceiptRequestInProgress = true;
-            var result = await _cashReceiptGateway.RequestIssueAsync(
-                new CashReceiptRequest(merchant, SelectedCashReceiptType, _cart.Total));
-            IsCashReceiptRequestInProgress = false;
+            CashReceiptResult result;
+            try
+            {
+                result = await _cashReceiptGateway.RequestIssueAsync(
+                    new CashReceiptRequest(_session.CurrentTerminal!.PosCode, merchant, SelectedCashReceiptType, _cart.Total));
+            }
+            finally
+            {
+                IsCashReceiptRequestInProgress = false;
+            }
 
             if (!result.IsIssued)
             {
@@ -461,10 +470,10 @@ public sealed partial class PosViewModel : ObservableObject
                 ToastMessage = result.ResponseMessage;
                 await _delay.Delay(TimeSpan.FromMilliseconds(1200));
                 ToastMessage = null;
-                IsReceiptPreviewVisible = true;
                 PreviewedReceipt = BuildReceiptDocument(
                     capturedPayType == "CARD1" ? "카드결제1" : "카드결제2", result.ApprovalNo, installmentMonths,
                     null, null);
+                IsReceiptPreviewVisible = true;
                 ResetOrder();
             }
             else
@@ -589,10 +598,10 @@ public sealed partial class PosViewModel : ObservableObject
         ToastMessage = toastLabel;
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));
         ToastMessage = null;
-        IsReceiptPreviewVisible = true;
         PreviewedReceipt = BuildReceiptDocument(
             "현금", null, 0,
             CashReceiptTypeLabel(header.CashReceiptType), header.CashReceiptApprovalNo);
+        IsReceiptPreviewVisible = true;
         ResetOrder();
     }
 
@@ -777,6 +786,7 @@ public sealed partial class PosViewModel : ObservableObject
         string payTypeLabel, string? vanApprovalNo, int installmentMonths,
         string? cashReceiptTypeLabel, string? cashReceiptApprovalNo) => new()
     {
+        // ReceiptConfig 연동은 이번 범위 밖 — 헤더/푸터는 항상 빈 문자열
         HeaderText = string.Empty,
         FooterText = string.Empty,
         Lines = _cart.Lines.Select(l => new ReceiptLine(l.Name, l.Qty, l.Price, l.LineTotal)).ToList(),

@@ -339,6 +339,8 @@ public class PosViewModelPaymentTests
         Assert.Equal("149331691", sale.Header.CashReceiptApprovalNo);
         Assert.Equal("250704", sale.Header.CashReceiptApprovalDate);
         Assert.False(vm.IsCashConfirmVisible);
+        Assert.Equal("개인(소득공제)", vm.PreviewedReceipt!.CashReceiptTypeLabel);
+        Assert.Equal("149331691", vm.PreviewedReceipt.CashReceiptApprovalNo);
     }
 
     [Fact]

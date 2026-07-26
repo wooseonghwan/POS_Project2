@@ -5,7 +5,8 @@ public interface ICashReceiptGateway
     Task<CashReceiptResult> RequestIssueAsync(CashReceiptRequest request);
 }
 
-public sealed record CashReceiptRequest(string MerchantPayType, string ReceiptType, decimal Amount);
+public sealed record CashReceiptRequest(string PosCode, string MerchantPayType, string ReceiptType, decimal Amount);
+// PosCode: S23(POS 거래번호) 조립에 사용 — 카드승인(VanApprovalRequest)과 동일한 규칙.
 // MerchantPayType: "CARD1"/"CARD2" — van_config_tb 조회 키(카드결제와 동일한 가맹점 TID를 재사용).
 // ReceiptType: "PERSONAL"(개인 소득공제용) / "BUSINESS"(사업자 지출증빙용).
 

@@ -12,7 +12,7 @@ public class StubCashReceiptGatewayTests
         var outcome = new FakeVanOutcomeProvider(isApproved: true);
         var gateway = new StubCashReceiptGateway(new FakeDelayProvider(), outcome);
 
-        var result = await gateway.RequestIssueAsync(new CashReceiptRequest("CARD1", "PERSONAL", 5000m));
+        var result = await gateway.RequestIssueAsync(new CashReceiptRequest("1", "CARD1", "PERSONAL", 5000m));
 
         Assert.True(result.IsIssued);
         Assert.NotNull(result.ApprovalNo);
@@ -25,7 +25,7 @@ public class StubCashReceiptGatewayTests
         var outcome = new FakeVanOutcomeProvider(isApproved: false);
         var gateway = new StubCashReceiptGateway(new FakeDelayProvider(), outcome);
 
-        var result = await gateway.RequestIssueAsync(new CashReceiptRequest("CARD1", "BUSINESS", 5000m));
+        var result = await gateway.RequestIssueAsync(new CashReceiptRequest("1", "CARD1", "BUSINESS", 5000m));
 
         Assert.False(result.IsIssued);
         Assert.Null(result.ApprovalNo);
