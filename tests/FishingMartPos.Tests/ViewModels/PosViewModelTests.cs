@@ -580,7 +580,8 @@ public class PosViewModelTests
         await vm.RequestCardApprovalCommand.ExecuteAsync(null);
 
         Assert.False(vm.IsSignatureCaptureVisible);
-        Assert.Single(vanGateway.Requests);
+        var request = Assert.Single(vanGateway.Requests);
+        Assert.Null(request.SignatureHex);
     }
 
     [Fact]
@@ -641,6 +642,31 @@ public class PosViewModelTests
         var request = Assert.Single(vanGateway.Requests);
         Assert.Equal("HEXDATA1", request.SignatureHex);
         Assert.Single(sales.CreatedSales);
+    }
+
+    [Fact]
+    public async Task ConfirmSignature_WhenConverterFails_ShowsWarningAndStaysInSignatureStateWithoutCallingGateway()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var signatureConverter = new FakeSignatureConverter(hexResult: null);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway, signatureConverter: signatureConverter);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 1, 2, 3 });
+
+        Assert.Empty(vanGateway.Requests);
+        Assert.True(vm.IsSignatureCaptureVisible);
+        Assert.Equal("서명 처리에 실패했습니다. 다시 시도해주세요", Assert.Single(toastValues));
     }
 
     [Fact]

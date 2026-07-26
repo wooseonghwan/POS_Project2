@@ -20,9 +20,12 @@ public sealed class KiccSignatureConverter : ISignatureConverter
         try
         {
             File.WriteAllBytes(tempFile, bmpBytes);
-            var signData = new byte[8192];
+            // 128x32 벤더 예시 규격 기준으로도 실제 네이티브 인코딩 오버헤드를 확신할 수 없어
+            // 넉넉한 여유(256KB)를 둔다 — 8192바이트는 렌더링된 서명 비트맵 크기에 비해 너무 작아
+            // 네이티브 함수가 그 이상을 쓰면 힙 오버런으로 이어질 수 있었다.
+            var signData = new byte[262144];
             int len = Kicc_Bmp2SignDataN(tempFile, signData);
-            if (len <= 0) return (string?)null;
+            if (len <= 0 || len > signData.Length) return (string?)null;
             return Encoding.ASCII.GetString(signData, 0, len);
         }
         catch (Exception)
@@ -31,9 +34,17 @@ public sealed class KiccSignatureConverter : ISignatureConverter
         }
         finally
         {
-            if (File.Exists(tempFile))
+            try
             {
-                File.Delete(tempFile);
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+            catch (Exception)
+            {
+                // 임시 파일 삭제 실패는 변환 결과에 영향을 주지 않는다 — 네이티브 DLL이 파일 핸들을
+                // 아직 쥐고 있는 경우 등, finally에서 예외가 나면 호출 체인 전체가 크래시할 수 있다.
             }
         }
     });

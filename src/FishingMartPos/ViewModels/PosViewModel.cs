@@ -34,6 +34,9 @@ public sealed partial class PosViewModel : ObservableObject
 
     private static readonly int[] FixedInstallmentMonths = { 0, 2, 3, 4, 6, 12 };
     private const decimal InstallmentMinimumAmount = 50000m;
+
+    // 할부 자격과 서명 필요 여부는 서로 다른 업무 규칙이라 개념적으로 분리되어 있다.
+    // 현재 값이 InstallmentMinimumAmount와 우연히 같을 뿐, 하나로 합치지 말 것 — 향후 각기 다른 정책으로 바뀔 수 있다.
     private const decimal CardSignatureMinimumAmount = 50000m;
 
     [ObservableProperty]
@@ -479,6 +482,15 @@ public sealed partial class PosViewModel : ObservableObject
         }
 
         string? signatureHex = await _signatureConverter.ConvertToHexAsync(bmpBytes);
+        if (signatureHex is null)
+        {
+            IsToastWarning = true;
+            ToastMessage = "서명 처리에 실패했습니다. 다시 시도해주세요";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
         IsSignatureCaptureVisible = false;
         await ProceedWithCardApprovalAsync(signatureHex);
     }
