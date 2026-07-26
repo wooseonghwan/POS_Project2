@@ -384,6 +384,9 @@ public sealed partial class PosViewModel : ObservableObject
             var result = await _vanGateway.RequestApprovalAsync(
                 new VanApprovalRequest(_session.CurrentTerminal!.PosCode, capturedPayType, _cart.Total, installmentMonths));
 
+            IsCardApprovalInProgress = false;
+            IsCardPaymentVisible = false;
+
             if (result.IsApproved)
             {
                 var header = new SaleHeader
@@ -443,7 +446,7 @@ public sealed partial class PosViewModel : ObservableObject
     partial void OnCustomInstallmentMonthsTextChanged(string value)
     {
         if (!IsCustomInstallmentSelected) return;
-        SelectedInstallmentMonths = int.TryParse(value, out int months) && months > 0 ? months : 0;
+        SelectedInstallmentMonths = int.TryParse(value, out int months) && months is > 0 and <= 99 ? months : 0;
     }
 
     partial void OnSelectedInstallmentMonthsChanged(int value) => RefreshInstallmentOptions();

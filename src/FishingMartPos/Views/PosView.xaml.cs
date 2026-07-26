@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -50,5 +51,10 @@ public partial class PosView : UserControl
         {
             vm.ScanBarcodeCommand.Execute(barcode);
         }
+    }
+
+    private void InstallmentMonthsTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        e.Handled = !e.Text.All(char.IsDigit);
     }
 }

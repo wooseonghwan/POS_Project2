@@ -444,7 +444,8 @@
                             </Button>
                             <TextBox Text="{Binding CustomInstallmentMonthsText, UpdateSourceTrigger=PropertyChanged}"
                                      IsEnabled="{Binding IsCustomInstallmentSelected}" Margin="3" VerticalContentAlignment="Center"
-                                     HorizontalContentAlignment="Center" />
+                                     HorizontalContentAlignment="Center" MaxLength="2"
+                                     PreviewTextInput="InstallmentMonthsTextBox_PreviewTextInput" />
                         </UniformGrid>
                         <TextBlock Text="{Binding SelectedInstallmentLabel, StringFormat='선택: {0}'}" FontSize="12"
                                    Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" Margin="0,8,0,16" />

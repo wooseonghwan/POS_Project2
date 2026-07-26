@@ -291,6 +291,11 @@ public class SalesRepositoryTests
             int savedInstallmentMonths = await verifyConn.QuerySingleAsync<int>(
                 "SELECT installment_months FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
             Assert.Equal(3, savedInstallmentMonths);
+
+            var completedSales = await repository.GetCompletedSalesAsync(DateTime.Today, DateTime.Today.AddDays(2));
+            var matched = Assert.Single(completedSales.Where(s =>
+                s.TotalAmt == 5000 && s.PayType == "CARD1" && s.VanApprovalNo == "TEST123"));
+            Assert.Equal(3, matched.InstallmentMonths);
         }
         finally
         {
