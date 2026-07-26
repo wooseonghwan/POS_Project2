@@ -60,7 +60,8 @@ public class LoginViewModelTests
                 ApprovalNo = "149331691",
                 ApprovalDateYyMmDd = "250704",
                 ResponseMessage = "현금영수증 발급 완료",
-            })));
+            }),
+            new StubReceiptPrinter()));
 
     private static Func<MainMenuViewModel, Task<InventoryViewModel>> CreateDummyInventoryViewModelFactory(
         ICurrentSession session, INavigationService navigation) =>

@@ -48,6 +48,7 @@ public partial class App : Application
         // 실제 KICC 로컬 에이전트 연동 시 IVanPaymentGateway 구현체만 교체(예: KiccVanPaymentGateway)
         services.AddSingleton<IVanPaymentGateway, StubVanPaymentGateway>();
         services.AddSingleton<ICashReceiptGateway, StubCashReceiptGateway>();
+        services.AddSingleton<IReceiptPrinter, StubReceiptPrinter>();
         services.AddSingleton<IPhotoPicker, WpfPhotoPicker>();
         services.AddSingleton<IProductPhotoStorage>(_ => new FileSystemProductPhotoStorage(AppContext.BaseDirectory));
         _services = services.BuildServiceProvider();
@@ -63,6 +64,7 @@ public partial class App : Application
         var salesRepository = _services.GetRequiredService<ISalesRepository>();
         var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
         var vanConfigRepository = _services.GetRequiredService<IVanConfigRepository>();
+        var receiptPrinter = _services.GetRequiredService<IReceiptPrinter>();
         var printerConfigRepository = _services.GetRequiredService<IPrinterConfigRepository>();
         var receiptConfigRepository = _services.GetRequiredService<IReceiptConfigRepository>();
         var systemInfoRepository = _services.GetRequiredService<ISystemInfoRepository>();
@@ -89,7 +91,7 @@ public partial class App : Application
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, kiccPosClient);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, kiccPosClient);
             await vm.LoadAsync();
             return vm;
         }

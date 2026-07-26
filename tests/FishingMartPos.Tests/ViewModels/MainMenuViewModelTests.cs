@@ -40,7 +40,8 @@ public class MainMenuViewModelTests
                 ApprovalNo = "149331691",
                 ApprovalDateYyMmDd = "250704",
                 ResponseMessage = "현금영수증 발급 완료",
-            }));
+            }),
+            new StubReceiptPrinter());
 
         Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory = _ => Task.FromResult(posViewModel);
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory = mainMenu =>

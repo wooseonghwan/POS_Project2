@@ -37,7 +37,8 @@ public class PosViewModelTests
         out MainMenuViewModel mainMenuViewModel,
         IVanPaymentGateway? vanGateway = null,
         IKiccPosClient? kiccPosClient = null,
-        ICashReceiptGateway? cashReceiptGateway = null)
+        ICashReceiptGateway? cashReceiptGateway = null,
+        IReceiptPrinter? receiptPrinter = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -70,6 +71,7 @@ public class PosViewModelTests
             {
                 IsIssued = true, ApprovalNo = "149331691", ApprovalDateYyMmDd = "250704", ResponseMessage = "현금영수증 발급 완료",
             }),
+            receiptPrinter ?? new StubReceiptPrinter(),
             kiccPosClient);
     }
 
@@ -885,5 +887,27 @@ public class PosViewModelTests
         vm.SelectCustomInstallmentCommand.Execute(null);
 
         Assert.False(vm.IsCustomInstallmentSelected);
+    }
+
+    [Fact]
+    public async Task RequestCardApproval_OnSuccess_ShowsReceiptPreviewWithCardDetails()
+    {
+        var vanGateway = new FakeVanPaymentGateway(new VanApprovalResult
+        {
+            IsApproved = true, ApprovalNo = "20260723999999", VanCode = "KICC", ResponseMessage = "카드 결제 완료",
+        });
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 5,000원 x 10 = 50,000원 — 할부 가능 최소금액
+        await vm.PayCard1Command.ExecuteAsync(null);
+        vm.SelectInstallmentCommand.Execute("3");
+
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsReceiptPreviewVisible);
+        Assert.Equal("카드결제1", vm.PreviewedReceipt!.PayTypeLabel);
+        Assert.Equal("20260723999999", vm.PreviewedReceipt.VanApprovalNo);
+        Assert.Equal(3, vm.PreviewedReceipt.InstallmentMonths);
     }
 }

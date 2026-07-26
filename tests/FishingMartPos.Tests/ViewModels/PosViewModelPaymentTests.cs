@@ -17,7 +17,8 @@ public class PosViewModelPaymentTests
     private static PosViewModel CreateViewModel(
         out FakeSalesRepository sales,
         out FakeHeldOrderRepository held,
-        FakeCashReceiptGateway? cashReceiptGateway = null)
+        FakeCashReceiptGateway? cashReceiptGateway = null,
+        IReceiptPrinter? receiptPrinter = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -48,7 +49,8 @@ public class PosViewModelPaymentTests
                 ApprovalNo = "149331691",
                 ApprovalDateYyMmDd = "250704",
                 ResponseMessage = "현금영수증 발급 완료",
-            }));
+            }),
+            receiptPrinter ?? new StubReceiptPrinter());
     }
 
     [Fact]
@@ -392,5 +394,59 @@ public class PosViewModelPaymentTests
 
         Assert.Contains(true, progressValues);
         Assert.False(vm.IsCashReceiptRequestInProgress);
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_OnSuccess_ShowsReceiptPreviewWithCartSnapshot()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsReceiptPreviewVisible);
+        Assert.NotNull(vm.PreviewedReceipt);
+        Assert.Equal("현금", vm.PreviewedReceipt!.PayTypeLabel);
+        Assert.Equal(5000, vm.PreviewedReceipt.TotalAmt);
+        var line = Assert.Single(vm.PreviewedReceipt.Lines);
+        Assert.Equal("지렁이", line.ProductName);
+        Assert.Equal(1, line.Qty);
+    }
+
+    [Fact]
+    public async Task CloseReceiptPreview_HidesPreview()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        vm.CloseReceiptPreviewCommand.Execute(null);
+
+        Assert.False(vm.IsReceiptPreviewVisible);
+    }
+
+    [Fact]
+    public async Task PrintReceipt_WithStubPrinter_ShowsNotSupportedToastAndKeepsPreviewOpen()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.PrintReceiptCommand.ExecuteAsync(null);
+
+        Assert.Equal("프린터 연동은 지원 예정입니다", Assert.Single(toastValues));
+        Assert.True(vm.IsReceiptPreviewVisible);
     }
 }

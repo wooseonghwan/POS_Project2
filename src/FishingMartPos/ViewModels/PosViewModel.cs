@@ -23,6 +23,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly MainMenuViewModel _mainMenuViewModel;
     private readonly IVanPaymentGateway _vanGateway;
     private readonly ICashReceiptGateway _cashReceiptGateway;
+    private readonly IReceiptPrinter _receiptPrinter;
     private readonly IKiccPosClient? _kiccPosClient;
     private readonly Cart _cart = new();
 
@@ -76,6 +77,12 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isCashReceiptRequestInProgress;
 
     [ObservableProperty]
+    private bool _isReceiptPreviewVisible;
+
+    [ObservableProperty]
+    private ReceiptDocument? _previewedReceipt;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedInstallmentLabel))]
     private int _selectedInstallmentMonths;
 
@@ -110,6 +117,7 @@ public sealed partial class PosViewModel : ObservableObject
         MainMenuViewModel mainMenuViewModel,
         IVanPaymentGateway vanGateway,
         ICashReceiptGateway cashReceiptGateway,
+        IReceiptPrinter receiptPrinter,
         IKiccPosClient? kiccPosClient = null)
     {
         _productRepository = productRepository;
@@ -122,6 +130,7 @@ public sealed partial class PosViewModel : ObservableObject
         _mainMenuViewModel = mainMenuViewModel;
         _vanGateway = vanGateway;
         _cashReceiptGateway = cashReceiptGateway;
+        _receiptPrinter = receiptPrinter;
         _kiccPosClient = kiccPosClient;
 
         RefreshInstallmentOptions();
@@ -452,6 +461,10 @@ public sealed partial class PosViewModel : ObservableObject
                 ToastMessage = result.ResponseMessage;
                 await _delay.Delay(TimeSpan.FromMilliseconds(1200));
                 ToastMessage = null;
+                IsReceiptPreviewVisible = true;
+                PreviewedReceipt = BuildReceiptDocument(
+                    capturedPayType == "CARD1" ? "카드결제1" : "카드결제2", result.ApprovalNo, installmentMonths,
+                    null, null);
                 ResetOrder();
             }
             else
@@ -576,6 +589,10 @@ public sealed partial class PosViewModel : ObservableObject
         ToastMessage = toastLabel;
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));
         ToastMessage = null;
+        IsReceiptPreviewVisible = true;
+        PreviewedReceipt = BuildReceiptDocument(
+            "현금", null, 0,
+            CashReceiptTypeLabel(header.CashReceiptType), header.CashReceiptApprovalNo);
         ResetOrder();
     }
 
@@ -738,6 +755,45 @@ public sealed partial class PosViewModel : ObservableObject
             });
         }
     }
+
+    [RelayCommand]
+    private void CloseReceiptPreview() => IsReceiptPreviewVisible = false;
+
+    [RelayCommand]
+    private async Task PrintReceipt()
+    {
+        if (PreviewedReceipt is null) return;
+        bool printed = await _receiptPrinter.PrintAsync(PreviewedReceipt);
+        if (!printed)
+        {
+            IsToastWarning = true;
+            ToastMessage = "프린터 연동은 지원 예정입니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+        }
+    }
+
+    private ReceiptDocument BuildReceiptDocument(
+        string payTypeLabel, string? vanApprovalNo, int installmentMonths,
+        string? cashReceiptTypeLabel, string? cashReceiptApprovalNo) => new()
+    {
+        HeaderText = string.Empty,
+        FooterText = string.Empty,
+        Lines = _cart.Lines.Select(l => new ReceiptLine(l.Name, l.Qty, l.Price, l.LineTotal)).ToList(),
+        TotalAmt = _cart.Total,
+        PayTypeLabel = payTypeLabel,
+        VanApprovalNo = vanApprovalNo,
+        InstallmentMonths = installmentMonths,
+        CashReceiptTypeLabel = cashReceiptTypeLabel,
+        CashReceiptApprovalNo = cashReceiptApprovalNo,
+    };
+
+    private static string? CashReceiptTypeLabel(string type) => type switch
+    {
+        "PERSONAL" => "개인(소득공제)",
+        "BUSINESS" => "사업자(지출증빙)",
+        _ => null,
+    };
 
     private void RefreshCartLines()
     {
