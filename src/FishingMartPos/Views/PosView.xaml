@@ -594,5 +594,63 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- 영수증 미리보기 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsReceiptPreviewVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="24" Width="340" MaxHeight="480" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="영수증 미리보기" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,16" />
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="300">
+                        <StackPanel DataContext="{Binding PreviewedReceipt}">
+                            <ItemsControl ItemsSource="{Binding Lines}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="0.6*" />
+                                                <ColumnDefinition Width="1*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding ProductName}" FontSize="12" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Qty}" FontSize="12" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding LineAmt, StringFormat='{}{0:N0}원'}" FontSize="12" HorizontalAlignment="Right" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Divider}" Margin="0,8" Padding="0,8,0,0">
+                                <Grid>
+                                    <TextBlock Text="합계" FontSize="14" FontWeight="Bold" />
+                                    <TextBlock Text="{Binding TotalAmt, StringFormat='{}{0:N0}원'}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <TextBlock Text="{Binding PayTypeLabel, StringFormat='결제수단: {0}'}" FontSize="12" Margin="0,2" />
+                            <TextBlock Text="{Binding VanApprovalNo, StringFormat='승인번호: {0}'}" FontSize="12" Margin="0,2"
+                                       Visibility="{Binding VanApprovalNo, Converter={StaticResource NullToVisibilityConverter}}" />
+                            <TextBlock Text="{Binding InstallmentMonths, StringFormat='할부: {0}개월'}" FontSize="12" Margin="0,2"
+                                       Visibility="{Binding VanApprovalNo, Converter={StaticResource NullToVisibilityConverter}}" />
+                            <TextBlock Text="{Binding CashReceiptTypeLabel, StringFormat='현금영수증: {0}'}" FontSize="12" Margin="0,2"
+                                       Visibility="{Binding CashReceiptTypeLabel, Converter={StaticResource NullToVisibilityConverter}}" />
+                            <TextBlock Text="{Binding CashReceiptApprovalNo, StringFormat='현금영수증 승인번호: {0}'}" FontSize="12" Margin="0,2"
+                                       Visibility="{Binding CashReceiptApprovalNo, Converter={StaticResource NullToVisibilityConverter}}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                        <Button Content="닫기" Padding="16,6" Margin="0,0,8,0" Command="{Binding CloseReceiptPreviewCommand}" />
+                        <Button Content="인쇄" Padding="16,6" Background="{DynamicResource Accent}"
+                                Foreground="White" BorderBrush="{DynamicResource AccentDark}"
+                                Command="{Binding PrintReceiptCommand}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
