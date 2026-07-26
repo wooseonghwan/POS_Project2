@@ -492,7 +492,7 @@
                                Foreground="{DynamicResource Accent}" HorizontalAlignment="Center" Margin="0,0,0,16" />
 
                     <!-- 할부 선택 상태 -->
-                    <StackPanel Visibility="{Binding IsCardApprovalInProgress, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                    <StackPanel Visibility="{Binding IsInstallmentPanelVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <TextBlock Text="할부개월 선택" FontSize="13" Foreground="{DynamicResource MutedText}" Margin="0,0,0,8" />
                         <TextBlock Text="5만원 이상부터 할부 결제가 가능합니다" FontSize="11" Foreground="{DynamicResource CartDeleteBorder}" Margin="0,0,0,8"
                                    Visibility="{Binding IsInstallmentEligible, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
@@ -554,6 +554,23 @@
                                    Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,6" />
                         <TextBlock Text="승인 처리 중입니다" FontSize="13" Foreground="{DynamicResource MutedText}"
                                    HorizontalAlignment="Center" Margin="0,0,0,16" />
+                    </StackPanel>
+
+                    <!-- 서명 입력 상태 -->
+                    <StackPanel Visibility="{Binding IsSignatureCaptureVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Margin="0,12,0,0">
+                        <TextBlock Text="고객 서명" FontSize="13" Foreground="{DynamicResource MutedText}"
+                                   HorizontalAlignment="Center" Margin="0,0,0,8" />
+                        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Background="White">
+                            <InkCanvas x:Name="SignatureCanvas" Height="160" />
+                        </Border>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                            <Button Content="지우기" Padding="16,6" Margin="0,0,8,0" Click="ClearSignatureButton_Click" />
+                            <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Click="CancelSignatureButton_Click" />
+                            <Button Content="서명완료" Padding="16,6" Background="{DynamicResource Accent}"
+                                    Foreground="White" BorderBrush="{DynamicResource AccentDark}"
+                                    Click="ConfirmSignatureButton_Click" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>
