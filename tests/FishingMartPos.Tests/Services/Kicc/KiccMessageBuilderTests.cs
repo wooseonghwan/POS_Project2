@@ -10,7 +10,7 @@ public class KiccMessageBuilderTests
     {
         var merchant = new KiccMerchantConfig("CARD1", "0788888", "1234567890");
 
-        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 1004m, "POSTRAN123");
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 1004m, "POSTRAN123", installmentMonths: 0);
 
         Assert.Equal("S00=002;S01=D1;S02=40;S03=0788888;S04=1234567890;S09=00;S10=1004;S15=0;S16=91;S23=POSTRAN123;", sendData);
     }
@@ -20,7 +20,7 @@ public class KiccMessageBuilderTests
     {
         var card1 = new KiccMerchantConfig("CARD1", "2977338", "3169055788");
 
-        var sendData = KiccMessageBuilder.BuildApprovalRequest(card1, 5000m, "T1");
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(card1, 5000m, "T1", installmentMonths: 0);
 
         Assert.Contains("S03=2977338;S04=3169055788;", sendData);
     }
@@ -30,8 +30,24 @@ public class KiccMessageBuilderTests
     {
         var card2 = new KiccMerchantConfig("CARD2", "2977340", "3160326930");
 
-        var sendData = KiccMessageBuilder.BuildApprovalRequest(card2, 5000m, "T2");
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(card2, 5000m, "T2", installmentMonths: 0);
 
         Assert.Contains("S03=2977340;S04=3160326930;", sendData);
+    }
+
+    [Theory]
+    [InlineData(0, "S09=00;")]
+    [InlineData(2, "S09=02;")]
+    [InlineData(3, "S09=03;")]
+    [InlineData(4, "S09=04;")]
+    [InlineData(6, "S09=06;")]
+    [InlineData(12, "S09=12;")]
+    public void BuildApprovalRequest_InstallmentMonths_FormatsS09AsTwoDigitString(int installmentMonths, string expectedFragment)
+    {
+        var merchant = new KiccMerchantConfig("CARD1", "0788888", "1234567890");
+
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 5000m, "T1", installmentMonths);
+
+        Assert.Contains(expectedFragment, sendData);
     }
 }

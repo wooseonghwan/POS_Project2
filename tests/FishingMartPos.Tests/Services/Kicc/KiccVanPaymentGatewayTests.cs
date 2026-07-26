@@ -87,4 +87,16 @@ public class KiccVanPaymentGatewayTests
         Assert.Equal(0x14, req.Gcd);
         Assert.Equal(0x04, req.Jcd);
     }
+
+    [Fact]
+    public async Task RequestApprovalAsync_WithInstallmentMonths_ForwardsToSendData()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=0000;R09=1;"));
+        var gateway = new KiccVanPaymentGateway(client, Merchants);
+
+        await gateway.RequestApprovalAsync(new VanApprovalRequest("1", "CARD1", 5000m, InstallmentMonths: 3));
+
+        var sendData = Assert.Single(client.Requests).SendData;
+        Assert.Contains("S09=03;", sendData);
+    }
 }

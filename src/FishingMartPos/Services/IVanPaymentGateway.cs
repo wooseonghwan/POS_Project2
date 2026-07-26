@@ -5,7 +5,7 @@ public interface IVanPaymentGateway
     Task<VanApprovalResult> RequestApprovalAsync(VanApprovalRequest request);
 }
 
-public sealed record VanApprovalRequest(string PosCode, string PayType, decimal Amount);
+public sealed record VanApprovalRequest(string PosCode, string PayType, decimal Amount, int InstallmentMonths = 0);
 
 public sealed class VanApprovalResult
 {
