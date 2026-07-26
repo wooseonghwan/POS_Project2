@@ -52,6 +52,7 @@ public class PosViewModelPaymentTests
                 ResponseMessage = "현금영수증 발급 완료",
             }),
             receiptPrinter ?? new StubReceiptPrinter(),
+            new FakeSignatureConverter(),
             _ => Task.FromResult(new PaymentManagementViewModel(
                 salesRepo, new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
                 new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),

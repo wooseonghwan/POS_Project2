@@ -63,6 +63,7 @@ public class LoginViewModelTests
                 ResponseMessage = "현금영수증 발급 완료",
             }),
             new StubReceiptPrinter(),
+            new FakeSignatureConverter(),
             CreateDummyPaymentManagementViewModelFactory(session, navigation)));
 
     private static Func<MainMenuViewModel, Task<InventoryViewModel>> CreateDummyInventoryViewModelFactory(

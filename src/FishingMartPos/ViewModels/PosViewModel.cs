@@ -24,6 +24,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly IVanPaymentGateway _vanGateway;
     private readonly ICashReceiptGateway _cashReceiptGateway;
     private readonly IReceiptPrinter _receiptPrinter;
+    private readonly ISignatureConverter _signatureConverter;
     private readonly IKiccPosClient? _kiccPosClient;
     private readonly Func<MainMenuViewModel, Task<PaymentManagementViewModel>> _paymentManagementViewModelFactory;
     private readonly Cart _cart = new();
@@ -33,6 +34,7 @@ public sealed partial class PosViewModel : ObservableObject
 
     private static readonly int[] FixedInstallmentMonths = { 0, 2, 3, 4, 6, 12 };
     private const decimal InstallmentMinimumAmount = 50000m;
+    private const decimal CardSignatureMinimumAmount = 50000m;
 
     [ObservableProperty]
     private string? _selectedBarcode;
@@ -72,7 +74,12 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isCardPaymentVisible;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInstallmentPanelVisible))]
     private bool _isCardApprovalInProgress;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInstallmentPanelVisible))]
+    private bool _isSignatureCaptureVisible;
 
     [ObservableProperty]
     private bool _isCashReceiptRequestInProgress;
@@ -125,6 +132,7 @@ public sealed partial class PosViewModel : ObservableObject
         IVanPaymentGateway vanGateway,
         ICashReceiptGateway cashReceiptGateway,
         IReceiptPrinter receiptPrinter,
+        ISignatureConverter signatureConverter,
         Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory,
         IKiccPosClient? kiccPosClient = null)
     {
@@ -139,6 +147,7 @@ public sealed partial class PosViewModel : ObservableObject
         _vanGateway = vanGateway;
         _cashReceiptGateway = cashReceiptGateway;
         _receiptPrinter = receiptPrinter;
+        _signatureConverter = signatureConverter;
         _kiccPosClient = kiccPosClient;
         _paymentManagementViewModelFactory = paymentManagementViewModelFactory;
 
@@ -149,6 +158,7 @@ public sealed partial class PosViewModel : ObservableObject
 
     public string SelectedInstallmentLabel => SelectedInstallmentMonths <= 0 ? "일시불" : $"{SelectedInstallmentMonths}개월";
     public bool IsInstallmentEligible => _cart.Total >= InstallmentMinimumAmount;
+    public bool IsInstallmentPanelVisible => !IsCardApprovalInProgress && !IsSignatureCaptureVisible;
     public bool CanConfirmCashPayment => SelectedCashReceiptType == "NONE" || SelectedCashReceiptMerchant is not null;
 
     public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
@@ -428,6 +438,7 @@ public sealed partial class PosViewModel : ObservableObject
         IsCustomInstallmentSelected = false;
         CustomInstallmentMonthsText = string.Empty;
         IsCardApprovalInProgress = false;
+        IsSignatureCaptureVisible = false;
         RefreshInstallmentOptions();
         IsCardPaymentVisible = true;
     }
@@ -436,11 +447,49 @@ public sealed partial class PosViewModel : ObservableObject
     private void CancelCardPayment()
     {
         IsCardPaymentVisible = false;
+        IsSignatureCaptureVisible = false;
         _pendingCardPayType = null;
     }
 
     [RelayCommand]
     private async Task RequestCardApproval()
+    {
+        if (!CanPay) return;
+        if (_pendingCardPayType is null) return;
+
+        if (_cart.Total >= CardSignatureMinimumAmount)
+        {
+            IsSignatureCaptureVisible = true;
+            return;
+        }
+
+        await ProceedWithCardApprovalAsync(null);
+    }
+
+    [RelayCommand]
+    private async Task ConfirmSignature(byte[]? bmpBytes)
+    {
+        if (bmpBytes is null || bmpBytes.Length == 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "서명을 입력해주세요";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
+        string? signatureHex = await _signatureConverter.ConvertToHexAsync(bmpBytes);
+        IsSignatureCaptureVisible = false;
+        await ProceedWithCardApprovalAsync(signatureHex);
+    }
+
+    [RelayCommand]
+    private void CancelSignature()
+    {
+        IsSignatureCaptureVisible = false;
+    }
+
+    private async Task ProceedWithCardApprovalAsync(string? signatureHex)
     {
         if (!CanPay) return;
         if (_pendingCardPayType is not string payType) return;
@@ -452,7 +501,7 @@ public sealed partial class PosViewModel : ObservableObject
         try
         {
             var result = await _vanGateway.RequestApprovalAsync(
-                new VanApprovalRequest(_session.CurrentTerminal!.PosCode, capturedPayType, _cart.Total, installmentMonths));
+                new VanApprovalRequest(_session.CurrentTerminal!.PosCode, capturedPayType, _cart.Total, installmentMonths, signatureHex));
 
             IsCardApprovalInProgress = false;
             IsCardPaymentVisible = false;
@@ -498,6 +547,7 @@ public sealed partial class PosViewModel : ObservableObject
             IsCardProcessing = false;
             IsCardApprovalInProgress = false;
             IsCardPaymentVisible = false;
+            IsSignatureCaptureVisible = false;
             _pendingCardPayType = null;
         }
     }

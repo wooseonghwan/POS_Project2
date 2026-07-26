@@ -42,6 +42,7 @@ public class MainMenuViewModelTests
                 ResponseMessage = "현금영수증 발급 완료",
             }),
             new StubReceiptPrinter(),
+            new FakeSignatureConverter(),
             _ => Task.FromResult(new PaymentManagementViewModel(
                 new FakeSalesRepository(),
                 new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),

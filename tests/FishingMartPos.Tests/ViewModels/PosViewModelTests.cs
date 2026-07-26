@@ -38,7 +38,8 @@ public class PosViewModelTests
         IVanPaymentGateway? vanGateway = null,
         IKiccPosClient? kiccPosClient = null,
         ICashReceiptGateway? cashReceiptGateway = null,
-        IReceiptPrinter? receiptPrinter = null)
+        IReceiptPrinter? receiptPrinter = null,
+        ISignatureConverter? signatureConverter = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -76,6 +77,7 @@ public class PosViewModelTests
                 IsIssued = true, ApprovalNo = "149331691", ApprovalDateYyMmDd = "250704", ResponseMessage = "현금영수증 발급 완료",
             }),
             receiptPrinter ?? new StubReceiptPrinter(),
+            signatureConverter ?? new FakeSignatureConverter(),
             _ => Task.FromResult(new PaymentManagementViewModel(
                 salesRepo, vanGateway ?? new FakeVanPaymentGateway(ApprovedResult),
                 cashReceiptGateway ?? new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
@@ -548,11 +550,14 @@ public class PosViewModelTests
         var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
         await vm.LoadAsync();
         vm.VisibleProducts[0].AddCommand.Execute(null);
-        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 5,000원 x 10 = 50,000원 — 할부 가능 최소금액
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 5,000원 x 10 = 50,000원 — 할부 가능 & 서명 필요 최소금액
 
         await vm.PayCard1Command.ExecuteAsync(null);
         vm.SelectInstallmentCommand.Execute("3");
         await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+        Assert.True(vm.IsSignatureCaptureVisible); // 5만원 이상이라 서명 단계로 진입, 아직 게이트웨이 호출 안 됨
+        Assert.Empty(vanGateway.Requests);
+        await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 1, 2, 3 });
 
         var (header, _) = Assert.Single(sales.CreatedSales);
         Assert.Equal("CARD1", header.PayType);
@@ -561,6 +566,100 @@ public class PosViewModelTests
         Assert.Equal(3, header.InstallmentMonths);
         Assert.Empty(vm.CartLines);
         Assert.False(vm.IsCardPaymentVisible);
+    }
+
+    [Fact]
+    public async Task RequestCardApproval_WhenAmountBelowSignatureThreshold_SkipsSignatureAndCallsGatewayDirectly()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // 5,000원 — 5만원 미만
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsSignatureCaptureVisible);
+        Assert.Single(vanGateway.Requests);
+    }
+
+    [Fact]
+    public async Task RequestCardApproval_WhenAmountAtSignatureThreshold_ShowsSignatureCaptureWithoutCallingGateway()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsSignatureCaptureVisible);
+        Assert.Empty(vanGateway.Requests);
+    }
+
+    [Fact]
+    public async Task ConfirmSignature_WithEmptyBytes_ShowsWarningAndStaysInSignatureState()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.ConfirmSignatureCommand.ExecuteAsync(null);
+
+        Assert.Equal("서명을 입력해주세요", Assert.Single(toastValues));
+        Assert.Empty(vanGateway.Requests);
+        Assert.True(vm.IsSignatureCaptureVisible);
+    }
+
+    [Fact]
+    public async Task ConfirmSignature_WithBytes_ConvertsAndSendsHexToGateway()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var signatureConverter = new FakeSignatureConverter("HEXDATA1");
+        var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway, signatureConverter: signatureConverter);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 9, 9, 9 });
+
+        Assert.Single(signatureConverter.ConvertedBytes);
+        var request = Assert.Single(vanGateway.Requests);
+        Assert.Equal("HEXDATA1", request.SignatureHex);
+        Assert.Single(sales.CreatedSales);
+    }
+
+    [Fact]
+    public async Task CancelSignature_ReturnsToInstallmentSelectionWithoutCallingGateway()
+    {
+        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
+        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        vm.CancelSignatureCommand.Execute(null);
+
+        Assert.False(vm.IsSignatureCaptureVisible);
+        Assert.True(vm.IsCardPaymentVisible);
+        Assert.True(vm.IsInstallmentPanelVisible);
+        Assert.Empty(vanGateway.Requests);
     }
 
     [Fact]
@@ -922,6 +1021,7 @@ public class PosViewModelTests
         vm.SelectInstallmentCommand.Execute("3");
 
         await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+        await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 1, 2, 3 }); // 5만원 이상이라 서명 완료 후에야 승인 진행
 
         Assert.True(vm.IsReceiptPreviewVisible);
         Assert.Equal("카드결제1", vm.PreviewedReceipt!.PayTypeLabel);

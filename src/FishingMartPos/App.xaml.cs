@@ -91,7 +91,7 @@ public partial class App : Application
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, CreatePaymentManagementViewModelAsync, kiccPosClient);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, new StubSignatureConverter(), CreatePaymentManagementViewModelAsync, kiccPosClient);
             await vm.LoadAsync();
             return vm;
         }
