@@ -1,3 +1,4 @@
+using Dapper;
 using FishingMartPos.Configuration;
 using FishingMartPos.Data;
 using FishingMartPos.Models;
@@ -8,11 +9,19 @@ namespace FishingMartPos.Tests.Repositories;
 
 public class SalesRepositoryPaymentManagementTests
 {
-    private static SalesRepository CreateRepository()
+    // product_tb에 실재하는 바코드 (지렁이) — 재고 복구 검증에 사용. TESTBARCODE1은 product_tb에 없어서
+    // CancelSaleAsync의 재입고 UPDATE가 조용한 no-op이 되어 재고 변화를 관측할 수 없다.
+    private const string RealBarcode = "8800000020001";
+
+    private static MySqlConnectionFactory CreateConnectionFactory()
     {
         var config = AppConfig.Load(AppContext.BaseDirectory);
-        var connectionFactory = new MySqlConnectionFactory(config);
-        return new SalesRepository(connectionFactory);
+        return new MySqlConnectionFactory(config);
+    }
+
+    private static SalesRepository CreateRepository()
+    {
+        return new SalesRepository(CreateConnectionFactory());
     }
 
     private static SaleHeader NewHeader(string payType = "CASH") => new()
@@ -31,6 +40,11 @@ public class SalesRepositoryPaymentManagementTests
     private static List<SaleDetailLine> OneLine() => new()
     {
         new SaleDetailLine { Barcode = "TESTBARCODE1", ProductName = "테스트상품", Qty = 2, UnitPrice = 1000m },
+    };
+
+    private static List<SaleDetailLine> OneLineWithRealProduct(int qty = 1) => new()
+    {
+        new SaleDetailLine { Barcode = RealBarcode, ProductName = "지렁이", Qty = qty, UnitPrice = 5000m },
     };
 
     [Fact]
@@ -81,10 +95,28 @@ public class SalesRepositoryPaymentManagementTests
     [Fact]
     public async Task CancelSaleAsync_MarksCancelledAndRestocksProduct()
     {
-        var repo = CreateRepository();
-        long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
+
+        int stockBefore;
+        using (var conn = await factory.CreateOpenConnectionAsync())
+        {
+            stockBefore = await conn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+        }
+
+        long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLineWithRealProduct());
+
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
+        int stockAfterSale = await verifyConn.QuerySingleAsync<int>(
+            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+        Assert.Equal(stockBefore - 1, stockAfterSale); // 판매로 재고 1 감소 확인
 
         await repo.CancelSaleAsync(saleNo);
+
+        int stockAfterCancel = await verifyConn.QuerySingleAsync<int>(
+            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+        Assert.Equal(stockBefore, stockAfterCancel); // 취소로 재고가 원래 수량으로 완전히 복구되었는지 확인
 
         var result = await repo.GetSaleWithLinesAsync(saleNo);
         Assert.Equal("CANCELLED", result!.Value.Header.Status);
@@ -93,11 +125,29 @@ public class SalesRepositoryPaymentManagementTests
     [Fact]
     public async Task CancelSaleAsync_WhenAlreadyCancelled_IsNoOp()
     {
-        var repo = CreateRepository();
-        long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
+
+        int stockBefore;
+        using (var conn = await factory.CreateOpenConnectionAsync())
+        {
+            stockBefore = await conn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+        }
+
+        long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLineWithRealProduct());
         await repo.CancelSaleAsync(saleNo);
 
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
+        int stockAfterFirstCancel = await verifyConn.QuerySingleAsync<int>(
+            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+        Assert.Equal(stockBefore, stockAfterFirstCancel); // 첫 취소로 재고 복구됨
+
         await repo.CancelSaleAsync(saleNo); // 두 번째 취소 — 예외 없이 조용히 무시되어야 함
+
+        int stockAfterSecondCancel = await verifyConn.QuerySingleAsync<int>(
+            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+        Assert.Equal(stockAfterFirstCancel, stockAfterSecondCancel); // 이중 재입고가 없어야 함
 
         var result = await repo.GetSaleWithLinesAsync(saleNo);
         Assert.Equal("CANCELLED", result!.Value.Header.Status);
