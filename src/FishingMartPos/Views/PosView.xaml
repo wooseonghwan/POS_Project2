@@ -11,6 +11,13 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:ZeroCountToVisibilityConverter x:Key="ZeroCountToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <Style x:Key="InstallmentOptionButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="3" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -380,6 +387,135 @@
                         <Button Content="계산완료" Padding="16,6" Background="{DynamicResource Accent}"
                                 Foreground="White" BorderBrush="{DynamicResource AccentDark}"
                                 Command="{Binding ConfirmCashPaymentCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 카드결제 팝업 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsCardPaymentVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="32,24" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="카드결제" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,4" />
+                    <TextBlock Text="{Binding TotalAmountStr}" FontSize="24" FontWeight="Black"
+                               Foreground="{DynamicResource Accent}" HorizontalAlignment="Center" Margin="0,0,0,16" />
+
+                    <!-- 할부 선택 상태 -->
+                    <StackPanel Visibility="{Binding IsCardApprovalInProgress, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                        <TextBlock Text="할부개월 선택" FontSize="13" Foreground="{DynamicResource MutedText}" Margin="0,0,0,8" />
+                        <UniformGrid Columns="4" Rows="2">
+                            <Button Content="일시불" Command="{Binding SelectInstallmentCommand}" CommandParameter="0">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding SelectedInstallmentMonths}" Value="0" />
+                                                    <Condition Binding="{Binding IsCustomInstallmentSelected}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="2개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="2">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="2">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="3개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="3">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="3">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="4개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="4">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="4">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="6개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="6">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="6">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="12개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="12">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="12">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="기타개월" Command="{Binding SelectCustomInstallmentCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCustomInstallmentSelected}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBox Text="{Binding CustomInstallmentMonthsText, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsCustomInstallmentSelected}" Margin="3" VerticalContentAlignment="Center"
+                                     HorizontalContentAlignment="Center" />
+                        </UniformGrid>
+                        <TextBlock Text="{Binding SelectedInstallmentLabel, StringFormat='선택: {0}'}" FontSize="12"
+                                   Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" Margin="0,8,0,16" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelCardPaymentCommand}" />
+                            <Button Content="승인요청" Padding="16,6" Background="{DynamicResource Accent}"
+                                    Foreground="White" BorderBrush="{DynamicResource AccentDark}"
+                                    Command="{Binding RequestCardApprovalCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 승인 처리 중 상태 -->
+                    <StackPanel Visibility="{Binding IsCardApprovalInProgress, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                HorizontalAlignment="Center" Margin="0,12,0,0">
+                        <TextBlock Text="카드 리더기에 카드를 꽂아주세요" FontSize="14" FontWeight="Bold"
+                                   Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                        <TextBlock Text="승인 처리 중입니다" FontSize="13" Foreground="{DynamicResource MutedText}"
+                                   HorizontalAlignment="Center" Margin="0,0,0,16" />
                     </StackPanel>
                 </StackPanel>
             </Border>
