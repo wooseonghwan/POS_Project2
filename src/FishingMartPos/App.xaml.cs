@@ -47,6 +47,7 @@ public partial class App : Application
         services.AddSingleton<IVanOutcomeProvider, RandomVanOutcomeProvider>();
         // 실제 KICC 로컬 에이전트 연동 시 IVanPaymentGateway 구현체만 교체(예: KiccVanPaymentGateway)
         services.AddSingleton<IVanPaymentGateway, StubVanPaymentGateway>();
+        services.AddSingleton<ICashReceiptGateway, StubCashReceiptGateway>();
         services.AddSingleton<IPhotoPicker, WpfPhotoPicker>();
         services.AddSingleton<IProductPhotoStorage>(_ => new FileSystemProductPhotoStorage(AppContext.BaseDirectory));
         _services = services.BuildServiceProvider();
