@@ -354,6 +354,37 @@
             </Border>
         </Grid>
 
+        <!-- 현금결제 확인 팝업 -->
+        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+              Visibility="{Binding IsCashConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
+                    Padding="32,24" Width="320" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="현금결제 확인" FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,16" />
+                    <Grid Margin="0,4">
+                        <TextBlock Text="계산합계" FontSize="13" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding TotalAmountStr}" FontSize="15" FontWeight="Bold" HorizontalAlignment="Right" />
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <TextBlock Text="받은금액" FontSize="13" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding CashInputStr}" FontSize="15" FontWeight="Bold" HorizontalAlignment="Right" />
+                    </Grid>
+                    <Grid Margin="0,4,0,16">
+                        <TextBlock Text="거스름돈" FontSize="13" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="{Binding ChangeStr}" FontSize="18" FontWeight="Black"
+                                   Foreground="{DynamicResource Accent}" HorizontalAlignment="Right" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelCashPaymentCommand}" />
+                        <Button Content="계산완료" Padding="16,6" Background="{DynamicResource Accent}"
+                                Foreground="White" BorderBrush="{DynamicResource AccentDark}"
+                                Command="{Binding ConfirmCashPaymentCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- 결제완료 토스트 -->
         <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding ToastMessage, Converter={StaticResource NullToVisibilityConverter}}">
