@@ -12,6 +12,8 @@
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:ZeroCountToVisibilityConverter x:Key="ZeroCountToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:CashReceiptTypeToMerchantPickerVisibilityConverter x:Key="CashReceiptTypeToMerchantPickerVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:InverseBooleanConverter x:Key="InverseBooleanConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <Style x:Key="InstallmentOptionButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="3" />
             <Setter Property="Padding" Value="6" />
@@ -365,7 +367,7 @@
         <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsCashConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
-                    Padding="32,24" Width="320" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    Padding="32,24" Width="360" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel>
                     <TextBlock Text="현금결제 확인" FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,16" />
@@ -382,11 +384,96 @@
                         <TextBlock Text="{Binding ChangeStr}" FontSize="18" FontWeight="Black"
                                    Foreground="{DynamicResource Accent}" HorizontalAlignment="Right" />
                     </Grid>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelCashPaymentCommand}" />
+
+                    <!-- 현금영수증 선택 -->
+                    <StackPanel Visibility="{Binding IsCashReceiptRequestInProgress, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                        <TextBlock Text="현금영수증" FontSize="13" Foreground="{DynamicResource MutedText}" Margin="0,0,0,8" />
+                        <UniformGrid Columns="3">
+                            <Button Content="미발행" Command="{Binding SelectCashReceiptTypeCommand}" CommandParameter="NONE" Margin="3">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedCashReceiptType}" Value="NONE">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="개인" Command="{Binding SelectCashReceiptTypeCommand}" CommandParameter="PERSONAL" Margin="3">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedCashReceiptType}" Value="PERSONAL">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="사업자" Command="{Binding SelectCashReceiptTypeCommand}" CommandParameter="BUSINESS" Margin="3">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedCashReceiptType}" Value="BUSINESS">
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </UniformGrid>
+
+                        <!-- 가맹점 선택: 미발행이 아닐 때만 표시 -->
+                        <StackPanel Visibility="{Binding SelectedCashReceiptType, Converter={StaticResource CashReceiptTypeToMerchantPickerVisibilityConverter}}" Margin="0,6,0,0">
+                            <TextBlock Text="가맹점 선택" FontSize="12" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                            <UniformGrid Columns="2">
+                                <Button Content="대원수산" Command="{Binding SelectCashReceiptMerchantCommand}" CommandParameter="CARD1" Margin="3">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedCashReceiptMerchant}" Value="CARD1">
+                                                    <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                    <Setter Property="Foreground" Value="White" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="대원낚시마트" Command="{Binding SelectCashReceiptMerchantCommand}" CommandParameter="CARD2" Margin="3">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedCashReceiptMerchant}" Value="CARD2">
+                                                    <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                    <Setter Property="Foreground" Value="White" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </UniformGrid>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 현금영수증 발급 처리 중 -->
+                    <StackPanel Visibility="{Binding IsCashReceiptRequestInProgress, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                HorizontalAlignment="Center" Margin="0,4,0,0">
+                        <TextBlock Text="카드단말기에서 고객 전화번호(또는 사업자등록번호)를 입력해주세요" FontSize="13" FontWeight="Bold"
+                                   Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="300" Margin="0,0,0,6" />
+                        <TextBlock Text="현금영수증 발급 처리 중입니다" FontSize="12" Foreground="{DynamicResource MutedText}"
+                                   HorizontalAlignment="Center" Margin="0,0,0,4" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                        <Button Content="취소" Padding="16,6" Margin="0,0,8,0" Command="{Binding CancelCashPaymentCommand}"
+                                IsEnabled="{Binding IsCashReceiptRequestInProgress, Converter={StaticResource InverseBooleanConverter}}" />
                         <Button Content="계산완료" Padding="16,6" Background="{DynamicResource Accent}"
                                 Foreground="White" BorderBrush="{DynamicResource AccentDark}"
-                                Command="{Binding ConfirmCashPaymentCommand}" />
+                                Command="{Binding ConfirmCashPaymentCommand}" IsEnabled="{Binding CanConfirmCashPayment}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
