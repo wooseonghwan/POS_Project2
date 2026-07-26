@@ -13,6 +13,13 @@
             <Setter Property="Margin" Value="3" />
             <Setter Property="Padding" Value="8,6" />
             <Setter Property="FontSize" Value="12" />
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" TextAlignment="Center" />
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="DetailPickerButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="3" />
@@ -23,7 +30,7 @@
     </UserControl.Resources>
     <Grid>
         <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
-                Padding="24" Width="380" MaxHeight="540" HorizontalAlignment="Center" VerticalAlignment="Center">
+                Padding="24" Width="420" MaxHeight="560" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -145,7 +152,7 @@
                     </TextBlock>
                 </StackPanel>
 
-                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0"
+                <UniformGrid Grid.Row="3" Columns="2" Rows="2" Margin="0,12,0,0"
                             Visibility="{Binding IsReceiptConversionVisible, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <Button Content="거래취소" Command="{Binding RequestCancelCommand}" IsEnabled="{Binding CanCancel}"
                             Background="{DynamicResource CartDeleteBackground}" Foreground="{DynamicResource CartDeleteText}"
@@ -154,7 +161,7 @@
                             Style="{StaticResource DetailActionButtonStyle}" />
                     <Button Content="영수증 재발행" Command="{Binding ReissueReceiptCommand}" Style="{StaticResource DetailActionButtonStyle}" />
                     <Button Content="닫기" Command="{Binding CloseCommand}" Style="{StaticResource DetailActionButtonStyle}" />
-                </StackPanel>
+                </UniformGrid>
             </Grid>
         </Border>
 
