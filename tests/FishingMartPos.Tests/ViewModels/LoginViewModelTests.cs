@@ -33,7 +33,8 @@ public class LoginViewModelTests
             CreateDummyPosViewModelFactory(session, navigation),
             CreateDummyInventoryViewModelFactory(session, navigation),
             CreateDummySalesReportViewModelFactory(session, navigation),
-            CreateDummySettingsViewModelFactory(navigation));
+            CreateDummySettingsViewModelFactory(navigation),
+            CreateDummyPaymentManagementViewModelFactory(session, navigation));
     }
 
     private static Func<MainMenuViewModel, Task<PosViewModel>> CreateDummyPosViewModelFactory(
@@ -79,6 +80,26 @@ public class LoginViewModelTests
     private static Func<MainMenuViewModel, Task<SettingsViewModel>> CreateDummySettingsViewModelFactory(
         INavigationService navigation) =>
         mainMenu => Task.FromResult(new SettingsViewModel(navigation, mainMenu));
+
+    private static Func<MainMenuViewModel, Task<PaymentManagementViewModel>> CreateDummyPaymentManagementViewModelFactory(
+        ICurrentSession session, INavigationService navigation) =>
+        mainMenu => Task.FromResult(new PaymentManagementViewModel(
+            new FakeSalesRepository(),
+            new FakeVanPaymentGateway(new VanApprovalResult
+            {
+                IsApproved = true,
+                ApprovalNo = "20260723120000",
+                VanCode = "KICC",
+                ResponseMessage = "카드 결제 완료",
+            }),
+            new FakeCashReceiptGateway(new CashReceiptResult
+            {
+                IsIssued = true,
+                ApprovalNo = "149331691",
+                ApprovalDateYyMmDd = "250704",
+                ResponseMessage = "현금영수증 발급 완료",
+            }),
+            new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenu));
 
     [Fact]
     public void PressingDigits_BuildsPinString()

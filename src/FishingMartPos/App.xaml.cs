@@ -162,8 +162,15 @@ public partial class App : Application
             return Task.FromResult(vm);
         }
 
+        async Task<PaymentManagementViewModel> CreatePaymentManagementViewModelAsync(MainMenuViewModel mainMenu)
+        {
+            var vm = new PaymentManagementViewModel(salesRepository, vanGateway, cashReceiptGateway, receiptPrinter, delayProvider, session, navigation, mainMenu);
+            await vm.LoadAsync();
+            return vm;
+        }
+
         LoginViewModel CreateLoginViewModel() =>
-            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync);
+            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync, CreatePaymentManagementViewModelAsync);
 
         navigation.NavigateTo(CreateLoginViewModel());
 

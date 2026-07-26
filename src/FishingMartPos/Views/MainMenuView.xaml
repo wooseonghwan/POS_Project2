@@ -36,7 +36,7 @@
         </Border>
 
         <Grid Grid.Row="1" Background="{DynamicResource MenuBackground}">
-            <UniformGrid Columns="2" Rows="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="460" Height="300">
+            <UniformGrid Columns="3" Rows="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="700" Height="300">
                 <Button Command="{Binding GoToSalesCommand}" Margin="10" Background="White"
                         BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
@@ -109,6 +109,22 @@
                                      Canvas.Left="20" Canvas.Top="31" />
                         </Canvas>
                         <TextBlock Text="환경설정" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding GoToPaymentManagementCommand}" Margin="10" Background="White"
+                        BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <Canvas Width="48" Height="40" Margin="0,0,0,14">
+                            <Border Width="34" Height="24" CornerRadius="3" BorderThickness="3"
+                                    BorderBrush="{DynamicResource MenuIconInventory}" Background="Transparent"
+                                    Canvas.Left="0" Canvas.Top="8" />
+                            <Rectangle Width="34" Height="3" Fill="{DynamicResource MenuIconInventory}"
+                                       Canvas.Left="0" Canvas.Top="16" />
+                            <Ellipse Width="14" Height="14" Fill="{DynamicResource Accent}"
+                                     Canvas.Left="28" Canvas.Top="26" />
+                        </Canvas>
+                        <TextBlock Text="결제관리" FontSize="16" FontWeight="Bold"
                                    Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Button>

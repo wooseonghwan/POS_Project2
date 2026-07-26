@@ -55,14 +55,21 @@ public class MainMenuViewModelTests
             Task.FromResult(new SalesReportViewModel(new FakeSalesRepository(), navigation, mainMenu));
         Func<MainMenuViewModel, Task<SettingsViewModel>> settingsViewModelFactory = mainMenu =>
             Task.FromResult(new SettingsViewModel(navigation, mainMenu));
+        Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory = mainMenu =>
+            Task.FromResult(new PaymentManagementViewModel(
+                new FakeSalesRepository(),
+                new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
+                new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
+                new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenu));
 
         var vm = new MainMenuViewModel(session, navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory, settingsViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory, settingsViewModelFactory, paymentManagementViewModelFactory),
             PosViewModelFactory = posViewModelFactory,
             InventoryViewModelFactory = inventoryViewModelFactory,
             SalesReportViewModelFactory = salesReportViewModelFactory,
             SettingsViewModelFactory = settingsViewModelFactory,
+            PaymentManagementViewModelFactory = paymentManagementViewModelFactory,
         };
         return (vm, session, navigation);
     }
@@ -151,6 +158,34 @@ public class MainMenuViewModelTests
 
         Assert.Null(navigation.CurrentViewModel);
         Assert.False(vm.IsAdmin);
+    }
+
+    [Fact]
+    public async Task GoToPaymentManagement_InvokesFactoryAndNavigates()
+    {
+        var session = new CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "S1", StaffName = "직원", Role = "STAFF", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        PaymentManagementViewModel? created = null;
+        var vm = new MainMenuViewModel(session, navigation)
+        {
+            PaymentManagementViewModelFactory = mainMenu =>
+            {
+                created = new PaymentManagementViewModel(
+                    new FakeSalesRepository(),
+                    new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
+                    new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
+                    new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenu);
+                return Task.FromResult(created);
+            },
+        };
+
+        await vm.GoToPaymentManagementCommand.ExecuteAsync(null);
+
+        Assert.NotNull(created);
+        Assert.Same(created, navigation.CurrentViewModel);
     }
 
     [Fact]
