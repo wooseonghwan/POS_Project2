@@ -49,6 +49,7 @@ public partial class App : Application
         services.AddSingleton<IVanPaymentGateway, StubVanPaymentGateway>();
         services.AddSingleton<ICashReceiptGateway, StubCashReceiptGateway>();
         services.AddSingleton<IReceiptPrinter, StubReceiptPrinter>();
+        services.AddSingleton<ISignatureConverter, StubSignatureConverter>();
         services.AddSingleton<IPhotoPicker, WpfPhotoPicker>();
         services.AddSingleton<IProductPhotoStorage>(_ => new FileSystemProductPhotoStorage(AppContext.BaseDirectory));
         _services = services.BuildServiceProvider();
@@ -65,6 +66,7 @@ public partial class App : Application
         var heldOrderRepository = _services.GetRequiredService<IHeldOrderRepository>();
         var vanConfigRepository = _services.GetRequiredService<IVanConfigRepository>();
         var receiptPrinter = _services.GetRequiredService<IReceiptPrinter>();
+        ISignatureConverter signatureConverter = _services.GetRequiredService<ISignatureConverter>(); // StubSignatureConverter (기본값)
         var printerConfigRepository = _services.GetRequiredService<IPrinterConfigRepository>();
         var receiptConfigRepository = _services.GetRequiredService<IReceiptConfigRepository>();
         var systemInfoRepository = _services.GetRequiredService<ISystemInfoRepository>();
@@ -84,6 +86,7 @@ public partial class App : Application
             kiccPosClient = realClient;
             vanGateway = new KiccVanPaymentGateway(realClient, merchantsByPayType);
             cashReceiptGateway = new KiccCashReceiptGateway(realClient, merchantsByPayType);
+            signatureConverter = new KiccSignatureConverter();
         }
         _kiccPosClient = kiccPosClient;
         var photoPicker = _services.GetRequiredService<IPhotoPicker>();
@@ -91,7 +94,7 @@ public partial class App : Application
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, new StubSignatureConverter(), CreatePaymentManagementViewModelAsync, kiccPosClient);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, signatureConverter, CreatePaymentManagementViewModelAsync, kiccPosClient);
             await vm.LoadAsync();
             return vm;
         }
