@@ -32,6 +32,7 @@ public class PosViewModelPaymentTests
             new PosTerminal { PosCode = "1", PosName = "POS1" });
         var navigation = new NavigationService();
         var mainMenuViewModel = new MainMenuViewModel(session, navigation);
+        var salesRepo = sales;
 
         return new PosViewModel(
             new FakeProductRepository(new[] { Bait1 }), new FakeCodeRepository(codes),
@@ -50,7 +51,11 @@ public class PosViewModelPaymentTests
                 ApprovalDateYyMmDd = "250704",
                 ResponseMessage = "현금영수증 발급 완료",
             }),
-            receiptPrinter ?? new StubReceiptPrinter());
+            receiptPrinter ?? new StubReceiptPrinter(),
+            _ => Task.FromResult(new PaymentManagementViewModel(
+                salesRepo, new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
+                new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
+                new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenuViewModel)));
     }
 
     [Fact]

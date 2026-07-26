@@ -57,6 +57,10 @@ public class PosViewModelTests
         navigation = new NavigationService();
         mainMenuViewModel = new MainMenuViewModel(session, navigation);
 
+        var salesRepo = sales;
+        var navigationService = navigation;
+        var mainMenu = mainMenuViewModel;
+
         return new PosViewModel(
             new FakeProductRepository(new[] { Bait1, Float1 }),
             new FakeCodeRepository(codes),
@@ -72,6 +76,10 @@ public class PosViewModelTests
                 IsIssued = true, ApprovalNo = "149331691", ApprovalDateYyMmDd = "250704", ResponseMessage = "현금영수증 발급 완료",
             }),
             receiptPrinter ?? new StubReceiptPrinter(),
+            _ => Task.FromResult(new PaymentManagementViewModel(
+                salesRepo, vanGateway ?? new FakeVanPaymentGateway(ApprovedResult),
+                cashReceiptGateway ?? new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
+                receiptPrinter ?? new StubReceiptPrinter(), new FakeDelayProvider(), session, navigationService, mainMenu)),
             kiccPosClient);
     }
 
@@ -296,6 +304,16 @@ public class PosViewModelTests
         vm.GoToMainMenuCommand.Execute(null);
 
         Assert.Same(mainMenuViewModel, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task ShowPaymentManagement_NavigatesToPaymentManagementViewModel()
+    {
+        var vm = CreateViewModel(out _, out _, out var navigation, out _);
+
+        await vm.ShowPaymentManagementCommand.ExecuteAsync(null);
+
+        Assert.IsType<PaymentManagementViewModel>(navigation.CurrentViewModel);
     }
 
     [Fact]

@@ -41,7 +41,12 @@ public class MainMenuViewModelTests
                 ApprovalDateYyMmDd = "250704",
                 ResponseMessage = "현금영수증 발급 완료",
             }),
-            new StubReceiptPrinter());
+            new StubReceiptPrinter(),
+            _ => Task.FromResult(new PaymentManagementViewModel(
+                new FakeSalesRepository(),
+                new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
+                new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
+                new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, new MainMenuViewModel(session, navigation))));
 
         Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory = _ => Task.FromResult(posViewModel);
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory = mainMenu =>

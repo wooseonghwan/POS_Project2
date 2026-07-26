@@ -25,6 +25,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly ICashReceiptGateway _cashReceiptGateway;
     private readonly IReceiptPrinter _receiptPrinter;
     private readonly IKiccPosClient? _kiccPosClient;
+    private readonly Func<MainMenuViewModel, Task<PaymentManagementViewModel>> _paymentManagementViewModelFactory;
     private readonly Cart _cart = new();
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
@@ -124,6 +125,7 @@ public sealed partial class PosViewModel : ObservableObject
         IVanPaymentGateway vanGateway,
         ICashReceiptGateway cashReceiptGateway,
         IReceiptPrinter receiptPrinter,
+        Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory,
         IKiccPosClient? kiccPosClient = null)
     {
         _productRepository = productRepository;
@@ -138,6 +140,7 @@ public sealed partial class PosViewModel : ObservableObject
         _cashReceiptGateway = cashReceiptGateway;
         _receiptPrinter = receiptPrinter;
         _kiccPosClient = kiccPosClient;
+        _paymentManagementViewModelFactory = paymentManagementViewModelFactory;
 
         RefreshInstallmentOptions();
     }
@@ -680,6 +683,13 @@ public sealed partial class PosViewModel : ObservableObject
 
     [RelayCommand]
     private void GoToMainMenu() => _navigation.NavigateTo(_mainMenuViewModel);
+
+    [RelayCommand]
+    private async Task ShowPaymentManagement()
+    {
+        var vm = await _paymentManagementViewModelFactory.Invoke(_mainMenuViewModel);
+        _navigation.NavigateTo(vm);
+    }
 
     private long? _pendingRecallHoldNo;
 

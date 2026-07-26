@@ -249,7 +249,7 @@
                     </Grid.RowDefinitions>
 
                     <UniformGrid Grid.Row="0" Columns="3">
-                        <Button Content="영수증관리" IsEnabled="False" Margin="3" />
+                        <Button Content="영수증관리" Command="{Binding ShowPaymentManagementCommand}" Margin="3" />
                         <Button Content="직전정보" Command="{Binding ShowLastTransactionCommand}" Margin="3" />
                         <Button Content="영수증발행" IsEnabled="False" Margin="3" />
                     </UniformGrid>
