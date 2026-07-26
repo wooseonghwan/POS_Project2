@@ -101,6 +101,7 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
                     _ => captured.PayType,
                 },
                 TotalAmtStr = CurrencyFormat.Format(captured.TotalAmt),
+                ApprovalNo = captured.VanApprovalNo ?? captured.CashReceiptApprovalNo,
                 StatusLabel = captured.Status == "CANCELLED" ? "취소됨" : "정상",
                 SelectCommand = new AsyncRelayCommand(() => OpenDetailAsync(captured.SaleNo)),
             });
@@ -116,7 +117,18 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
         var detail = new TransactionDetailViewModel(
             result.Value.Header, result.Value.Lines, _session.CurrentTerminal!.PosCode,
             _salesRepository, _vanGateway, _cashReceiptGateway, _receiptPrinter, _delay);
-        detail.Changed += async () => await RefreshAsync();
+        detail.Changed += async () =>
+        {
+            try
+            {
+                await RefreshAsync();
+            }
+            catch (Exception)
+            {
+                // 화면 갱신 실패는 조용히 무시 — 사용자는 조회 버튼으로 재시도할 수 있고,
+                // 여기서 예외가 새어나가면 async void 이벤트 핸들러라 프로세스가 죽을 수 있다.
+            }
+        };
         detail.CloseRequested += () => IsDetailVisible = false;
 
         SelectedDetail = detail;

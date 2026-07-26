@@ -19,11 +19,6 @@ public class SalesRepositoryPaymentManagementTests
         return new MySqlConnectionFactory(config);
     }
 
-    private static SalesRepository CreateRepository()
-    {
-        return new SalesRepository(CreateConnectionFactory());
-    }
-
     private static SaleHeader NewHeader(string payType = "CASH") => new()
     {
         PosCd = "9",
@@ -50,46 +45,80 @@ public class SalesRepositoryPaymentManagementTests
     [Fact]
     public async Task GetLastCompletedSaleAsync_ReturnsMostRecentSaleForPosCode()
     {
-        var repo = CreateRepository();
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
         long firstSaleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
         long secondSaleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
 
-        var result = await repo.GetLastCompletedSaleAsync("9");
+        try
+        {
+            var result = await repo.GetLastCompletedSaleAsync("9");
 
-        Assert.NotNull(result);
-        Assert.Equal(secondSaleNo, result!.SaleNo);
-        Assert.True(result.SaleNo >= firstSaleNo);
+            Assert.NotNull(result);
+            Assert.Equal(secondSaleNo, result!.SaleNo);
+            Assert.True(result.SaleNo >= firstSaleNo);
+        }
+        finally
+        {
+            using var conn = await factory.CreateOpenConnectionAsync();
+            await conn.ExecuteAsync(
+                "DELETE FROM sales_detail_tb WHERE sale_no IN (@A, @B)", new { A = firstSaleNo, B = secondSaleNo });
+            await conn.ExecuteAsync(
+                "DELETE FROM sales_header_tb WHERE sale_no IN (@A, @B)", new { A = firstSaleNo, B = secondSaleNo });
+        }
     }
 
     [Fact]
     public async Task GetSaleWithLinesAsync_ReturnsHeaderAndLines()
     {
-        var repo = CreateRepository();
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
         long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
 
-        var result = await repo.GetSaleWithLinesAsync(saleNo);
+        try
+        {
+            var result = await repo.GetSaleWithLinesAsync(saleNo);
 
-        Assert.NotNull(result);
-        Assert.Equal(saleNo, result!.Value.Header.SaleNo);
-        Assert.Single(result.Value.Lines);
-        Assert.Equal("TESTBARCODE1", result.Value.Lines[0].Barcode);
+            Assert.NotNull(result);
+            Assert.Equal(saleNo, result!.Value.Header.SaleNo);
+            Assert.Single(result.Value.Lines);
+            Assert.Equal("TESTBARCODE1", result.Value.Lines[0].Barcode);
+        }
+        finally
+        {
+            using var conn = await factory.CreateOpenConnectionAsync();
+            await conn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await conn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+        }
     }
 
     [Fact]
     public async Task SearchSalesAsync_FiltersByPayTypeAndApprovalNo()
     {
-        var repo = CreateRepository();
-        await repo.CreateSaleAsync(NewHeader("CASH"), OneLine());
-        await repo.CreateSaleAsync(NewHeader("CARD1"), OneLine());
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
+        long cashSaleNo = await repo.CreateSaleAsync(NewHeader("CASH"), OneLine());
+        long cardSaleNo = await repo.CreateSaleAsync(NewHeader("CARD1"), OneLine());
 
-        var from = DateTime.Today;
-        var to = DateTime.Today.AddDays(1);
+        try
+        {
+            var from = DateTime.Today;
+            var to = DateTime.Today.AddDays(1);
 
-        var cashOnly = await repo.SearchSalesAsync(from, to, "CASH", null);
-        Assert.All(cashOnly, s => Assert.Equal("CASH", s.PayType));
+            var cashOnly = await repo.SearchSalesAsync(from, to, "CASH", null);
+            Assert.All(cashOnly, s => Assert.Equal("CASH", s.PayType));
 
-        var byApproval = await repo.SearchSalesAsync(from, to, null, "TESTAPPROVAL1");
-        Assert.All(byApproval, s => Assert.Equal("TESTAPPROVAL1", s.VanApprovalNo));
+            var byApproval = await repo.SearchSalesAsync(from, to, null, "TESTAPPROVAL1");
+            Assert.All(byApproval, s => Assert.Equal("TESTAPPROVAL1", s.VanApprovalNo));
+        }
+        finally
+        {
+            using var conn = await factory.CreateOpenConnectionAsync();
+            await conn.ExecuteAsync(
+                "DELETE FROM sales_detail_tb WHERE sale_no IN (@A, @B)", new { A = cashSaleNo, B = cardSaleNo });
+            await conn.ExecuteAsync(
+                "DELETE FROM sales_header_tb WHERE sale_no IN (@A, @B)", new { A = cashSaleNo, B = cardSaleNo });
+        }
     }
 
     [Fact]
@@ -108,18 +137,29 @@ public class SalesRepositoryPaymentManagementTests
         long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLineWithRealProduct());
 
         using var verifyConn = await factory.CreateOpenConnectionAsync();
-        int stockAfterSale = await verifyConn.QuerySingleAsync<int>(
-            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
-        Assert.Equal(stockBefore - 1, stockAfterSale); // 판매로 재고 1 감소 확인
+        try
+        {
+            int stockAfterSale = await verifyConn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+            Assert.Equal(stockBefore - 1, stockAfterSale); // 판매로 재고 1 감소 확인
 
-        await repo.CancelSaleAsync(saleNo);
+            await repo.CancelSaleAsync(saleNo);
 
-        int stockAfterCancel = await verifyConn.QuerySingleAsync<int>(
-            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
-        Assert.Equal(stockBefore, stockAfterCancel); // 취소로 재고가 원래 수량으로 완전히 복구되었는지 확인
+            int stockAfterCancel = await verifyConn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+            Assert.Equal(stockBefore, stockAfterCancel); // 취소로 재고가 원래 수량으로 완전히 복구되었는지 확인
 
-        var result = await repo.GetSaleWithLinesAsync(saleNo);
-        Assert.Equal("CANCELLED", result!.Value.Header.Status);
+            var result = await repo.GetSaleWithLinesAsync(saleNo);
+            Assert.Equal("CANCELLED", result!.Value.Header.Status);
+        }
+        finally
+        {
+            await verifyConn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync(
+                "UPDATE product_tb SET stock_qty = @Stock WHERE barcode = @Barcode",
+                new { Stock = stockBefore, Barcode = RealBarcode });
+        }
     }
 
     [Fact]
@@ -136,34 +176,56 @@ public class SalesRepositoryPaymentManagementTests
         }
 
         long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLineWithRealProduct());
-        await repo.CancelSaleAsync(saleNo);
 
         using var verifyConn = await factory.CreateOpenConnectionAsync();
-        int stockAfterFirstCancel = await verifyConn.QuerySingleAsync<int>(
-            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
-        Assert.Equal(stockBefore, stockAfterFirstCancel); // 첫 취소로 재고 복구됨
+        try
+        {
+            await repo.CancelSaleAsync(saleNo);
 
-        await repo.CancelSaleAsync(saleNo); // 두 번째 취소 — 예외 없이 조용히 무시되어야 함
+            int stockAfterFirstCancel = await verifyConn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+            Assert.Equal(stockBefore, stockAfterFirstCancel); // 첫 취소로 재고 복구됨
 
-        int stockAfterSecondCancel = await verifyConn.QuerySingleAsync<int>(
-            "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
-        Assert.Equal(stockAfterFirstCancel, stockAfterSecondCancel); // 이중 재입고가 없어야 함
+            await repo.CancelSaleAsync(saleNo); // 두 번째 취소 — 예외 없이 조용히 무시되어야 함
 
-        var result = await repo.GetSaleWithLinesAsync(saleNo);
-        Assert.Equal("CANCELLED", result!.Value.Header.Status);
+            int stockAfterSecondCancel = await verifyConn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = RealBarcode });
+            Assert.Equal(stockAfterFirstCancel, stockAfterSecondCancel); // 이중 재입고가 없어야 함
+
+            var result = await repo.GetSaleWithLinesAsync(saleNo);
+            Assert.Equal("CANCELLED", result!.Value.Header.Status);
+        }
+        finally
+        {
+            await verifyConn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync(
+                "UPDATE product_tb SET stock_qty = @Stock WHERE barcode = @Barcode",
+                new { Stock = stockBefore, Barcode = RealBarcode });
+        }
     }
 
     [Fact]
     public async Task UpdateCashReceiptAsync_UpdatesHeaderFields()
     {
-        var repo = CreateRepository();
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
         long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
 
-        await repo.UpdateCashReceiptAsync(saleNo, "PERSONAL", "CARD1", "APPROVAL999", "260726");
+        try
+        {
+            await repo.UpdateCashReceiptAsync(saleNo, "PERSONAL", "CARD1", "APPROVAL999", "260726");
 
-        var result = await repo.GetSaleWithLinesAsync(saleNo);
-        Assert.Equal("PERSONAL", result!.Value.Header.CashReceiptType);
-        Assert.Equal("CARD1", result.Value.Header.CashReceiptMerchant);
-        Assert.Equal("APPROVAL999", result.Value.Header.CashReceiptApprovalNo);
+            var result = await repo.GetSaleWithLinesAsync(saleNo);
+            Assert.Equal("PERSONAL", result!.Value.Header.CashReceiptType);
+            Assert.Equal("CARD1", result.Value.Header.CashReceiptMerchant);
+            Assert.Equal("APPROVAL999", result.Value.Header.CashReceiptApprovalNo);
+        }
+        finally
+        {
+            using var conn = await factory.CreateOpenConnectionAsync();
+            await conn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await conn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+        }
     }
 }

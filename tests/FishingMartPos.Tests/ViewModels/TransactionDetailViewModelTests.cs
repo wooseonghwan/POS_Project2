@@ -91,11 +91,11 @@ public class TransactionDetailViewModelTests
     }
 
     [Fact]
-    public async Task CancelCommand_ForCardSale_CallsVanCancelWithOriginalApprovalFields()
+    public async Task ConfirmCancelCommand_ForCardSale_CallsVanCancelWithOriginalApprovalFields()
     {
         var vm = CreateViewModel(CardHeader(), out var sales, out var van, out _);
 
-        await vm.CancelCommand.ExecuteAsync(null);
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
 
         var request = Assert.Single(van.CancelRequests);
         Assert.Equal("99145616", request.OriginalApprovalNo);
@@ -105,22 +105,22 @@ public class TransactionDetailViewModelTests
     }
 
     [Fact]
-    public async Task CancelCommand_ForCashSaleWithoutReceipt_SkipsGatewayCallButCancelsSale()
+    public async Task ConfirmCancelCommand_ForCashSaleWithoutReceipt_SkipsGatewayCallButCancelsSale()
     {
         var vm = CreateViewModel(CashHeaderNoReceipt(), out var sales, out _, out var cashReceipt);
 
-        await vm.CancelCommand.ExecuteAsync(null);
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
 
         Assert.Empty(cashReceipt.CancelRequests);
         Assert.Single(sales.CancelledSaleNos, 11L);
     }
 
     [Fact]
-    public async Task CancelCommand_ForCashSaleWithReceipt_CallsCashReceiptCancelWithOriginalApprovalFieldsAndSkipsVan()
+    public async Task ConfirmCancelCommand_ForCashSaleWithReceipt_CallsCashReceiptCancelWithOriginalApprovalFieldsAndSkipsVan()
     {
         var vm = CreateViewModel(CashHeaderWithReceipt(), out var sales, out var van, out var cashReceipt);
 
-        await vm.CancelCommand.ExecuteAsync(null);
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
 
         var request = Assert.Single(cashReceipt.CancelRequests);
         Assert.Equal("CARD1", request.MerchantPayType);
@@ -133,11 +133,11 @@ public class TransactionDetailViewModelTests
     }
 
     [Fact]
-    public async Task CancelCommand_WhenAlreadyCancelled_DoesNotCallAnyGatewayOrRepository()
+    public async Task ConfirmCancelCommand_WhenAlreadyCancelled_DoesNotCallAnyGatewayOrRepository()
     {
         var vm = CreateViewModel(CardHeader("CANCELLED"), out var sales, out var van, out var cashReceipt);
 
-        await vm.CancelCommand.ExecuteAsync(null);
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
 
         Assert.Empty(van.CancelRequests);
         Assert.Empty(cashReceipt.CancelRequests);
@@ -145,12 +145,12 @@ public class TransactionDetailViewModelTests
     }
 
     [Fact]
-    public async Task CancelCommand_WhenRepositoryCancelFails_SetsStatusErrorAndDoesNotThrow()
+    public async Task ConfirmCancelCommand_WhenRepositoryCancelFails_SetsStatusErrorAndDoesNotThrow()
     {
         var vm = CreateViewModel(CardHeader(), out var sales, out var van, out _);
         sales.ThrowOnCancelSale = true;
 
-        var exception = await Record.ExceptionAsync(() => vm.CancelCommand.ExecuteAsync(null));
+        var exception = await Record.ExceptionAsync(() => vm.ConfirmCancelCommand.ExecuteAsync(null));
 
         Assert.Null(exception);
         Assert.Single(van.CancelRequests);
@@ -206,5 +206,114 @@ public class TransactionDetailViewModelTests
         vm.CloseCommand.Execute(null);
 
         Assert.True(closed);
+    }
+
+    [Fact]
+    public void RequestCancelCommand_WhenCancellable_ShowsConfirmOverlay()
+    {
+        var vm = CreateViewModel(CardHeader(), out _, out _, out _);
+
+        vm.RequestCancelCommand.Execute(null);
+
+        Assert.True(vm.IsCancelConfirmVisible);
+    }
+
+    [Fact]
+    public void RequestCancelCommand_WhenAlreadyCancelled_DoesNotShowConfirmOverlay()
+    {
+        var vm = CreateViewModel(CardHeader("CANCELLED"), out _, out _, out _);
+
+        vm.RequestCancelCommand.Execute(null);
+
+        Assert.False(vm.IsCancelConfirmVisible);
+    }
+
+    [Fact]
+    public void CancelCancelCommand_HidesConfirmOverlayWithoutActing()
+    {
+        var vm = CreateViewModel(CardHeader(), out var sales, out var van, out _);
+        vm.RequestCancelCommand.Execute(null);
+
+        vm.CancelCancelCommand.Execute(null);
+
+        Assert.False(vm.IsCancelConfirmVisible);
+        Assert.Empty(van.CancelRequests);
+        Assert.Empty(sales.CancelledSaleNos);
+    }
+
+    [Fact]
+    public async Task ConfirmCancelCommand_RetryAfterDbFailure_DoesNotCallGatewayAgainAndSucceedsOnRetry()
+    {
+        var vm = CreateViewModel(CardHeader(), out var sales, out var van, out _);
+        sales.ThrowOnCancelSale = true;
+
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
+
+        Assert.Single(van.CancelRequests);
+        Assert.Empty(sales.CancelledSaleNos);
+        Assert.True(vm.IsStatusError);
+        Assert.True(vm.CanCancel);
+
+        sales.ThrowOnCancelSale = false;
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
+
+        // 게이트웨이 취소는 재시도 없이 여전히 1회만 호출되어야 한다
+        Assert.Single(van.CancelRequests);
+        Assert.Single(sales.CancelledSaleNos, 10L);
+        Assert.Equal("CANCELLED", vm.Header.Status);
+        Assert.False(vm.IsStatusError);
+    }
+
+    [Fact]
+    public async Task ConfirmCancelCommand_ForCardSale_WhenVanApprovalNoMissing_SetsStatusErrorAndDoesNotCallGateway()
+    {
+        var header = CardHeader() with { VanApprovalNo = null };
+        var vm = CreateViewModel(header, out var sales, out var van, out _);
+
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
+
+        Assert.Empty(van.CancelRequests);
+        Assert.Empty(sales.CancelledSaleNos);
+        Assert.True(vm.IsStatusError);
+        Assert.Equal("원거래 승인정보가 없어 취소할 수 없습니다", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task ConfirmCancelCommand_ForCashSaleWithReceipt_WhenApprovalDateMissing_SetsStatusErrorAndDoesNotCallGateway()
+    {
+        var header = CashHeaderWithReceipt() with { CashReceiptApprovalDate = null };
+        var vm = CreateViewModel(header, out var sales, out _, out var cashReceipt);
+
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
+
+        Assert.Empty(cashReceipt.CancelRequests);
+        Assert.Empty(sales.CancelledSaleNos);
+        Assert.True(vm.IsStatusError);
+        Assert.Equal("원거래 승인정보가 없어 취소할 수 없습니다", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void ReissueReceiptCommand_ShowsPreviewWithDocumentMatchingSale()
+    {
+        var vm = CreateViewModel(CardHeader(), out _, out _, out _);
+
+        vm.ReissueReceiptCommand.Execute(null);
+
+        Assert.True(vm.IsReceiptPreviewVisible);
+        Assert.NotNull(vm.PreviewedReceipt);
+        Assert.Equal(22500m, vm.PreviewedReceipt!.TotalAmt);
+        Assert.Equal("카드결제1", vm.PreviewedReceipt.PayTypeLabel);
+        Assert.Equal("99145616", vm.PreviewedReceipt.VanApprovalNo);
+    }
+
+    [Fact]
+    public void CloseReceiptPreviewCommand_HidesPreview()
+    {
+        var vm = CreateViewModel(CardHeader(), out _, out _, out _);
+        vm.ReissueReceiptCommand.Execute(null);
+
+        vm.CloseReceiptPreviewCommand.Execute(null);
+
+        Assert.False(vm.IsReceiptPreviewVisible);
     }
 }

@@ -64,4 +64,31 @@ public class PaymentManagementViewModelTests
         Assert.True(vm.IsDetailVisible);
         Assert.Equal("7", vm.SelectedDetail!.SaleNoStr);
     }
+
+    [Fact]
+    public async Task SelectPayTypeFilterCommand_FiltersRowsByPayType()
+    {
+        var vm = CreateViewModel(out var sales);
+        sales.SeedCompletedSales(new List<SaleHeader>
+        {
+            new()
+            {
+                SaleNo = 1, PosCd = "1", SaleDt = DateTime.Today, StaffCd = "ADMIN1",
+                TotalAmt = 5000m, PayType = "CASH",
+            },
+            new()
+            {
+                SaleNo = 2, PosCd = "1", SaleDt = DateTime.Today, StaffCd = "ADMIN1",
+                TotalAmt = 22500m, PayType = "CARD1", VanApprovalNo = "99145616",
+            },
+        });
+        await vm.LoadAsync();
+        Assert.Equal(2, vm.Rows.Count);
+
+        await vm.SelectPayTypeFilterCommand.ExecuteAsync("CARD1");
+
+        var row = Assert.Single(vm.Rows);
+        Assert.Equal(2, row.SaleNo);
+        Assert.Equal("카드결제1", row.PayTypeLabel);
+    }
 }

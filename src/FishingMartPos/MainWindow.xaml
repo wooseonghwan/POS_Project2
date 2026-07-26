@@ -45,6 +45,9 @@
         <DataTemplate DataType="{x:Type vm:CodeManageViewModel}">
             <views:CodeManageView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PaymentManagementViewModel}">
+            <views:PaymentManagementView />
+        </DataTemplate>
     </Window.Resources>
     <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
         <ContentControl x:Name="CurrentViewHost" Content="{Binding CurrentContent}" />

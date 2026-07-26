@@ -25,10 +25,14 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TotalAmtStr))]
     [NotifyPropertyChangedFor(nameof(InstallmentLabelStr))]
     [NotifyPropertyChangedFor(nameof(StatusLabelStr))]
+    [NotifyPropertyChangedFor(nameof(IsInstallmentApplicable))]
     private SaleHeader _header;
 
     [ObservableProperty]
     private bool _isCancelling;
+
+    [ObservableProperty]
+    private bool _isCancelConfirmVisible;
 
     [ObservableProperty]
     private bool _isConvertingToReceipt;
@@ -40,6 +44,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     private string _selectedReceiptType = "PERSONAL";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirmReceiptConversion))]
     private string? _selectedReceiptMerchant;
 
     [ObservableProperty]
@@ -47,6 +52,14 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isStatusError;
+
+    [ObservableProperty]
+    private bool _isReceiptPreviewVisible;
+
+    [ObservableProperty]
+    private ReceiptDocument? _previewedReceipt;
+
+    private bool _gatewayCancelAlreadySucceeded;
 
     public IReadOnlyList<SaleDetailLine> Lines { get; }
 
@@ -75,6 +88,8 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
 
     public bool CanCancel => Header.Status == "COMPLETE";
     public bool CanConvertToCashReceipt => Header.PayType == "CASH" && Header.CashReceiptType == "NONE" && Header.Status == "COMPLETE";
+    public bool CanConfirmReceiptConversion => SelectedReceiptMerchant is not null;
+    public bool IsInstallmentApplicable => Header.PayType != "CASH";
     public string SaleNoStr => Header.SaleNo.ToString();
     public string SaleDtStr => Header.SaleDt.ToString("yyyy-MM-dd HH:mm:ss");
     public string PayTypeLabelStr => Header.PayType switch
@@ -89,36 +104,67 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     public string StatusLabelStr => Header.Status == "CANCELLED" ? "취소됨" : "정상";
 
     [RelayCommand]
-    private async Task Cancel()
+    private void RequestCancel()
     {
+        if (!CanCancel) return;
+        StatusMessage = null;
+        IsCancelConfirmVisible = true;
+    }
+
+    [RelayCommand]
+    private void CancelCancel() => IsCancelConfirmVisible = false;
+
+    [RelayCommand]
+    private async Task ConfirmCancel()
+    {
+        IsCancelConfirmVisible = false;
         if (!CanCancel || IsCancelling) return;
 
         IsCancelling = true;
         StatusMessage = null;
         try
         {
-            if (Header.PayType != "CASH")
+            if (!_gatewayCancelAlreadySucceeded)
             {
-                var result = await _vanGateway.RequestCancelAsync(new VanCancelRequest(
-                    _currentPosCode, Header.PayType, Header.TotalAmt, Header.InstallmentMonths,
-                    Header.VanApprovalNo!, Header.SaleDt.ToString("yyMMdd")));
-                if (!result.IsCancelled)
+                if (Header.PayType != "CASH")
                 {
-                    IsStatusError = true;
-                    StatusMessage = result.ResponseMessage;
-                    return;
+                    if (Header.VanApprovalNo is null)
+                    {
+                        IsStatusError = true;
+                        StatusMessage = "원거래 승인정보가 없어 취소할 수 없습니다";
+                        return;
+                    }
+
+                    var result = await _vanGateway.RequestCancelAsync(new VanCancelRequest(
+                        _currentPosCode, Header.PayType, Header.TotalAmt, Header.InstallmentMonths,
+                        Header.VanApprovalNo, Header.SaleDt.ToString("yyMMdd")));
+                    if (!result.IsCancelled)
+                    {
+                        IsStatusError = true;
+                        StatusMessage = result.ResponseMessage;
+                        return;
+                    }
+                    _gatewayCancelAlreadySucceeded = true;
                 }
-            }
-            else if (Header.CashReceiptType != "NONE")
-            {
-                var result = await _cashReceiptGateway.RequestCancelAsync(new CashReceiptCancelRequest(
-                    _currentPosCode, Header.CashReceiptMerchant!, Header.CashReceiptType, Header.TotalAmt,
-                    Header.CashReceiptApprovalNo!, Header.CashReceiptApprovalDate!));
-                if (!result.IsCancelled)
+                else if (Header.CashReceiptType != "NONE")
                 {
-                    IsStatusError = true;
-                    StatusMessage = result.ResponseMessage;
-                    return;
+                    if (Header.CashReceiptMerchant is null || Header.CashReceiptApprovalNo is null || Header.CashReceiptApprovalDate is null)
+                    {
+                        IsStatusError = true;
+                        StatusMessage = "원거래 승인정보가 없어 취소할 수 없습니다";
+                        return;
+                    }
+
+                    var result = await _cashReceiptGateway.RequestCancelAsync(new CashReceiptCancelRequest(
+                        _currentPosCode, Header.CashReceiptMerchant, Header.CashReceiptType, Header.TotalAmt,
+                        Header.CashReceiptApprovalNo, Header.CashReceiptApprovalDate));
+                    if (!result.IsCancelled)
+                    {
+                        IsStatusError = true;
+                        StatusMessage = result.ResponseMessage;
+                        return;
+                    }
+                    _gatewayCancelAlreadySucceeded = true;
                 }
             }
 
@@ -129,7 +175,9 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
             catch (Exception)
             {
                 IsStatusError = true;
-                StatusMessage = "취소 처리 중 오류가 발생했습니다. 담당자에게 문의하세요";
+                StatusMessage = _gatewayCancelAlreadySucceeded
+                    ? "결제 취소는 완료됐지만 저장에 실패했습니다. 다시 시도해주세요"
+                    : "취소 처리 중 오류가 발생했습니다. 담당자에게 문의하세요";
                 return;
             }
 
@@ -211,10 +259,22 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ReissueReceipt()
+    private void ReissueReceipt()
     {
-        var document = ReceiptDocumentFactory.FromSale(Header, Lines);
-        bool printed = await _receiptPrinter.PrintAsync(document);
+        PreviewedReceipt = ReceiptDocumentFactory.FromSale(Header, Lines);
+        IsReceiptPreviewVisible = true;
+        IsStatusError = false;
+        StatusMessage = null;
+    }
+
+    [RelayCommand]
+    private void CloseReceiptPreview() => IsReceiptPreviewVisible = false;
+
+    [RelayCommand]
+    private async Task PrintReceipt()
+    {
+        if (PreviewedReceipt is null) return;
+        bool printed = await _receiptPrinter.PrintAsync(PreviewedReceipt);
         if (!printed)
         {
             IsStatusError = true;

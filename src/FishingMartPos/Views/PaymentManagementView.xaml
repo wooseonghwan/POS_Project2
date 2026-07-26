@@ -8,6 +8,10 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:ZeroCountToVisibilityConverter x:Key="ZeroCountToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <Style x:Key="PayTypeFilterButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="Padding" Value="10,4" />
+        </Style>
     </UserControl.Resources>
     <Grid Background="{DynamicResource MenuBackground}">
         <Grid.RowDefinitions>
@@ -39,10 +43,54 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="결제수단" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" />
-                    <Button Content="전체" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="ALL" Margin="0,0,4,0" Padding="10,4" />
-                    <Button Content="현금" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CASH" Margin="0,0,4,0" Padding="10,4" />
-                    <Button Content="카드결제1" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD1" Margin="0,0,4,0" Padding="10,4" />
-                    <Button Content="카드결제2" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD2" Padding="10,4" />
+                    <Button Content="전체" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="ALL">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PayTypeFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PayTypeFilter}" Value="ALL">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="현금" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CASH">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PayTypeFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PayTypeFilter}" Value="CASH">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="카드결제1" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD1">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PayTypeFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PayTypeFilter}" Value="CARD1">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="카드결제2" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD2" Margin="0" Padding="10,4">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PayTypeFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PayTypeFilter}" Value="CARD2">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -63,12 +111,14 @@
                                         <ColumnDefinition Width="1.4*" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="0.6*" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding SaleDtStr}" FontSize="12" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="{Binding PayTypeLabel}" FontSize="12" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="2" Text="{Binding TotalAmtStr}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
-                                    <TextBlock Grid.Column="3" Text="{Binding StatusLabel}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="{Binding ApprovalNo}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                                    <TextBlock Grid.Column="4" Text="{Binding StatusLabel}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" />
                                 </Grid>
                             </Button>
                         </DataTemplate>
