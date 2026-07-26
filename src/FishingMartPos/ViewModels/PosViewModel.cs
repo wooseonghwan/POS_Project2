@@ -29,6 +29,7 @@ public sealed partial class PosViewModel : ObservableObject
     private string _activeCategoryCode = string.Empty;
 
     private static readonly int[] FixedInstallmentMonths = { 0, 2, 3, 4, 6, 12 };
+    private const decimal InstallmentMinimumAmount = 50000m;
 
     [ObservableProperty]
     private string? _selectedBarcode;
@@ -115,6 +116,7 @@ public sealed partial class PosViewModel : ObservableObject
     public bool CanPay => !IsCardProcessing;
 
     public string SelectedInstallmentLabel => SelectedInstallmentMonths <= 0 ? "일시불" : $"{SelectedInstallmentMonths}개월";
+    public bool IsInstallmentEligible => _cart.Total >= InstallmentMinimumAmount;
 
     public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
     public string TotalQtyStr => _cart.TotalQty.ToString("N0");
@@ -359,6 +361,7 @@ public sealed partial class PosViewModel : ObservableObject
         IsCustomInstallmentSelected = false;
         CustomInstallmentMonthsText = string.Empty;
         IsCardApprovalInProgress = false;
+        RefreshInstallmentOptions();
         IsCardPaymentVisible = true;
     }
 
@@ -431,13 +434,18 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private void SelectInstallment(string monthsParam)
     {
+        int months = int.Parse(monthsParam);
+        if (months > 0 && !IsInstallmentEligible) return;
+
         IsCustomInstallmentSelected = false;
-        SelectedInstallmentMonths = int.Parse(monthsParam);
+        SelectedInstallmentMonths = months;
     }
 
     [RelayCommand]
     private void SelectCustomInstallment()
     {
+        if (!IsInstallmentEligible) return;
+
         IsCustomInstallmentSelected = true;
         SelectedInstallmentMonths = 0;
         CustomInstallmentMonthsText = string.Empty;
@@ -464,6 +472,7 @@ public sealed partial class PosViewModel : ObservableObject
                 Months = months,
                 Label = months == 0 ? "일시불" : $"{months}개월",
                 IsSelected = !IsCustomInstallmentSelected && SelectedInstallmentMonths == months,
+                IsEnabled = months == 0 || IsInstallmentEligible,
                 SelectCommand = new RelayCommand(() => SelectInstallment(capturedMonths.ToString())),
             });
         }

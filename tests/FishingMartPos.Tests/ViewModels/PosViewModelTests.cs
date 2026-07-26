@@ -314,9 +314,12 @@ public class PosViewModelTests
     [InlineData("3", 3, "3개월")]
     [InlineData("12", 12, "12개월")]
     [InlineData("0", 0, "일시불")]
-    public void SelectInstallment_SetsMonthsAndLabelAndClearsCustomMode(string param, int expectedMonths, string expectedLabel)
+    public async Task SelectInstallment_SetsMonthsAndLabelAndClearsCustomMode(string param, int expectedMonths, string expectedLabel)
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 5,000원 x 10 = 50,000원 — 할부 가능 최소금액
         vm.SelectCustomInstallmentCommand.Execute(null); // 기타개월 먼저 선택해둔 상태에서
 
         vm.SelectInstallmentCommand.Execute(param);
@@ -327,9 +330,12 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public void SelectCustomInstallment_EnablesCustomModeAndResetsToZeroUntilTyped()
+    public async Task SelectCustomInstallment_EnablesCustomModeAndResetsToZeroUntilTyped()
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원 — 할부 가능 최소금액
 
         vm.SelectCustomInstallmentCommand.Execute(null);
 
@@ -339,9 +345,12 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public void CustomInstallmentMonthsText_WhenCustomModeActive_ParsesIntoSelectedMonths()
+    public async Task CustomInstallmentMonthsText_WhenCustomModeActive_ParsesIntoSelectedMonths()
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원 — 할부 가능 최소금액
         vm.SelectCustomInstallmentCommand.Execute(null);
 
         vm.CustomInstallmentMonthsText = "8";
@@ -351,9 +360,12 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public void CustomInstallmentMonthsText_WithNonPositiveOrInvalidInput_FallsBackToZero()
+    public async Task CustomInstallmentMonthsText_WithNonPositiveOrInvalidInput_FallsBackToZero()
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원 — 할부 가능 최소금액
         vm.SelectCustomInstallmentCommand.Execute(null);
 
         vm.CustomInstallmentMonthsText = "abc";
@@ -364,9 +376,12 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public void CustomInstallmentMonthsText_WhenCustomModeNotActive_IsIgnored()
+    public async Task CustomInstallmentMonthsText_WhenCustomModeNotActive_IsIgnored()
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원 — 할부 가능 최소금액
         vm.SelectInstallmentCommand.Execute("2"); // 고정 옵션 선택, 커스텀 모드 아님
 
         vm.CustomInstallmentMonthsText = "9"; // 코드 경로상 발생하지 않지만 방어적으로 확인
@@ -395,9 +410,12 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public void InstallmentOptions_SelectingOption_SetsSelectedMonthsAndUpdatesIsSelected()
+    public async Task InstallmentOptions_SelectingOption_SetsSelectedMonthsAndUpdatesIsSelected()
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원 — 할부 가능 최소금액
 
         vm.InstallmentOptions[1].SelectCommand.Execute(null); // "2개월"
 
@@ -411,9 +429,12 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public void InstallmentOptions_WhenCustomInstallmentSelectedWithMatchingMonths_NoFixedOptionShowsSelected()
+    public async Task InstallmentOptions_WhenCustomInstallmentSelectedWithMatchingMonths_NoFixedOptionShowsSelected()
     {
         var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원 — 할부 가능 최소금액
         vm.SelectCustomInstallmentCommand.Execute(null);
 
         vm.CustomInstallmentMonthsText = "6"; // matches a fixed option's months
@@ -502,6 +523,7 @@ public class PosViewModelTests
         var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway);
         await vm.LoadAsync();
         vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 5,000원 x 10 = 50,000원 — 할부 가능 최소금액
 
         await vm.PayCard1Command.ExecuteAsync(null);
         vm.SelectInstallmentCommand.Execute("3");
@@ -754,6 +776,61 @@ public class PosViewModelTests
         await vm.PayCard2Command.ExecuteAsync(null);
 
         Assert.Equal(0, vm.SelectedInstallmentMonths);
+        Assert.False(vm.IsCustomInstallmentSelected);
+    }
+
+    [Fact]
+    public async Task PayCard1_WithCartUnderInstallmentMinimum_DisablesInstallmentOptionsExceptLumpSum()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // 5,000원 — 5만원 미만
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        Assert.False(vm.IsInstallmentEligible);
+        var lumpSum = vm.InstallmentOptions.Single(o => o.Months == 0);
+        Assert.True(lumpSum.IsEnabled);
+        Assert.All(vm.InstallmentOptions.Where(o => o.Months > 0), o => Assert.False(o.IsEnabled));
+    }
+
+    [Fact]
+    public async Task PayCard1_WithCartAtInstallmentMinimum_EnablesAllInstallmentOptions()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // qty=10 → 50,000원
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        Assert.True(vm.IsInstallmentEligible);
+        Assert.All(vm.InstallmentOptions, o => Assert.True(o.IsEnabled));
+    }
+
+    [Fact]
+    public async Task SelectInstallment_WhenCartUnderMinimum_IgnoresNonLumpSumSelection()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // 5,000원
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        vm.SelectInstallmentCommand.Execute("3");
+
+        Assert.Equal(0, vm.SelectedInstallmentMonths);
+    }
+
+    [Fact]
+    public async Task SelectCustomInstallment_WhenCartUnderMinimum_IsIgnored()
+    {
+        var vm = CreateViewModel(out _, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null); // 5,000원
+        await vm.PayCard1Command.ExecuteAsync(null);
+
+        vm.SelectCustomInstallmentCommand.Execute(null);
+
         Assert.False(vm.IsCustomInstallmentSelected);
     }
 }
