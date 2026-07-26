@@ -780,6 +780,54 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public void SelectedCashReceiptType_DefaultsToNone()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        Assert.Equal("NONE", vm.SelectedCashReceiptType);
+        Assert.Null(vm.SelectedCashReceiptMerchant);
+        Assert.True(vm.CanConfirmCashPayment);
+    }
+
+    [Fact]
+    public void SelectCashReceiptType_ToPersonal_RequiresMerchantBeforeConfirming()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        vm.SelectCashReceiptTypeCommand.Execute("PERSONAL");
+
+        Assert.Equal("PERSONAL", vm.SelectedCashReceiptType);
+        Assert.Null(vm.SelectedCashReceiptMerchant);
+        Assert.False(vm.CanConfirmCashPayment);
+    }
+
+    [Fact]
+    public void SelectCashReceiptMerchant_AfterSelectingType_EnablesConfirm()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectCashReceiptTypeCommand.Execute("BUSINESS");
+
+        vm.SelectCashReceiptMerchantCommand.Execute("CARD2");
+
+        Assert.Equal("CARD2", vm.SelectedCashReceiptMerchant);
+        Assert.True(vm.CanConfirmCashPayment);
+    }
+
+    [Fact]
+    public void SelectCashReceiptType_BackToNone_ClearsMerchantAndReEnablesConfirm()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectCashReceiptTypeCommand.Execute("PERSONAL");
+        vm.SelectCashReceiptMerchantCommand.Execute("CARD1");
+
+        vm.SelectCashReceiptTypeCommand.Execute("NONE");
+
+        Assert.Equal("NONE", vm.SelectedCashReceiptType);
+        Assert.Null(vm.SelectedCashReceiptMerchant);
+        Assert.True(vm.CanConfirmCashPayment);
+    }
+
+    [Fact]
     public async Task PayCard1_WithCartUnderInstallmentMinimum_DisablesInstallmentOptionsExceptLumpSum()
     {
         var vm = CreateViewModel(out _, out _);

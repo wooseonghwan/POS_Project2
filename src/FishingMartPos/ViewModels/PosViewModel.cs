@@ -81,6 +81,14 @@ public sealed partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private string _customInstallmentMonthsText = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirmCashPayment))]
+    private string _selectedCashReceiptType = "NONE";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirmCashPayment))]
+    private string? _selectedCashReceiptMerchant;
+
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
@@ -117,6 +125,7 @@ public sealed partial class PosViewModel : ObservableObject
 
     public string SelectedInstallmentLabel => SelectedInstallmentMonths <= 0 ? "일시불" : $"{SelectedInstallmentMonths}개월";
     public bool IsInstallmentEligible => _cart.Total >= InstallmentMinimumAmount;
+    public bool CanConfirmCashPayment => SelectedCashReceiptType == "NONE" || SelectedCashReceiptMerchant is not null;
 
     public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
     public string TotalQtyStr => _cart.TotalQty.ToString("N0");
@@ -476,6 +485,22 @@ public sealed partial class PosViewModel : ObservableObject
                 SelectCommand = new RelayCommand(() => SelectInstallment(capturedMonths.ToString())),
             });
         }
+    }
+
+    [RelayCommand]
+    private void SelectCashReceiptType(string type)
+    {
+        SelectedCashReceiptType = type;
+        if (type == "NONE")
+        {
+            SelectedCashReceiptMerchant = null;
+        }
+    }
+
+    [RelayCommand]
+    private void SelectCashReceiptMerchant(string merchant)
+    {
+        SelectedCashReceiptMerchant = merchant;
     }
 
     private List<SaleDetailLine> BuildDetailLines() =>
