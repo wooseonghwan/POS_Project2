@@ -53,7 +53,7 @@ public class PosViewModelPaymentTests
     }
 
     [Fact]
-    public async Task PayCash_WithItemsInCart_CreatesSaleAndClearsCart()
+    public async Task PayCash_WithItemsInCart_OpensConfirmPopupWithoutCreatingSale()
     {
         var vm = CreateViewModel(out var sales, out _);
         await vm.LoadAsync();
@@ -61,10 +61,47 @@ public class PosViewModelPaymentTests
 
         await vm.PayCashCommand.ExecuteAsync(null);
 
+        Assert.True(vm.IsCashConfirmVisible);
+        Assert.Empty(sales.CreatedSales);
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_CreatesSaleClosesPopupAndClearsCart()
+    {
+        var vm = CreateViewModel(out var sales, out _);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
         var sale = Assert.Single(sales.CreatedSales);
         Assert.Equal("CASH", sale.Header.PayType);
         Assert.Equal(5000, sale.Header.TotalAmt);
+        Assert.False(vm.IsCashConfirmVisible);
         Assert.Empty(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task CancelCashPayment_ClosesPopupAndKeepsCartAndCashInputUntouched()
+    {
+        var vm = CreateViewModel(out var sales, out _);
+        await vm.LoadAsync();
+        // 숫자 키패드는 장바구니 줄이 선택되어 있으면 수량 버퍼로, 선택된 줄이 없으면 받은금액 입력으로 들어간다
+        // (PosViewModel.PressKey) — 상품을 담기 *전에* 눌러야 받은금액에 반영된다(AddToCart가 SelectedBarcode를 설정해버리므로).
+        vm.PressKeyCommand.Execute("5");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+
+        vm.CancelCashPaymentCommand.Execute(null);
+
+        Assert.False(vm.IsCashConfirmVisible);
+        Assert.Empty(sales.CreatedSales);
+        Assert.Single(vm.CartLines);
+        Assert.Equal("5,000원", vm.CashInputStr);
     }
 
     [Fact]

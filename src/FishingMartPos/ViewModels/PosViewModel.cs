@@ -60,6 +60,9 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isResetOrderConfirmVisible;
 
     [ObservableProperty]
+    private bool _isCashConfirmVisible;
+
+    [ObservableProperty]
     private bool _isCardPaymentVisible;
 
     [ObservableProperty]
@@ -298,7 +301,33 @@ public sealed partial class PosViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task PayCash() => await PayAsync("CASH", "현금 결제 완료");
+    private async Task PayCash()
+    {
+        if (!CanPay) return;
+        if (_cart.Lines.Count == 0)
+        {
+            IsToastWarning = true;
+            ToastMessage = "결제할 항목이 존재하지 않습니다";
+            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+            ToastMessage = null;
+            return;
+        }
+
+        IsCashConfirmVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmCashPayment()
+    {
+        IsCashConfirmVisible = false;
+        await PayAsync("CASH", "현금 결제 완료");
+    }
+
+    [RelayCommand]
+    private void CancelCashPayment()
+    {
+        IsCashConfirmVisible = false;
+    }
 
     private string? _pendingCardPayType;
 
