@@ -406,83 +406,30 @@
                     <!-- 할부 선택 상태 -->
                     <StackPanel Visibility="{Binding IsCardApprovalInProgress, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                         <TextBlock Text="할부개월 선택" FontSize="13" Foreground="{DynamicResource MutedText}" Margin="0,0,0,8" />
-                        <UniformGrid Columns="4" Rows="2">
-                            <Button Content="일시불" Command="{Binding SelectInstallmentCommand}" CommandParameter="0">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding SelectedInstallmentMonths}" Value="0" />
-                                                    <Condition Binding="{Binding IsCustomInstallmentSelected}" Value="False" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="2개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="2">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="2">
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="3개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="3">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="3">
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="4개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="4">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="4">
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="6개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="6">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="6">
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="12개월" Command="{Binding SelectInstallmentCommand}" CommandParameter="12">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedInstallmentMonths}" Value="12">
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                        <ItemsControl ItemsSource="{Binding InstallmentOptions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Label}" Command="{Binding SelectCommand}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                                        <Setter Property="Foreground" Value="White" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <UniformGrid Columns="4" Margin="0,4,0,0">
                             <Button Content="기타개월" Command="{Binding SelectCustomInstallmentCommand}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource InstallmentOptionButtonStyle}">

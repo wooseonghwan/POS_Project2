@@ -375,6 +375,53 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public void InstallmentOptions_HasSixFixedOptionsWithCorrectMonthsAndLabels()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        Assert.Equal(6, vm.InstallmentOptions.Count);
+        Assert.Equal(0, vm.InstallmentOptions[0].Months);
+        Assert.Equal("일시불", vm.InstallmentOptions[0].Label);
+        Assert.Equal(2, vm.InstallmentOptions[1].Months);
+        Assert.Equal("2개월", vm.InstallmentOptions[1].Label);
+        Assert.Equal(3, vm.InstallmentOptions[2].Months);
+        Assert.Equal("3개월", vm.InstallmentOptions[2].Label);
+        Assert.Equal(4, vm.InstallmentOptions[3].Months);
+        Assert.Equal("4개월", vm.InstallmentOptions[3].Label);
+        Assert.Equal(6, vm.InstallmentOptions[4].Months);
+        Assert.Equal("6개월", vm.InstallmentOptions[4].Label);
+        Assert.Equal(12, vm.InstallmentOptions[5].Months);
+        Assert.Equal("12개월", vm.InstallmentOptions[5].Label);
+    }
+
+    [Fact]
+    public void InstallmentOptions_SelectingOption_SetsSelectedMonthsAndUpdatesIsSelected()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        vm.InstallmentOptions[1].SelectCommand.Execute(null); // "2개월"
+
+        Assert.Equal(2, vm.SelectedInstallmentMonths);
+        Assert.True(vm.InstallmentOptions[1].IsSelected);
+        Assert.False(vm.InstallmentOptions[0].IsSelected);
+        Assert.False(vm.InstallmentOptions[2].IsSelected);
+        Assert.False(vm.InstallmentOptions[3].IsSelected);
+        Assert.False(vm.InstallmentOptions[4].IsSelected);
+        Assert.False(vm.InstallmentOptions[5].IsSelected);
+    }
+
+    [Fact]
+    public void InstallmentOptions_WhenCustomInstallmentSelectedWithMatchingMonths_NoFixedOptionShowsSelected()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectCustomInstallmentCommand.Execute(null);
+
+        vm.CustomInstallmentMonthsText = "6"; // matches a fixed option's months
+
+        Assert.All(vm.InstallmentOptions, option => Assert.False(option.IsSelected));
+    }
+
+    [Fact]
     public async Task PayCard1_WithEmptyCart_DoesNotCallGatewayOrCreateSale()
     {
         var vanGateway = new FakeVanPaymentGateway(ApprovedResult);

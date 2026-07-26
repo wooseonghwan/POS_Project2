@@ -28,6 +28,8 @@ public sealed partial class PosViewModel : ObservableObject
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
     private string _activeCategoryCode = string.Empty;
 
+    private static readonly int[] FixedInstallmentMonths = { 0, 2, 3, 4, 6, 12 };
+
     [ObservableProperty]
     private string? _selectedBarcode;
 
@@ -82,6 +84,7 @@ public sealed partial class PosViewModel : ObservableObject
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
     public ObservableCollection<HeldOrderSummaryViewModel> HeldOrders { get; } = new();
+    public ObservableCollection<InstallmentOptionViewModel> InstallmentOptions { get; } = new();
 
     public PosViewModel(
         IProductRepository productRepository,
@@ -105,6 +108,8 @@ public sealed partial class PosViewModel : ObservableObject
         _mainMenuViewModel = mainMenuViewModel;
         _vanGateway = vanGateway;
         _kiccPosClient = kiccPosClient;
+
+        RefreshInstallmentOptions();
     }
 
     public bool CanPay => !IsCardProcessing;
@@ -439,6 +444,26 @@ public sealed partial class PosViewModel : ObservableObject
     {
         if (!IsCustomInstallmentSelected) return;
         SelectedInstallmentMonths = int.TryParse(value, out int months) && months > 0 ? months : 0;
+    }
+
+    partial void OnSelectedInstallmentMonthsChanged(int value) => RefreshInstallmentOptions();
+
+    partial void OnIsCustomInstallmentSelectedChanged(bool value) => RefreshInstallmentOptions();
+
+    private void RefreshInstallmentOptions()
+    {
+        InstallmentOptions.Clear();
+        foreach (var months in FixedInstallmentMonths)
+        {
+            int capturedMonths = months;
+            InstallmentOptions.Add(new InstallmentOptionViewModel
+            {
+                Months = months,
+                Label = months == 0 ? "일시불" : $"{months}개월",
+                IsSelected = !IsCustomInstallmentSelected && SelectedInstallmentMonths == months,
+                SelectCommand = new RelayCommand(() => SelectInstallment(capturedMonths.ToString())),
+            });
+        }
     }
 
     private List<SaleDetailLine> BuildDetailLines() =>
