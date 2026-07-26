@@ -103,4 +103,26 @@ public class KiccMessageBuilderTests
 
         Assert.Contains("S09=03;", sendData);
     }
+
+    [Fact]
+    public void BuildApprovalRequest_WithSignatureHex_AppendsS30AndS31Fields()
+    {
+        var merchant = new KiccMerchantConfig("CARD1", "0788888", "1234567890");
+
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 60000m, "POSTRAN123", installmentMonths: 0, signatureHex: "AB12CD");
+
+        Assert.EndsWith("S23=POSTRAN123;S30=1;S31=AB12CD;", sendData);
+    }
+
+    [Fact]
+    public void BuildApprovalRequest_WithoutSignatureHex_OmitsS30AndS31Fields()
+    {
+        var merchant = new KiccMerchantConfig("CARD1", "0788888", "1234567890");
+
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 1004m, "POSTRAN123", installmentMonths: 0);
+
+        Assert.Equal("S00=002;S01=D1;S02=40;S03=0788888;S04=1234567890;S09=00;S10=1004;S15=0;S16=91;S23=POSTRAN123;", sendData);
+        Assert.DoesNotContain("S30", sendData);
+        Assert.DoesNotContain("S31", sendData);
+    }
 }

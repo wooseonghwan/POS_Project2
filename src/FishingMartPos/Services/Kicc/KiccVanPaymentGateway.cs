@@ -17,7 +17,7 @@ public sealed class KiccVanPaymentGateway : IVanPaymentGateway
     {
         var merchant = _merchantsByPayType[request.PayType];
         var posTranNo = BuildPosTranNo(request.PosCode);
-        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, request.Amount, posTranNo, request.InstallmentMonths);
+        var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, request.Amount, posTranNo, request.InstallmentMonths, request.SignatureHex);
 
         var raw = await _client.RequestAsync(0xFB, 0x14, 0x04, sendData);
 

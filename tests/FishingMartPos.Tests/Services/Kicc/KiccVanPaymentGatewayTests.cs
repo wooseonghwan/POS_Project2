@@ -134,4 +134,16 @@ public class KiccVanPaymentGatewayTests
         Assert.Contains("S01=D4;", sendData);
         Assert.Contains("S12=99145616;S13=260726;", sendData);
     }
+
+    [Fact]
+    public async Task RequestApprovalAsync_WithSignatureHex_ForwardsToSendData()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=0000;R09=1;"));
+        var gateway = new KiccVanPaymentGateway(client, Merchants);
+
+        await gateway.RequestApprovalAsync(new VanApprovalRequest("1", "CARD1", 60000m, SignatureHex: "AB12CD"));
+
+        var sendData = Assert.Single(client.Requests).SendData;
+        Assert.Contains("S30=1;S31=AB12CD;", sendData);
+    }
 }

@@ -7,7 +7,7 @@ public interface IVanPaymentGateway
     Task<VanCancelResult> RequestCancelAsync(VanCancelRequest request);
 }
 
-public sealed record VanApprovalRequest(string PosCode, string PayType, decimal Amount, int InstallmentMonths = 0);
+public sealed record VanApprovalRequest(string PosCode, string PayType, decimal Amount, int InstallmentMonths = 0, string? SignatureHex = null);
 
 public sealed class VanApprovalResult
 {
