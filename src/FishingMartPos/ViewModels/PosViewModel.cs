@@ -59,6 +59,16 @@ public sealed partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private bool _isResetOrderConfirmVisible;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedInstallmentLabel))]
+    private int _selectedInstallmentMonths;
+
+    [ObservableProperty]
+    private bool _isCustomInstallmentSelected;
+
+    [ObservableProperty]
+    private string _customInstallmentMonthsText = string.Empty;
+
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = new();
     public ObservableCollection<ProductTileViewModel> VisibleProducts { get; } = new();
     public ObservableCollection<CartLineViewModel> CartLines { get; } = new();
@@ -89,6 +99,8 @@ public sealed partial class PosViewModel : ObservableObject
     }
 
     public bool CanPay => !IsCardProcessing;
+
+    public string SelectedInstallmentLabel => SelectedInstallmentMonths <= 0 ? "일시불" : $"{SelectedInstallmentMonths}개월";
 
     public string TotalAmountStr => CurrencyFormat.Format(_cart.Total);
     public string TotalQtyStr => _cart.TotalQty.ToString("N0");
@@ -287,6 +299,27 @@ public sealed partial class PosViewModel : ObservableObject
 
     [RelayCommand]
     private async Task PayCard2() => await PayCardAsync("CARD2");
+
+    [RelayCommand]
+    private void SelectInstallment(string monthsParam)
+    {
+        IsCustomInstallmentSelected = false;
+        SelectedInstallmentMonths = int.Parse(monthsParam);
+    }
+
+    [RelayCommand]
+    private void SelectCustomInstallment()
+    {
+        IsCustomInstallmentSelected = true;
+        SelectedInstallmentMonths = 0;
+        CustomInstallmentMonthsText = string.Empty;
+    }
+
+    partial void OnCustomInstallmentMonthsTextChanged(string value)
+    {
+        if (!IsCustomInstallmentSelected) return;
+        SelectedInstallmentMonths = int.TryParse(value, out int months) && months > 0 ? months : 0;
+    }
 
     private List<SaleDetailLine> BuildDetailLines() =>
         _cart.Lines

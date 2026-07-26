@@ -300,6 +300,81 @@ public class PosViewModelTests
     }
 
     [Fact]
+    public void SelectedInstallmentMonths_DefaultsToZero()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        Assert.Equal(0, vm.SelectedInstallmentMonths);
+        Assert.Equal("일시불", vm.SelectedInstallmentLabel);
+        Assert.False(vm.IsCustomInstallmentSelected);
+    }
+
+    [Theory]
+    [InlineData("2", 2, "2개월")]
+    [InlineData("3", 3, "3개월")]
+    [InlineData("12", 12, "12개월")]
+    [InlineData("0", 0, "일시불")]
+    public void SelectInstallment_SetsMonthsAndLabelAndClearsCustomMode(string param, int expectedMonths, string expectedLabel)
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectCustomInstallmentCommand.Execute(null); // 기타개월 먼저 선택해둔 상태에서
+
+        vm.SelectInstallmentCommand.Execute(param);
+
+        Assert.Equal(expectedMonths, vm.SelectedInstallmentMonths);
+        Assert.Equal(expectedLabel, vm.SelectedInstallmentLabel);
+        Assert.False(vm.IsCustomInstallmentSelected);
+    }
+
+    [Fact]
+    public void SelectCustomInstallment_EnablesCustomModeAndResetsToZeroUntilTyped()
+    {
+        var vm = CreateViewModel(out _, out _);
+
+        vm.SelectCustomInstallmentCommand.Execute(null);
+
+        Assert.True(vm.IsCustomInstallmentSelected);
+        Assert.Equal(0, vm.SelectedInstallmentMonths);
+        Assert.Equal(string.Empty, vm.CustomInstallmentMonthsText);
+    }
+
+    [Fact]
+    public void CustomInstallmentMonthsText_WhenCustomModeActive_ParsesIntoSelectedMonths()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectCustomInstallmentCommand.Execute(null);
+
+        vm.CustomInstallmentMonthsText = "8";
+
+        Assert.Equal(8, vm.SelectedInstallmentMonths);
+        Assert.Equal("8개월", vm.SelectedInstallmentLabel);
+    }
+
+    [Fact]
+    public void CustomInstallmentMonthsText_WithNonPositiveOrInvalidInput_FallsBackToZero()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectCustomInstallmentCommand.Execute(null);
+
+        vm.CustomInstallmentMonthsText = "abc";
+        Assert.Equal(0, vm.SelectedInstallmentMonths);
+
+        vm.CustomInstallmentMonthsText = "-3";
+        Assert.Equal(0, vm.SelectedInstallmentMonths);
+    }
+
+    [Fact]
+    public void CustomInstallmentMonthsText_WhenCustomModeNotActive_IsIgnored()
+    {
+        var vm = CreateViewModel(out _, out _);
+        vm.SelectInstallmentCommand.Execute("2"); // 고정 옵션 선택, 커스텀 모드 아님
+
+        vm.CustomInstallmentMonthsText = "9"; // 코드 경로상 발생하지 않지만 방어적으로 확인
+
+        Assert.Equal(2, vm.SelectedInstallmentMonths); // 커스텀 모드가 아니므로 반영되지 않아야 함
+    }
+
+    [Fact]
     public async Task PayCard1_WithEmptyCart_DoesNotCallGatewayOrCreateSale()
     {
         var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
