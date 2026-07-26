@@ -257,4 +257,92 @@ public class SalesRepositoryTests
                 new { Stock = stockBefore, Barcode = barcode });
         }
     }
+
+    [Fact]
+    public async Task CreateSale_WithInstallmentMonths_RoundTripsThroughDb()
+    {
+        var config = AppConfig.Load(AppContext.BaseDirectory);
+        var factory = new MySqlConnectionFactory(config);
+        ISalesRepository repository = new SalesRepository(factory);
+
+        const string barcode = "8800000020001";
+        int stockBefore;
+        using (var conn = await factory.CreateOpenConnectionAsync())
+        {
+            stockBefore = await conn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
+        }
+
+        var header = new SaleHeader
+        {
+            PosCd = "1", SaleDt = DateTime.Now, StaffCd = "ADMIN1", TotalAmt = 5000,
+            PayType = "CARD1", VanApprovalNo = "TEST123", VanCode = "KICC", InstallmentMonths = 3,
+        };
+        var lines = new[]
+        {
+            new SaleDetailLine { Barcode = barcode, ProductName = "지렁이", Qty = 1, UnitPrice = 5000 },
+        };
+
+        long saleNo = await repository.CreateSaleAsync(header, lines);
+
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
+        try
+        {
+            int savedInstallmentMonths = await verifyConn.QuerySingleAsync<int>(
+                "SELECT installment_months FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            Assert.Equal(3, savedInstallmentMonths);
+        }
+        finally
+        {
+            await verifyConn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync(
+                "UPDATE product_tb SET stock_qty = @Stock WHERE barcode = @Barcode",
+                new { Stock = stockBefore, Barcode = barcode });
+        }
+    }
+
+    [Fact]
+    public async Task CreateSale_WithoutExplicitInstallmentMonths_DefaultsToZero()
+    {
+        var config = AppConfig.Load(AppContext.BaseDirectory);
+        var factory = new MySqlConnectionFactory(config);
+        ISalesRepository repository = new SalesRepository(factory);
+
+        const string barcode = "8800000020001";
+        int stockBefore;
+        using (var conn = await factory.CreateOpenConnectionAsync())
+        {
+            stockBefore = await conn.QuerySingleAsync<int>(
+                "SELECT stock_qty FROM product_tb WHERE barcode = @Barcode", new { Barcode = barcode });
+        }
+
+        var header = new SaleHeader
+        {
+            PosCd = "1", SaleDt = DateTime.Now, StaffCd = "ADMIN1", TotalAmt = 5000,
+            PayType = "CASH", CashReceived = 5000, ChangeAmt = 0,
+        };
+        var lines = new[]
+        {
+            new SaleDetailLine { Barcode = barcode, ProductName = "지렁이", Qty = 1, UnitPrice = 5000 },
+        };
+
+        long saleNo = await repository.CreateSaleAsync(header, lines);
+
+        using var verifyConn = await factory.CreateOpenConnectionAsync();
+        try
+        {
+            int savedInstallmentMonths = await verifyConn.QuerySingleAsync<int>(
+                "SELECT installment_months FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            Assert.Equal(0, savedInstallmentMonths);
+        }
+        finally
+        {
+            await verifyConn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await verifyConn.ExecuteAsync(
+                "UPDATE product_tb SET stock_qty = @Stock WHERE barcode = @Barcode",
+                new { Stock = stockBefore, Barcode = barcode });
+        }
+    }
 }

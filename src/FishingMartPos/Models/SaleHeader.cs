@@ -11,4 +11,5 @@ public sealed class SaleHeader
     public decimal? ChangeAmt { get; init; }
     public string? VanApprovalNo { get; init; }
     public string? VanCode { get; init; }
+    public int InstallmentMonths { get; init; } // 0 = 일시불, 2/3/4/6/12 = 해당 개월, 그 외 양의 정수 = 기타개월
 }
