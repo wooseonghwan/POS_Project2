@@ -68,6 +68,7 @@ public partial class App : Application
         var systemInfoRepository = _services.GetRequiredService<ISystemInfoRepository>();
         var delayProvider = _services.GetRequiredService<IDelayProvider>();
         IVanPaymentGateway vanGateway = _services.GetRequiredService<IVanPaymentGateway>(); // StubVanPaymentGateway (기본값)
+        ICashReceiptGateway cashReceiptGateway = _services.GetRequiredService<ICashReceiptGateway>(); // StubCashReceiptGateway (기본값)
         IKiccPosClient? kiccPosClient = null;
         if (config.KiccUseRealGateway)
         {
@@ -80,6 +81,7 @@ public partial class App : Application
             await realClient.ConnectAsync(); // 연결 실패해도 앱은 계속 기동 — 카드결제 시점에 자연스럽게 실패 처리됨
             kiccPosClient = realClient;
             vanGateway = new KiccVanPaymentGateway(realClient, merchantsByPayType);
+            cashReceiptGateway = new KiccCashReceiptGateway(realClient, merchantsByPayType);
         }
         _kiccPosClient = kiccPosClient;
         var photoPicker = _services.GetRequiredService<IPhotoPicker>();
@@ -87,7 +89,7 @@ public partial class App : Application
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, kiccPosClient);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, kiccPosClient);
             await vm.LoadAsync();
             return vm;
         }

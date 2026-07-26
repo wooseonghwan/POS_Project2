@@ -36,7 +36,8 @@ public class PosViewModelTests
         out INavigationService navigation,
         out MainMenuViewModel mainMenuViewModel,
         IVanPaymentGateway? vanGateway = null,
-        IKiccPosClient? kiccPosClient = null)
+        IKiccPosClient? kiccPosClient = null,
+        ICashReceiptGateway? cashReceiptGateway = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -65,6 +66,10 @@ public class PosViewModelTests
             navigation,
             mainMenuViewModel,
             vanGateway ?? new FakeVanPaymentGateway(ApprovedResult),
+            cashReceiptGateway ?? new FakeCashReceiptGateway(new CashReceiptResult
+            {
+                IsIssued = true, ApprovalNo = "149331691", ApprovalDateYyMmDd = "250704", ResponseMessage = "현금영수증 발급 완료",
+            }),
             kiccPosClient);
     }
 

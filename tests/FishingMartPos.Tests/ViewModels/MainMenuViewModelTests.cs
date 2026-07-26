@@ -33,6 +33,13 @@ public class MainMenuViewModelTests
                 ApprovalNo = "20260723120000",
                 VanCode = "KICC",
                 ResponseMessage = "카드 결제 완료",
+            }),
+            new FakeCashReceiptGateway(new CashReceiptResult
+            {
+                IsIssued = true,
+                ApprovalNo = "149331691",
+                ApprovalDateYyMmDd = "250704",
+                ResponseMessage = "현금영수증 발급 완료",
             }));
 
         Func<MainMenuViewModel, Task<PosViewModel>> posViewModelFactory = _ => Task.FromResult(posViewModel);

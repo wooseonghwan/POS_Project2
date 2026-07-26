@@ -14,7 +14,10 @@ public class PosViewModelPaymentTests
         Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 50
     };
 
-    private static PosViewModel CreateViewModel(out FakeSalesRepository sales, out FakeHeldOrderRepository held)
+    private static PosViewModel CreateViewModel(
+        out FakeSalesRepository sales,
+        out FakeHeldOrderRepository held,
+        FakeCashReceiptGateway? cashReceiptGateway = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -38,6 +41,13 @@ public class PosViewModelPaymentTests
                 ApprovalNo = "20260723120000",
                 VanCode = "KICC",
                 ResponseMessage = "카드 결제 완료",
+            }),
+            cashReceiptGateway ?? new FakeCashReceiptGateway(new CashReceiptResult
+            {
+                IsIssued = true,
+                ApprovalNo = "149331691",
+                ApprovalDateYyMmDd = "250704",
+                ResponseMessage = "현금영수증 발급 완료",
             }));
     }
 
@@ -280,5 +290,107 @@ public class PosViewModelPaymentTests
         var restoredCartLine = Assert.Single(vm.CartLines);
         Assert.Equal(1, restoredCartLine.Qty);
         Assert.Equal("보류는 2건만 가능합니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_WithNoCashReceiptSelected_DoesNotCallGateway()
+    {
+        var cashReceiptGateway = new FakeCashReceiptGateway(new CashReceiptResult
+        {
+            IsIssued = true, ApprovalNo = "1", ApprovalDateYyMmDd = "250704", ResponseMessage = "발급 완료",
+        });
+        var vm = CreateViewModel(out var sales, out _, cashReceiptGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        Assert.Empty(cashReceiptGateway.Requests);
+        var sale = Assert.Single(sales.CreatedSales);
+        Assert.Equal("NONE", sale.Header.CashReceiptType);
+        Assert.Null(sale.Header.CashReceiptApprovalNo);
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_WithPersonalReceiptSelected_CallsGatewayAndSavesApprovalNo()
+    {
+        var cashReceiptGateway = new FakeCashReceiptGateway(new CashReceiptResult
+        {
+            IsIssued = true, ApprovalNo = "149331691", ApprovalDateYyMmDd = "250704", ResponseMessage = "현금영수증 발급 완료",
+        });
+        var vm = CreateViewModel(out var sales, out _, cashReceiptGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        vm.SelectCashReceiptTypeCommand.Execute("PERSONAL");
+        vm.SelectCashReceiptMerchantCommand.Execute("CARD1");
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        var request = Assert.Single(cashReceiptGateway.Requests);
+        Assert.Equal("CARD1", request.MerchantPayType);
+        Assert.Equal("PERSONAL", request.ReceiptType);
+        var sale = Assert.Single(sales.CreatedSales);
+        Assert.Equal("PERSONAL", sale.Header.CashReceiptType);
+        Assert.Equal("CARD1", sale.Header.CashReceiptMerchant);
+        Assert.Equal("149331691", sale.Header.CashReceiptApprovalNo);
+        Assert.Equal("250704", sale.Header.CashReceiptApprovalDate);
+        Assert.False(vm.IsCashConfirmVisible);
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_WhenGatewayDeclines_DoesNotCreateSaleAndKeepsPopupOpen()
+    {
+        var cashReceiptGateway = new FakeCashReceiptGateway(new CashReceiptResult
+        {
+            IsIssued = false, ResponseMessage = "현금영수증 발급 실패",
+        });
+        var vm = CreateViewModel(out var sales, out _, cashReceiptGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        vm.SelectCashReceiptTypeCommand.Execute("BUSINESS");
+        vm.SelectCashReceiptMerchantCommand.Execute("CARD2");
+        var toastValues = new List<string?>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
+                toastValues.Add(vm.ToastMessage);
+        };
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        Assert.Empty(sales.CreatedSales);
+        Assert.True(vm.IsCashConfirmVisible);
+        Assert.Single(vm.CartLines);
+        Assert.True(vm.IsToastWarning);
+        Assert.Equal("현금영수증 발급 실패", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_TogglesIsCashReceiptRequestInProgressDuringCall()
+    {
+        var cashReceiptGateway = new FakeCashReceiptGateway(new CashReceiptResult
+        {
+            IsIssued = true, ApprovalNo = "1", ApprovalDateYyMmDd = "250704", ResponseMessage = "발급 완료",
+        });
+        var vm = CreateViewModel(out _, out _, cashReceiptGateway);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        vm.SelectCashReceiptTypeCommand.Execute("PERSONAL");
+        vm.SelectCashReceiptMerchantCommand.Execute("CARD1");
+        var progressValues = new List<bool>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PosViewModel.IsCashReceiptRequestInProgress))
+                progressValues.Add(vm.IsCashReceiptRequestInProgress);
+        };
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        Assert.Contains(true, progressValues);
+        Assert.False(vm.IsCashReceiptRequestInProgress);
     }
 }

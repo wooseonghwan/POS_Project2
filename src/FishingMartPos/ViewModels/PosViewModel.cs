@@ -22,6 +22,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly MainMenuViewModel _mainMenuViewModel;
     private readonly IVanPaymentGateway _vanGateway;
+    private readonly ICashReceiptGateway _cashReceiptGateway;
     private readonly IKiccPosClient? _kiccPosClient;
     private readonly Cart _cart = new();
 
@@ -72,6 +73,9 @@ public sealed partial class PosViewModel : ObservableObject
     private bool _isCardApprovalInProgress;
 
     [ObservableProperty]
+    private bool _isCashReceiptRequestInProgress;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedInstallmentLabel))]
     private int _selectedInstallmentMonths;
 
@@ -105,6 +109,7 @@ public sealed partial class PosViewModel : ObservableObject
         INavigationService navigation,
         MainMenuViewModel mainMenuViewModel,
         IVanPaymentGateway vanGateway,
+        ICashReceiptGateway cashReceiptGateway,
         IKiccPosClient? kiccPosClient = null)
     {
         _productRepository = productRepository;
@@ -116,6 +121,7 @@ public sealed partial class PosViewModel : ObservableObject
         _navigation = navigation;
         _mainMenuViewModel = mainMenuViewModel;
         _vanGateway = vanGateway;
+        _cashReceiptGateway = cashReceiptGateway;
         _kiccPosClient = kiccPosClient;
 
         RefreshInstallmentOptions();
@@ -329,12 +335,37 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
+        SelectedCashReceiptType = "NONE";
+        SelectedCashReceiptMerchant = null;
         IsCashConfirmVisible = true;
     }
+
+    private CashReceiptResult? _pendingCashReceiptResult;
 
     [RelayCommand]
     private async Task ConfirmCashPayment()
     {
+        if (SelectedCashReceiptType != "NONE")
+        {
+            if (SelectedCashReceiptMerchant is not string merchant) return;
+
+            IsCashReceiptRequestInProgress = true;
+            var result = await _cashReceiptGateway.RequestIssueAsync(
+                new CashReceiptRequest(merchant, SelectedCashReceiptType, _cart.Total));
+            IsCashReceiptRequestInProgress = false;
+
+            if (!result.IsIssued)
+            {
+                IsToastWarning = true;
+                ToastMessage = result.ResponseMessage;
+                await _delay.Delay(TimeSpan.FromMilliseconds(1200));
+                ToastMessage = null;
+                return;
+            }
+
+            _pendingCashReceiptResult = result;
+        }
+
         IsCashConfirmVisible = false;
         await PayAsync("CASH", "현금 결제 완료");
     }
@@ -520,6 +551,7 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
+        var cashReceiptResult = _pendingCashReceiptResult;
         var header = new SaleHeader
         {
             PosCd = _session.CurrentTerminal!.PosCode,
@@ -531,10 +563,15 @@ public sealed partial class PosViewModel : ObservableObject
             ChangeAmt = payType == "CASH" ? Math.Max(0, CashAmount - _cart.Total) : null,
             VanApprovalNo = null,
             VanCode = null,
+            CashReceiptType = payType == "CASH" ? SelectedCashReceiptType : "NONE",
+            CashReceiptMerchant = payType == "CASH" ? SelectedCashReceiptMerchant : null,
+            CashReceiptApprovalNo = cashReceiptResult?.ApprovalNo,
+            CashReceiptApprovalDate = cashReceiptResult?.ApprovalDateYyMmDd,
         };
 
         await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
 
+        _pendingCashReceiptResult = null;
         IsToastWarning = false;
         ToastMessage = toastLabel;
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));
