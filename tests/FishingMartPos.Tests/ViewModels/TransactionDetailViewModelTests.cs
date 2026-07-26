@@ -33,6 +33,21 @@ public class TransactionDetailViewModelTests
         Status = status,
     };
 
+    private static SaleHeader CashHeaderWithReceipt(string status = "COMPLETE") => new()
+    {
+        SaleNo = 12,
+        PosCd = "1",
+        SaleDt = new DateTime(2026, 7, 26),
+        StaffCd = "ADMIN1",
+        TotalAmt = 7000m,
+        PayType = "CASH",
+        CashReceiptType = "PERSONAL",
+        CashReceiptMerchant = "CARD1",
+        CashReceiptApprovalNo = "APR9",
+        CashReceiptApprovalDate = "260101",
+        Status = status,
+    };
+
     private static TransactionDetailViewModel CreateViewModel(
         SaleHeader header,
         out FakeSalesRepository sales,
@@ -98,6 +113,50 @@ public class TransactionDetailViewModelTests
 
         Assert.Empty(cashReceipt.CancelRequests);
         Assert.Single(sales.CancelledSaleNos, 11L);
+    }
+
+    [Fact]
+    public async Task CancelCommand_ForCashSaleWithReceipt_CallsCashReceiptCancelWithOriginalApprovalFieldsAndSkipsVan()
+    {
+        var vm = CreateViewModel(CashHeaderWithReceipt(), out var sales, out var van, out var cashReceipt);
+
+        await vm.CancelCommand.ExecuteAsync(null);
+
+        var request = Assert.Single(cashReceipt.CancelRequests);
+        Assert.Equal("CARD1", request.MerchantPayType);
+        Assert.Equal("PERSONAL", request.ReceiptType);
+        Assert.Equal(7000m, request.Amount);
+        Assert.Equal("APR9", request.OriginalApprovalNo);
+        Assert.Equal("260101", request.OriginalApprovalDateYyMmDd);
+        Assert.Single(sales.CancelledSaleNos, 12L);
+        Assert.Empty(van.CancelRequests);
+    }
+
+    [Fact]
+    public async Task CancelCommand_WhenAlreadyCancelled_DoesNotCallAnyGatewayOrRepository()
+    {
+        var vm = CreateViewModel(CardHeader("CANCELLED"), out var sales, out var van, out var cashReceipt);
+
+        await vm.CancelCommand.ExecuteAsync(null);
+
+        Assert.Empty(van.CancelRequests);
+        Assert.Empty(cashReceipt.CancelRequests);
+        Assert.Empty(sales.CancelledSaleNos);
+    }
+
+    [Fact]
+    public async Task CancelCommand_WhenRepositoryCancelFails_SetsStatusErrorAndDoesNotThrow()
+    {
+        var vm = CreateViewModel(CardHeader(), out var sales, out var van, out _);
+        sales.ThrowOnCancelSale = true;
+
+        var exception = await Record.ExceptionAsync(() => vm.CancelCommand.ExecuteAsync(null));
+
+        Assert.Null(exception);
+        Assert.Single(van.CancelRequests);
+        Assert.Empty(sales.CancelledSaleNos);
+        Assert.True(vm.IsStatusError);
+        Assert.False(string.IsNullOrEmpty(vm.StatusMessage));
     }
 
     [Fact]

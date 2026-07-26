@@ -122,7 +122,17 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
                 }
             }
 
-            await _salesRepository.CancelSaleAsync(Header.SaleNo);
+            try
+            {
+                await _salesRepository.CancelSaleAsync(Header.SaleNo);
+            }
+            catch (Exception)
+            {
+                IsStatusError = true;
+                StatusMessage = "취소 처리 중 오류가 발생했습니다. 담당자에게 문의하세요";
+                return;
+            }
+
             Header = Header with { Status = "CANCELLED" };
             IsStatusError = false;
             StatusMessage = "취소되었습니다";
@@ -171,7 +181,17 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
                 return;
             }
 
-            await _salesRepository.UpdateCashReceiptAsync(Header.SaleNo, SelectedReceiptType, merchant, result.ApprovalNo!, result.ApprovalDateYyMmDd!);
+            try
+            {
+                await _salesRepository.UpdateCashReceiptAsync(Header.SaleNo, SelectedReceiptType, merchant, result.ApprovalNo!, result.ApprovalDateYyMmDd!);
+            }
+            catch (Exception)
+            {
+                IsStatusError = true;
+                StatusMessage = "현금영수증 갱신 중 오류가 발생했습니다. 담당자에게 문의하세요";
+                return;
+            }
+
             Header = Header with
             {
                 CashReceiptType = SelectedReceiptType,

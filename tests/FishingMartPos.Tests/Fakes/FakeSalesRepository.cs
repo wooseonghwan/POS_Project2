@@ -10,6 +10,9 @@ public sealed class FakeSalesRepository : ISalesRepository
     public List<long> CancelledSaleNos { get; } = new();
     public List<(long SaleNo, string ReceiptType, string Merchant, string ApprovalNo, string ApprovalDateYyMmDd)> CashReceiptUpdates { get; } = new();
 
+    public bool ThrowOnCancelSale { get; set; }
+    public bool ThrowOnUpdateCashReceipt { get; set; }
+
     private long _nextSaleNo = 1;
     private IReadOnlyList<SaleHeader> _completedSales = Array.Empty<SaleHeader>();
     private SaleHeader? _lastCompletedSale;
@@ -64,12 +67,20 @@ public sealed class FakeSalesRepository : ISalesRepository
 
     public Task CancelSaleAsync(long saleNo)
     {
+        if (ThrowOnCancelSale)
+        {
+            throw new InvalidOperationException("Simulated DB failure on CancelSaleAsync");
+        }
         CancelledSaleNos.Add(saleNo);
         return Task.CompletedTask;
     }
 
     public Task UpdateCashReceiptAsync(long saleNo, string receiptType, string merchant, string approvalNo, string approvalDateYyMmDd)
     {
+        if (ThrowOnUpdateCashReceipt)
+        {
+            throw new InvalidOperationException("Simulated DB failure on UpdateCashReceiptAsync");
+        }
         CashReceiptUpdates.Add((saleNo, receiptType, merchant, approvalNo, approvalDateYyMmDd));
         return Task.CompletedTask;
     }
