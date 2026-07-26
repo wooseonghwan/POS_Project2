@@ -20,9 +20,9 @@ public sealed class SalesRepository : ISalesRepository
 
         const string insertHeaderSql = """
             INSERT INTO sales_header_tb
-                (pos_cd, sale_dt, staff_cd, total_amt, pay_type, cash_received, change_amt, van_approval_no, van_code, installment_months, status)
+                (pos_cd, sale_dt, staff_cd, total_amt, pay_type, cash_received, change_amt, van_approval_no, van_code, installment_months, cash_receipt_type, cash_receipt_merchant, cash_receipt_approval_no, cash_receipt_approval_date, status)
             VALUES
-                (@PosCd, @SaleDt, @StaffCd, @TotalAmt, @PayType, @CashReceived, @ChangeAmt, @VanApprovalNo, @VanCode, @InstallmentMonths, 'COMPLETE')
+                (@PosCd, @SaleDt, @StaffCd, @TotalAmt, @PayType, @CashReceived, @ChangeAmt, @VanApprovalNo, @VanCode, @InstallmentMonths, @CashReceiptType, @CashReceiptMerchant, @CashReceiptApprovalNo, @CashReceiptApprovalDate, 'COMPLETE')
             """;
         await connection.ExecuteAsync(insertHeaderSql, header, transaction);
         long saleNo = await connection.QuerySingleAsync<long>("SELECT LAST_INSERT_ID()", transaction: transaction);
@@ -70,7 +70,9 @@ public sealed class SalesRepository : ISalesRepository
         const string sql = """
             SELECT pos_cd AS PosCd, sale_dt AS SaleDt, staff_cd AS StaffCd, total_amt AS TotalAmt,
                    pay_type AS PayType, cash_received AS CashReceived, change_amt AS ChangeAmt,
-                   van_approval_no AS VanApprovalNo, van_code AS VanCode, installment_months AS InstallmentMonths
+                   van_approval_no AS VanApprovalNo, van_code AS VanCode, installment_months AS InstallmentMonths,
+                   cash_receipt_type AS CashReceiptType, cash_receipt_merchant AS CashReceiptMerchant,
+                   cash_receipt_approval_no AS CashReceiptApprovalNo, cash_receipt_approval_date AS CashReceiptApprovalDate
             FROM sales_header_tb
             WHERE sale_dt >= @From AND sale_dt < @To AND status = 'COMPLETE'
             """;
