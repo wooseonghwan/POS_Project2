@@ -78,4 +78,39 @@ public class KiccCashReceiptGatewayTests
         var sendData = Assert.Single(client.Requests).SendData;
         Assert.Contains("S03=2977340;", sendData);
     }
+
+    [Fact]
+    public async Task RequestCancelAsync_WhenR04IsSuccess_ReturnsCancelled()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=0000;"));
+        var gateway = new KiccCashReceiptGateway(client, Merchants);
+
+        var result = await gateway.RequestCancelAsync(new CashReceiptCancelRequest("1", "CARD1", "PERSONAL", 1004m, "149331691", "250704"));
+
+        Assert.True(result.IsCancelled);
+    }
+
+    [Fact]
+    public async Task RequestCancelAsync_WhenR04IsNotSuccess_ReturnsNotCancelled()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=1234;"));
+        var gateway = new KiccCashReceiptGateway(client, Merchants);
+
+        var result = await gateway.RequestCancelAsync(new CashReceiptCancelRequest("1", "CARD1", "PERSONAL", 1004m, "149331691", "250704"));
+
+        Assert.False(result.IsCancelled);
+    }
+
+    [Fact]
+    public async Task RequestCancelAsync_SendsB2WithOriginalApprovalFields()
+    {
+        var client = new FakeKiccPosClient(KiccRawResponse.Success("R04=0000;"));
+        var gateway = new KiccCashReceiptGateway(client, Merchants);
+
+        await gateway.RequestCancelAsync(new CashReceiptCancelRequest("1", "CARD1", "PERSONAL", 1004m, "149331691", "250704"));
+
+        var sendData = Assert.Single(client.Requests).SendData;
+        Assert.Contains("S01=B2;", sendData);
+        Assert.Contains("S12=149331691;S13=250704;", sendData);
+    }
 }

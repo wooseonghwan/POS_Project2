@@ -31,4 +31,14 @@ public class StubCashReceiptGatewayTests
         Assert.Null(result.ApprovalNo);
         Assert.False(string.IsNullOrEmpty(result.ResponseMessage));
     }
+
+    [Fact]
+    public async Task RequestCancelAsync_WhenOutcomeProviderApproves_ReturnsCancelled()
+    {
+        var gateway = new StubCashReceiptGateway(new FakeDelayProvider(), new FakeVanOutcomeProvider(isApproved: true));
+
+        var result = await gateway.RequestCancelAsync(new CashReceiptCancelRequest("1", "CARD1", "PERSONAL", 1004m, "149331691", "250704"));
+
+        Assert.True(result.IsCancelled);
+    }
 }

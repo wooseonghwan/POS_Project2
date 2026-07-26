@@ -46,6 +46,34 @@ public sealed class KiccCashReceiptGateway : ICashReceiptGateway
         return new CashReceiptResult { IsIssued = false, ResponseMessage = "현금영수증 발급 거절" };
     }
 
+    public async Task<CashReceiptCancelResult> RequestCancelAsync(CashReceiptCancelRequest request)
+    {
+        if (!_merchantsByPayType.TryGetValue(request.MerchantPayType, out var merchant))
+        {
+            return new CashReceiptCancelResult { IsCancelled = false, ResponseMessage = "가맹점 설정을 찾을 수 없습니다" };
+        }
+
+        var posTranNo = BuildPosTranNo(request.PosCode);
+        var sendData = KiccMessageBuilder.BuildCashReceiptCancelRequest(
+            merchant, request.Amount, request.ReceiptType,
+            request.OriginalApprovalNo, request.OriginalApprovalDateYyMmDd, posTranNo);
+
+        var raw = await _client.RequestAsync(0xFB, 0x14, 0x04, sendData);
+
+        if (!raw.IsSuccess)
+        {
+            return new CashReceiptCancelResult { IsCancelled = false, ResponseMessage = raw.FailureMessage ?? "현금영수증 취소 거절" };
+        }
+
+        var fields = KiccResponseParser.Parse(raw.Data!);
+        if (fields.TryGetValue("R04", out var rc) && rc == "0000")
+        {
+            return new CashReceiptCancelResult { IsCancelled = true, ResponseMessage = "현금영수증 취소 완료" };
+        }
+
+        return new CashReceiptCancelResult { IsCancelled = false, ResponseMessage = "현금영수증 취소 거절" };
+    }
+
     private static string BuildPosTranNo(string posCode) =>
         $"{posCode}{DateTime.Now:yyMMddHHmmss}{Random.Shared.Next(10, 99)}";
 }

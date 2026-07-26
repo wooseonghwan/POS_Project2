@@ -3,6 +3,8 @@ namespace FishingMartPos.Services;
 public interface ICashReceiptGateway
 {
     Task<CashReceiptResult> RequestIssueAsync(CashReceiptRequest request);
+
+    Task<CashReceiptCancelResult> RequestCancelAsync(CashReceiptCancelRequest request);
 }
 
 public sealed record CashReceiptRequest(string PosCode, string MerchantPayType, string ReceiptType, decimal Amount);
@@ -14,6 +16,16 @@ public sealed class CashReceiptResult
 {
     public required bool IsIssued { get; init; }
     public string? ApprovalNo { get; init; }           // 발급 성공 시 승인번호(KICC 응답 R09)
-    public string? ApprovalDateYyMmDd { get; init; }   // 발급 성공 시 YYMMDD(KICC 응답 R07 앞 6자리) — 향후 B2 취소에 필요, 지금은 저장만
+    public string? ApprovalDateYyMmDd { get; init; }   // 발급 성공 시 YYMMDD(KICC 응답 R07 앞 6자리) — B2 취소에 사용
+    public required string ResponseMessage { get; init; }
+}
+
+public sealed record CashReceiptCancelRequest(
+    string PosCode, string MerchantPayType, string ReceiptType, decimal Amount,
+    string OriginalApprovalNo, string OriginalApprovalDateYyMmDd);
+
+public sealed class CashReceiptCancelResult
+{
+    public required bool IsCancelled { get; init; }
     public required string ResponseMessage { get; init; }
 }

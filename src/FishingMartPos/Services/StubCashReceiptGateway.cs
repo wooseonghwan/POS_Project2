@@ -40,4 +40,20 @@ public sealed class StubCashReceiptGateway : ICashReceiptGateway
             ResponseMessage = DeclineMessages[_messageRandom.Next(DeclineMessages.Length)],
         };
     }
+
+    public async Task<CashReceiptCancelResult> RequestCancelAsync(CashReceiptCancelRequest request)
+    {
+        await _delay.Delay(TimeSpan.FromMilliseconds(1500));
+
+        if (_outcomeProvider.NextIsApproved())
+        {
+            return new CashReceiptCancelResult { IsCancelled = true, ResponseMessage = "현금영수증 취소 완료" };
+        }
+
+        return new CashReceiptCancelResult
+        {
+            IsCancelled = false,
+            ResponseMessage = DeclineMessages[_messageRandom.Next(DeclineMessages.Length)],
+        };
+    }
 }
