@@ -12,7 +12,7 @@ public class KiccMessageBuilderTests
 
         var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 1004m, "POSTRAN123", installmentMonths: 0);
 
-        Assert.Equal("S00=002;S01=D1;S02=40;S03=0788888;S04=1234567890;S09=00;S10=1004;S15=0;S16=91;S23=POSTRAN123;", sendData);
+        Assert.Equal("S00=001;S01=D1;S02=40;S03=0788888;S04=1234567890;S09=00;S10=1004;S15=0;S16=91;S23=POSTRAN123;", sendData);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class KiccMessageBuilderTests
 
         var sendData = KiccMessageBuilder.BuildCashReceiptIssueRequest(merchant, 1004m, "PERSONAL", "20250704132431000000");
 
-        Assert.Equal("S00=002;S01=B1;S02=40;S03=0788888;S09=00;S10=1004;S11=00;S15=0;S16=91;S23=20250704132431000000;", sendData);
+        Assert.Equal("S00=001;S01=B1;S02=40;S03=0788888;S09=00;S10=1004;S11=00;S15=0;S16=91;S23=20250704132431000000;", sendData);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class KiccMessageBuilderTests
 
         var sendData = KiccMessageBuilder.BuildCashReceiptCancelRequest(merchant, 1004m, "PERSONAL", "149331691", "250704", "20250704132431000000");
 
-        Assert.Equal("S00=002;S01=B2;S02=40;S03=0788888;S09=00;S10=1004;S11=00;S12=149331691;S13=250704;S15=0;S16=91;S23=20250704132431000000;", sendData);
+        Assert.Equal("S00=001;S01=B2;S02=40;S03=0788888;S09=00;S10=1004;S11=00;S12=149331691;S13=250704;S15=0;S16=91;S23=20250704132431000000;", sendData);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public class KiccMessageBuilderTests
 
         var sendData = KiccMessageBuilder.BuildApprovalRequest(merchant, 1004m, "POSTRAN123", installmentMonths: 0);
 
-        Assert.Equal("S00=002;S01=D1;S02=40;S03=0788888;S04=1234567890;S09=00;S10=1004;S15=0;S16=91;S23=POSTRAN123;", sendData);
+        Assert.Equal("S00=001;S01=D1;S02=40;S03=0788888;S04=1234567890;S09=00;S10=1004;S15=0;S16=91;S23=POSTRAN123;", sendData);
         Assert.DoesNotContain("S30", sendData);
         Assert.DoesNotContain("S31", sendData);
     }

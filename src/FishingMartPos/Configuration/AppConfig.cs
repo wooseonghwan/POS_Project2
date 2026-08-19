@@ -9,6 +9,10 @@ public sealed class AppConfig
     public bool KiccUseRealGateway { get; init; }
     public int KiccComPort { get; init; }
     public int KiccBaudRate { get; init; } = 57600;
+    // 이 매장은 "단말기승인(부착형)"이 아니라 EasyCard2의 "PC결제(로컬 HTTP/JSONP)" 방식으로 설정되어
+    // 있음이 실기기 테스트로 확인됨(EasyCard2 환경설정에 신용 IP/PORT 존재, 단말기연결은 사용안함).
+    // 카드 승인/취소는 KiccPos.dll가 아니라 이 포트로 로컬 요청을 보내 처리한다.
+    public int KiccHttpPort { get; init; } = 8080;
 
     public static AppConfig Load(string basePath)
     {
@@ -37,6 +41,10 @@ public sealed class AppConfig
         {
             kiccBaudRate = 57600;
         }
+        if (!int.TryParse(configuration["Kicc:HttpPort"], out int kiccHttpPort))
+        {
+            kiccHttpPort = 8080;
+        }
 
         return new AppConfig
         {
@@ -45,6 +53,7 @@ public sealed class AppConfig
             KiccUseRealGateway = kiccUseRealGateway,
             KiccComPort = kiccComPort,
             KiccBaudRate = kiccBaudRate,
+            KiccHttpPort = kiccHttpPort,
         };
     }
 }
