@@ -15,20 +15,64 @@
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:CashReceiptTypeToMerchantPickerVisibilityConverter x:Key="CashReceiptTypeToMerchantPickerVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:InverseBooleanConverter x:Key="InverseBooleanConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:CategoryCodeToIconGeometryConverter x:Key="CategoryCodeToIconGeometryConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <Style x:Key="InstallmentOptionButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="3" />
             <Setter Property="Padding" Value="6" />
             <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
             <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
         </Style>
+        <Style x:Key="CategoryTabButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MenuTileBorder}" />
+            <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Accent}" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CategoryTabIconStyle" TargetType="Path">
+            <Setter Property="Stroke" Value="{DynamicResource MutedText}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="Stroke" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="200" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
+        <Border Grid.Row="0" Background="White" BorderBrush="{DynamicResource HeaderBorder}" BorderThickness="0,0,0,1">
+            <TextBlock Text="대원낚시 POS 시스템" FontSize="14" FontWeight="Bold" Margin="16,10"
+                       Foreground="{DynamicResource TitleText}" />
+        </Border>
+
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
@@ -133,21 +177,16 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Content="{Binding Name}" Command="{Binding SelectCommand}"
-                                    Padding="4,10" FontSize="14" FontWeight="Bold" BorderThickness="0,0,1,1"
-                                    BorderBrush="{DynamicResource MenuTileBorder}">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
-                                        <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsActive}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
+                            <Button Command="{Binding SelectCommand}" Style="{StaticResource CategoryTabButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{Binding Code, Converter={StaticResource CategoryCodeToIconGeometryConverter}}"
+                                          Width="15" Height="15" Stretch="Uniform" Margin="0,0,5,0"
+                                          StrokeThickness="1.6" StrokeLineJoin="Round"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          Fill="Transparent" VerticalAlignment="Center"
+                                          Style="{StaticResource CategoryTabIconStyle}" />
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                </StackPanel>
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -183,7 +222,7 @@
         </Grid>
 
         <!-- 하단: 수량/키패드/결제 -->
-        <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource HeaderBorder}" Background="White">
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource HeaderBorder}" Background="White">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -270,7 +309,7 @@
         </Border>
 
         <!-- 보류목록 오버레이 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsHeldListVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="20" Width="420" MaxHeight="400" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -308,7 +347,7 @@
         </Grid>
 
         <!-- 보류 불러오기 교체 확인 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsRecallConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -327,7 +366,7 @@
         </Grid>
 
         <!-- 보류 삭제 확인 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsDeleteHeldConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -346,7 +385,7 @@
         </Grid>
 
         <!-- 초기화 확인 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsResetOrderConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -365,7 +404,7 @@
         </Grid>
 
         <!-- 현금결제 확인 팝업 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsCashConfirmVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="32,24" Width="360" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -481,7 +520,7 @@
         </Grid>
 
         <!-- 카드결제 팝업 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsCardPaymentVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="32,24" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -577,7 +616,7 @@
         </Grid>
 
         <!-- 영수증 미리보기 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsReceiptPreviewVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="24" Width="340" MaxHeight="480" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -635,13 +674,13 @@
         </Grid>
 
         <!-- 직전정보 팝업 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding IsLastTransactionVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <views:TransactionDetailPopup DataContext="{Binding LastTransactionDetail}" />
         </Grid>
 
         <!-- 결제완료 토스트 -->
-        <Grid Grid.RowSpan="2" Background="{DynamicResource ModalOverlay}"
+        <Grid Grid.RowSpan="3" Background="{DynamicResource ModalOverlay}"
               Visibility="{Binding ToastMessage, Converter={StaticResource NullToVisibilityConverter}}">
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                     Padding="48,36" HorizontalAlignment="Center" VerticalAlignment="Center">

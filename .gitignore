@@ -3,6 +3,9 @@ bin/
 obj/
 *.user
 
+## Publish output (build artifact; deployed appsettings.json can contain real store credentials)
+publish/
+
 ## Local secrets (never commit real DB credentials)
 appsettings.Local.json
 **/appsettings.Local.json
