@@ -14,13 +14,15 @@ public static class ReceiptDocumentFactory
         InstallmentMonths = header.InstallmentMonths,
         CashReceiptTypeLabel = CashReceiptTypeLabel(header.CashReceiptType),
         CashReceiptApprovalNo = header.CashReceiptApprovalNo,
+        SaleDateTime = header.SaleDt,
+        SaleNo = header.SaleNo,
     };
 
     private static string PayTypeLabel(string payType) => payType switch
     {
         "CASH" => "현금",
-        "CARD1" => "카드결제1",
-        "CARD2" => "카드결제2",
+        "CARD1" => "카드",
+        "CARD2" => "카드",
         _ => payType,
     };
 

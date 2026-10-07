@@ -18,7 +18,8 @@ public sealed class ProductRepository : IProductRepository
         using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
             SELECT barcode AS Barcode, major_cd AS MajorCd, minor_cd AS MinorCd, poscat_cd AS PosCatCd,
-                   name AS Name, price AS Price, stock_qty AS StockQty, photo_path AS PhotoPath
+                   name AS Name, price AS Price, stock_qty AS StockQty, photo_path AS PhotoPath,
+                   (pos_grid_yn = 'Y') AS ShowInGrid
             FROM product_tb
             WHERE use_yn = 'Y'
             ORDER BY poscat_cd, name
@@ -39,12 +40,13 @@ public sealed class ProductRepository : IProductRepository
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
-            INSERT INTO product_tb (barcode, major_cd, minor_cd, poscat_cd, name, price, stock_qty, photo_path, use_yn)
-            VALUES (@Barcode, @MajorCd, @MinorCd, @PosCatCd, @Name, @Price, @StockQty, @PhotoPath, 'Y')
+            INSERT INTO product_tb (barcode, major_cd, minor_cd, poscat_cd, name, price, stock_qty, photo_path, use_yn, pos_grid_yn)
+            VALUES (@Barcode, @MajorCd, @MinorCd, @PosCatCd, @Name, @Price, @StockQty, @PhotoPath, 'Y',
+                    CASE WHEN @ShowInGrid THEN 'Y' ELSE 'N' END)
             ON DUPLICATE KEY UPDATE
                 major_cd = VALUES(major_cd), minor_cd = VALUES(minor_cd), poscat_cd = VALUES(poscat_cd),
                 name = VALUES(name), price = VALUES(price), stock_qty = VALUES(stock_qty),
-                photo_path = VALUES(photo_path), use_yn = 'Y'
+                photo_path = VALUES(photo_path), use_yn = 'Y', pos_grid_yn = VALUES(pos_grid_yn)
             """;
         await connection.ExecuteAsync(sql, product);
     }

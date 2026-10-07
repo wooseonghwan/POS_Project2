@@ -27,6 +27,14 @@ public sealed partial class InventoryViewModel : ObservableObject
     private Dictionary<string, string> _minorNames = new();
     private Dictionary<string, string> _posCatNames = new();
 
+    // 대/소/POS분류가 비어 있는(NULL) 상품도 있으므로(예: 바코드 일괄등록), null을 그대로 Dictionary에 조회하면
+    // ArgumentNullException이 난다. 코드가 없으면 빈 문자열로 표시한다.
+    private static string LookupName(Dictionary<string, string> names, string? code)
+    {
+        if (code is null) return string.Empty;
+        return names.TryGetValue(code, out var name) ? name : code;
+    }
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -148,9 +156,9 @@ public sealed partial class InventoryViewModel : ObservableObject
             {
                 Barcode = captured.Barcode,
                 Name = captured.Name,
-                MajorName = _majorNames.TryGetValue(captured.MajorCd, out var majorName) ? majorName : captured.MajorCd,
-                MinorName = _minorNames.TryGetValue(captured.MinorCd, out var minorName) ? minorName : captured.MinorCd,
-                PosCatName = _posCatNames.TryGetValue(captured.PosCatCd, out var posCatName) ? posCatName : captured.PosCatCd,
+                MajorName = LookupName(_majorNames, captured.MajorCd),
+                MinorName = LookupName(_minorNames, captured.MinorCd),
+                PosCatName = LookupName(_posCatNames, captured.PosCatCd),
                 PriceStr = CurrencyFormat.Format(captured.Price),
                 StockQtyStr = captured.StockQty.ToString("N0"),
                 Swatch = swatch,
@@ -173,9 +181,9 @@ public sealed partial class InventoryViewModel : ObservableObject
         {
             Barcode = product.Barcode,
             Name = product.Name,
-            MajorName = _majorNames.TryGetValue(product.MajorCd, out var majorName) ? majorName : product.MajorCd,
-            MinorName = _minorNames.TryGetValue(product.MinorCd, out var minorName) ? minorName : product.MinorCd,
-            PosCatName = _posCatNames.TryGetValue(product.PosCatCd, out var posCatName) ? posCatName : product.PosCatCd,
+            MajorName = LookupName(_majorNames, product.MajorCd),
+            MinorName = LookupName(_minorNames, product.MinorCd),
+            PosCatName = LookupName(_posCatNames, product.PosCatCd),
             PriceStr = CurrencyFormat.Format(product.Price),
             StockQtyStr = product.StockQty.ToString("N0"),
             Swatch = swatch,

@@ -33,6 +33,7 @@ public sealed class KiccPosClient : IKiccPosClient
     // 현상이 실기기에서 재현됨(로더 락 계열 데드락으로 추정). 스레드를 앱 수명 동안 하나만 만들어 재사용해서
     // 이 충돌 가능성 자체를 없앤다.
     private readonly BlockingCollection<Action> _workQueue = new();
+    private volatile bool _connected;
     private readonly Thread _workerThread;
 
     static KiccPosClient()
@@ -107,10 +108,12 @@ public sealed class KiccPosClient : IKiccPosClient
         {
             // KLoad가 응답 없이 걸려있는 경우 — 워커 스레드는 계속 대기하지만(강제 종료 불가),
             // 앱은 더 이상 기다리지 않고 "연결 실패"로 간주해 정상 기동을 진행한다.
+            _connected = false;
             return false;
         }
 
-        return await loadTask;
+        _connected = await loadTask;
+        return _connected;
     }
 
     public void Disconnect()
@@ -132,10 +135,17 @@ public sealed class KiccPosClient : IKiccPosClient
         }
     }
 
-    public async Task<KiccRawResponse> RequestAsync(int cmd, int gcd, int jcd, string sendData)
+    public async Task<KiccRawResponse> RequestAsync(int cmd, int gcd, int jcd, string sendData, int maxPollAttempts = MaxPollAttempts)
     {
         try
         {
+            // 시작 시 COM 포트가 다른 프로그램(EzMSR 등)에 잡혀 있어 연결이 실패했다면, 그 사이 포트가 풀렸을 수 있으니 한 번 더 연결한다.
+            if (!_connected && !await ConnectAsync())
+            {
+                Log("KLoad 재시도 실패 — 단말기 연결 안 됨");
+                return KiccRawResponse.Failure("단말기 연결 실패 (COM 포트 사용 중인지 확인)");
+            }
+
             Log($"KReqCmd 호출 직전: CMD=0x{cmd:X2} GCD=0x{gcd:X2} JCD=0x{jcd:X2} SendData={sendData}");
             var err = new byte[4096];
             int ret = await RunOnWorkerAsync(() => KReqCmd(cmd, gcd, jcd, sendData, err));
@@ -146,7 +156,7 @@ public sealed class KiccPosClient : IKiccPosClient
             if (ret == -3) return KiccRawResponse.Failure("고객이 결제를 취소했습니다");
             if (ret != 0) return KiccRawResponse.Failure(errText);
 
-            for (int attempt = 0; attempt < MaxPollAttempts; attempt++)
+            for (int attempt = 0; attempt < maxPollAttempts; attempt++)
             {
                 var (len, rcd, text) = await RunOnWorkerAsync(() =>
                 {
@@ -160,16 +170,16 @@ public sealed class KiccPosClient : IKiccPosClient
 
                 if (len > 0)
                 {
-                    Log($"KGetEvent 응답 수신 (시도 {attempt + 1}/{MaxPollAttempts}): len={len} rcd=0x{rcd:X2} text={text}");
+                    Log($"KGetEvent 응답 수신 (시도 {attempt + 1}/{maxPollAttempts}): len={len} rcd=0x{rcd:X2} text={text}");
                     return rcd == 0x00 ? KiccRawResponse.Success(text) : KiccRawResponse.Failure(text);
                 }
                 if (attempt == 0 || (attempt + 1) % 20 == 0)
                 {
-                    Log($"KGetEvent 대기 중 (시도 {attempt + 1}/{MaxPollAttempts}, 자료없음)");
+                    Log($"KGetEvent 대기 중 (시도 {attempt + 1}/{maxPollAttempts}, 자료없음)");
                 }
                 await Task.Delay(PollIntervalMs);
             }
-            Log($"KGetEvent 폴링 {MaxPollAttempts}회 모두 자료없음 — 응답 시간 초과 처리");
+            Log($"KGetEvent 폴링 {maxPollAttempts}회 모두 자료없음 — 응답 시간 초과 처리");
             return KiccRawResponse.Failure("응답 시간 초과");
         }
         catch (Exception ex)

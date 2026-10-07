@@ -26,7 +26,7 @@ public class ReceiptDocumentFactoryTests
 
         var document = ReceiptDocumentFactory.FromSale(header, lines);
 
-        Assert.Equal("카드결제1", document.PayTypeLabel);
+        Assert.Equal("카드", document.PayTypeLabel);
         Assert.Equal("99145616", document.VanApprovalNo);
         Assert.Equal(3, document.InstallmentMonths);
         Assert.Equal(22500m, document.TotalAmt);

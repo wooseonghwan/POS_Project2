@@ -16,6 +16,7 @@
         <local:CashReceiptTypeToMerchantPickerVisibilityConverter x:Key="CashReceiptTypeToMerchantPickerVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:InverseBooleanConverter x:Key="InverseBooleanConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:CategoryCodeToIconGeometryConverter x:Key="CategoryCodeToIconGeometryConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
+        <local:QuarterWidthConverter x:Key="QuarterWidthConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <Style x:Key="InstallmentOptionButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="3" />
             <Setter Property="Padding" Value="6" />
@@ -192,16 +193,16 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="{DynamicResource MenuBackground}">
+                <ScrollViewer x:Name="ProductScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="{DynamicResource MenuBackground}">
                     <ItemsControl ItemsSource="{Binding VisibleProducts}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel />
+                                <WrapPanel ItemWidth="{Binding ActualWidth, ElementName=ProductScrollViewer, Converter={StaticResource QuarterWidthConverter}}" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Command="{Binding AddCommand}" Margin="6" Padding="8" Width="112" Background="White"
+                                <Button Command="{Binding AddCommand}" Margin="6" Padding="8" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="130" Background="White"
                                         BorderBrush="{DynamicResource InputBorder}" BorderThickness="1">
                                     <StackPanel>
                                         <Border Background="{Binding Swatch}" Height="32" CornerRadius="2" Margin="0,0,0,4">
@@ -299,9 +300,9 @@
                                 BorderBrush="{DynamicResource NeutralButtonBorder}" />
                         <Button Content="현금결제" Command="{Binding PayCashCommand}" IsEnabled="{Binding CanPay}" Margin="3" FontSize="15" FontWeight="Bold"
                                 Background="{DynamicResource Accent}" Foreground="White" BorderBrush="{DynamicResource AccentDark}" />
-                        <Button Content="카드결제1" Command="{Binding PayCard1Command}" IsEnabled="{Binding CanPay}" Margin="3" FontSize="15" FontWeight="Bold"
+                        <Button Content="대원수산" Command="{Binding PayCard1Command}" IsEnabled="{Binding CanPay}" Margin="3" FontSize="15" FontWeight="Bold"
                                 Background="{DynamicResource Accent}" Foreground="White" BorderBrush="{DynamicResource AccentDark}" />
-                        <Button Content="카드결제2" Command="{Binding PayCard2Command}" IsEnabled="{Binding CanPay}" Margin="3" FontSize="15" FontWeight="Bold"
+                        <Button Content="대원낚시마트" Command="{Binding PayCard2Command}" IsEnabled="{Binding CanPay}" Margin="3" FontSize="15" FontWeight="Bold"
                                 Background="{DynamicResource AccentDark}" Foreground="White" BorderBrush="{DynamicResource AccentDark}" />
                     </UniformGrid>
                 </Grid>

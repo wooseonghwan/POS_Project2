@@ -16,7 +16,7 @@ public sealed class FakeKiccPosClient : IKiccPosClient
 
     public void Disconnect() { }
 
-    public Task<KiccRawResponse> RequestAsync(int cmd, int gcd, int jcd, string sendData)
+    public Task<KiccRawResponse> RequestAsync(int cmd, int gcd, int jcd, string sendData, int maxPollAttempts = 600)
     {
         Requests.Add((cmd, gcd, jcd, sendData));
         return Task.FromResult(_response);

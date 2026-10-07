@@ -73,9 +73,10 @@ public sealed partial class InventoryFormViewModel : ObservableObject
 
         if (editingProduct is not null)
         {
-            MajorCd = editingProduct.MajorCd;
-            MinorCd = editingProduct.MinorCd;
-            PosCatCd = editingProduct.PosCatCd;
+            // 바코드 일괄등록 상품은 대/소/POS분류가 비어 있을(NULL) 수 있으므로 빈 문자열로 대체한다.
+            MajorCd = editingProduct.MajorCd ?? string.Empty;
+            MinorCd = editingProduct.MinorCd ?? string.Empty;
+            PosCatCd = editingProduct.PosCatCd ?? string.Empty;
             Name = editingProduct.Name;
             BarcodeInput = editingProduct.Barcode;
             PriceInput = editingProduct.Price.ToString("N0");

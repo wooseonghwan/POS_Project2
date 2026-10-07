@@ -12,11 +12,11 @@ public class PosViewModelTests
 {
     private static readonly Product Bait1 = new()
     {
-        Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 50
+        Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 50, ShowInGrid = true
     };
     private static readonly Product Float1 = new()
     {
-        Barcode = "F1", MajorCd = "FISH", MinorCd = "TACKLE", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 50
+        Barcode = "F1", MajorCd = "FISH", MinorCd = "TACKLE", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 50, ShowInGrid = true
     };
 
     private static readonly VanApprovalResult ApprovedResult = new()
@@ -1050,7 +1050,7 @@ public class PosViewModelTests
         await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 1, 2, 3 }); // 5만원 이상이라 서명 완료 후에야 승인 진행
 
         Assert.True(vm.IsReceiptPreviewVisible);
-        Assert.Equal("카드결제1", vm.PreviewedReceipt!.PayTypeLabel);
+        Assert.Equal("카드", vm.PreviewedReceipt!.PayTypeLabel);
         Assert.Equal("20260723999999", vm.PreviewedReceipt.VanApprovalNo);
         Assert.Equal(3, vm.PreviewedReceipt.InstallmentMonths);
     }

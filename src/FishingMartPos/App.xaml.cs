@@ -6,6 +6,7 @@ using FishingMartPos.Navigation;
 using FishingMartPos.Repositories;
 using FishingMartPos.Services;
 using FishingMartPos.Services.Kicc;
+using FishingMartPos.Services.Printing;
 using FishingMartPos.Theme;
 using FishingMartPos.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,7 +72,7 @@ public partial class App : Application
         // 실제 KICC 로컬 에이전트 연동 시 IVanPaymentGateway 구현체만 교체(예: KiccVanPaymentGateway)
         services.AddSingleton<IVanPaymentGateway, StubVanPaymentGateway>();
         services.AddSingleton<ICashReceiptGateway, StubCashReceiptGateway>();
-        services.AddSingleton<IReceiptPrinter, StubReceiptPrinter>();
+        services.AddSingleton<IReceiptPrinter, WindowsReceiptPrinter>();
         services.AddSingleton<ISignatureConverter, StubSignatureConverter>();
         services.AddSingleton<IPhotoPicker, WpfPhotoPicker>();
         services.AddSingleton<IProductPhotoStorage>(_ => new FileSystemProductPhotoStorage(AppContext.BaseDirectory));
@@ -99,11 +100,15 @@ public partial class App : Application
         IVanPaymentGateway vanGateway = _services.GetRequiredService<IVanPaymentGateway>(); // StubVanPaymentGateway (기본값)
         ICashReceiptGateway cashReceiptGateway = _services.GetRequiredService<ICashReceiptGateway>(); // StubCashReceiptGateway (기본값)
         IKiccPosClient? kiccPosClient = null;
+        // KICC 백그라운드 연결이 끝나기 전에 POS/결제관리 화면이 만들어지면 스텁 게이트웨이가 박혀
+        // 실결제가 시뮬레이션으로 빠지는 문제가 있어, 화면 생성 전에 이 작업이 끝나길 기다린다.
+        Task kiccInitTask = Task.CompletedTask;
         var photoPicker = _services.GetRequiredService<IPhotoPicker>();
         var photoStorage = _services.GetRequiredService<IProductPhotoStorage>();
 
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
+            await kiccInitTask;
             var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, signatureConverter, CreatePaymentManagementViewModelAsync, kiccPosClient);
             await vm.LoadAsync();
             return vm;
@@ -177,6 +182,7 @@ public partial class App : Application
 
         async Task<PaymentManagementViewModel> CreatePaymentManagementViewModelAsync(MainMenuViewModel mainMenu)
         {
+            await kiccInitTask;
             var vm = new PaymentManagementViewModel(salesRepository, vanGateway, cashReceiptGateway, receiptPrinter, delayProvider, session, navigation, mainMenu);
             await vm.LoadAsync();
             return vm;
@@ -199,7 +205,10 @@ public partial class App : Application
         // 로더 락(loader lock) 데드락으로 앱이 창도 없이 영원히 멈추는 현상이 실기기에서 재현됨.
         if (config.KiccUseRealGateway)
         {
-            _ = InitializeKiccGatewayAsync();
+            // 연결 전/실패 시에는 스텁이 아니라 "사용 불가" 게이트웨이로 거절되도록 먼저 바꿔둔다.
+            vanGateway = new UnavailableVanPaymentGateway();
+            cashReceiptGateway = new UnavailableCashReceiptGateway();
+            kiccInitTask = InitializeKiccGatewayAsync();
         }
 
         async Task InitializeKiccGatewayAsync()
@@ -213,20 +222,21 @@ public partial class App : Application
                     r => r.PayType,
                     r => new KiccMerchantConfig(r.PayType, r.TerminalId ?? string.Empty, r.BusinessNo ?? string.Empty));
 
-                // 카드 승인/취소: 이 매장은 EasyCard2의 로컬 HTTP(PC결제) 방식이라 KiccPos.dll 없이 처리된다.
+                // 카드 승인/취소: 포스기에 내장된 EasyCard2(로컬 HTTP, PC결제 경로)로 보낸다. 카드리더는 EasyCard2가 직접 처리.
+                // 네이티브 KiccPos.dll(KLoad)을 기다리지 않도록 먼저 설정한다.
                 vanGateway = new KiccHttpVanPaymentGateway(config.KiccHttpPort, merchantsByPayType);
-                Log($"KICC HTTP 게이트웨이 구성 완료 (포트 {config.KiccHttpPort})");
+                Log($"카드결제 EasyCard2 HTTP 게이트웨이 구성 완료 (포트 {config.KiccHttpPort})");
 
-                // 현금영수증/서명/돈통열기는 여전히 KiccPos.dll(단말기승인 부착형 API)을 사용한다.
+                // 돈통열기/현금영수증은 네이티브 KiccPosClient를 쓴다. 연결이 실패해도 스텁으로 되돌리지 않는다.
                 var realClient = new KiccPosClient(config.KiccComPort, config.KiccBaudRate);
                 Log("KiccPosClient 생성 완료, ConnectAsync(KLoad) 호출 직전 (백그라운드)");
-                bool connected = await realClient.ConnectAsync(); // 연결 실패해도 앱은 계속 기동 — 해당 기능만 자연스럽게 실패 처리됨
+                bool connected = await realClient.ConnectAsync();
                 Log($"ConnectAsync(KLoad) 반환됨: connected={connected}");
                 kiccPosClient = realClient;
                 _kiccPosClient = realClient;
                 cashReceiptGateway = new KiccCashReceiptGateway(realClient, merchantsByPayType);
                 signatureConverter = new KiccSignatureConverter();
-                Log("KICC 게이트웨이 구성 완료 (백그라운드)");
+                Log("KICC 네이티브 게이트웨이 구성 완료 (백그라운드)");
             }
             catch (Exception ex)
             {

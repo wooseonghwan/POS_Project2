@@ -302,7 +302,7 @@ public class TransactionDetailViewModelTests
         Assert.True(vm.IsReceiptPreviewVisible);
         Assert.NotNull(vm.PreviewedReceipt);
         Assert.Equal(22500m, vm.PreviewedReceipt!.TotalAmt);
-        Assert.Equal("카드결제1", vm.PreviewedReceipt.PayTypeLabel);
+        Assert.Equal("카드", vm.PreviewedReceipt.PayTypeLabel);
         Assert.Equal("99145616", vm.PreviewedReceipt.VanApprovalNo);
     }
 

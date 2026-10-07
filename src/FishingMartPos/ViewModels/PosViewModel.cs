@@ -213,7 +213,7 @@ public sealed partial class PosViewModel : ObservableObject
     {
         VisibleProducts.Clear();
         int swatchIndex = 0;
-        foreach (var product in _allProducts.Where(p => p.PosCatCd == _activeCategoryCode))
+        foreach (var product in _allProducts.Where(p => p.ShowInGrid && p.PosCatCd == _activeCategoryCode))
         {
             var captured = product;
             VisibleProducts.Add(new ProductTileViewModel
@@ -541,7 +541,7 @@ public sealed partial class PosViewModel : ObservableObject
                 await _delay.Delay(TimeSpan.FromMilliseconds(1200));
                 ToastMessage = null;
                 PreviewedReceipt = BuildReceiptDocument(
-                    capturedPayType == "CARD1" ? "카드결제1" : "카드결제2", result.ApprovalNo, installmentMonths,
+                    "카드", result.ApprovalNo, installmentMonths,
                     null, null);
                 IsReceiptPreviewVisible = true;
                 ResetOrder();
@@ -692,7 +692,9 @@ public sealed partial class PosViewModel : ObservableObject
         IsCardProcessing = true;
         try
         {
-            var result = await _kiccPosClient.RequestAsync(0xFB, 0x14, 0x0B, "");
+            // 돈통 열기는 사람 입력을 기다릴 이유가 없는 즉시 응답용 명령이라, 카드승인(기본 60초)보다
+            // 훨씬 짧게 3초(30 * 100ms)만 기다린다.
+            var result = await _kiccPosClient.RequestAsync(0xFB, 0x14, 0x0B, "", maxPollAttempts: 30);
             if (!result.IsSuccess)
             {
                 IsToastWarning = true;
@@ -899,6 +901,7 @@ public sealed partial class PosViewModel : ObservableObject
         InstallmentMonths = installmentMonths,
         CashReceiptTypeLabel = cashReceiptTypeLabel,
         CashReceiptApprovalNo = cashReceiptApprovalNo,
+        SaleDateTime = DateTime.Now,
     };
 
     private static string? CashReceiptTypeLabel(string type) => type switch
