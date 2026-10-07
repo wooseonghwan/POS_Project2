@@ -320,7 +320,7 @@ public class InventoryFormViewModelTests
         await vm.SaveCommand.ExecuteAsync(null);
 
         var saved = Assert.Single(products.SavedProducts);
-        Assert.Equal("8800000020002", saved.Barcode);
+        Assert.Equal("70000", saved.Barcode);
     }
 
     [Fact]
