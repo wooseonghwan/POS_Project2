@@ -67,15 +67,18 @@ public class MainMenuViewModelTests
                 new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
                 new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
                 new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenu));
+        Func<MainMenuViewModel, Task<CashDrawerViewModel>> cashDrawerViewModelFactory = mainMenu =>
+            Task.FromResult(new CashDrawerViewModel(new FakeCashDrawerRepository(), session, new FakeDelayProvider(), navigation, mainMenu));
 
         var vm = new MainMenuViewModel(session, navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory, settingsViewModelFactory, paymentManagementViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory, settingsViewModelFactory, paymentManagementViewModelFactory, cashDrawerViewModelFactory),
             PosViewModelFactory = posViewModelFactory,
             InventoryViewModelFactory = inventoryViewModelFactory,
             SalesReportViewModelFactory = salesReportViewModelFactory,
             SettingsViewModelFactory = settingsViewModelFactory,
             PaymentManagementViewModelFactory = paymentManagementViewModelFactory,
+            CashDrawerViewModelFactory = cashDrawerViewModelFactory,
         };
         return (vm, session, navigation);
     }
@@ -192,6 +195,16 @@ public class MainMenuViewModelTests
 
         Assert.NotNull(created);
         Assert.Same(created, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task GoToCashDrawer_InvokesFactoryAndNavigates()
+    {
+        var (vm, _, navigation) = Create();
+
+        await vm.GoToCashDrawerCommand.ExecuteAsync(null);
+
+        Assert.IsType<CashDrawerViewModel>(navigation.CurrentViewModel);
     }
 
     [Fact]

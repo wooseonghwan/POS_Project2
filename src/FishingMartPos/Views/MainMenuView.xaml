@@ -128,6 +128,20 @@
                                    Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Button>
+                <Button Command="{Binding GoToCashDrawerCommand}" Margin="10" Background="White"
+                        BorderBrush="{DynamicResource MenuTileBorder}" BorderThickness="1">
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <Canvas Width="48" Height="36" Margin="0,0,0,14">
+                            <Border Width="42" Height="26" CornerRadius="3" BorderThickness="3"
+                                    BorderBrush="{DynamicResource Accent}" Background="Transparent"
+                                    Canvas.Left="0" Canvas.Top="5" />
+                            <Ellipse Width="16" Height="16" Stroke="{DynamicResource Accent}" StrokeThickness="2.5"
+                                     Canvas.Left="13" Canvas.Top="10" />
+                        </Canvas>
+                        <TextBlock Text="시재" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource MenuTileLabelText}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </UniformGrid>
         </Grid>
     </Grid>

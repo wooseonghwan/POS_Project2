@@ -34,7 +34,8 @@ public class LoginViewModelTests
             CreateDummyInventoryViewModelFactory(session, navigation),
             CreateDummySalesReportViewModelFactory(session, navigation),
             CreateDummySettingsViewModelFactory(navigation),
-            CreateDummyPaymentManagementViewModelFactory(session, navigation));
+            CreateDummyPaymentManagementViewModelFactory(session, navigation),
+            CreateDummyCashDrawerViewModelFactory(session, navigation));
     }
 
     private static Func<MainMenuViewModel, Task<PosViewModel>> CreateDummyPosViewModelFactory(
@@ -102,6 +103,11 @@ public class LoginViewModelTests
                 ResponseMessage = "현금영수증 발급 완료",
             }),
             new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenu));
+
+    private static Func<MainMenuViewModel, Task<CashDrawerViewModel>> CreateDummyCashDrawerViewModelFactory(
+        ICurrentSession session, INavigationService navigation) =>
+        mainMenu => Task.FromResult(new CashDrawerViewModel(
+            new FakeCashDrawerRepository(), session, new FakeDelayProvider(), navigation, mainMenu));
 
     [Fact]
     public void PressingDigits_BuildsPinString()

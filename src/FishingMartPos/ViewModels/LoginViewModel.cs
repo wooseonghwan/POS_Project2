@@ -17,6 +17,7 @@ public sealed partial class LoginViewModel : ObservableObject
     private readonly Func<MainMenuViewModel, Task<SalesReportViewModel>> _salesReportViewModelFactory;
     private readonly Func<MainMenuViewModel, Task<SettingsViewModel>> _settingsViewModelFactory;
     private readonly Func<MainMenuViewModel, Task<PaymentManagementViewModel>> _paymentManagementViewModelFactory;
+    private readonly Func<MainMenuViewModel, Task<CashDrawerViewModel>> _cashDrawerViewModelFactory;
 
     [ObservableProperty]
     private string _pin = string.Empty;
@@ -42,7 +43,8 @@ public sealed partial class LoginViewModel : ObservableObject
         Func<MainMenuViewModel, Task<InventoryViewModel>> inventoryViewModelFactory,
         Func<MainMenuViewModel, Task<SalesReportViewModel>> salesReportViewModelFactory,
         Func<MainMenuViewModel, Task<SettingsViewModel>> settingsViewModelFactory,
-        Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory)
+        Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory,
+        Func<MainMenuViewModel, Task<CashDrawerViewModel>> cashDrawerViewModelFactory)
     {
         _staffRepository = staffRepository;
         _session = session;
@@ -54,6 +56,7 @@ public sealed partial class LoginViewModel : ObservableObject
         _salesReportViewModelFactory = salesReportViewModelFactory;
         _settingsViewModelFactory = settingsViewModelFactory;
         _paymentManagementViewModelFactory = paymentManagementViewModelFactory;
+        _cashDrawerViewModelFactory = cashDrawerViewModelFactory;
     }
 
     [RelayCommand]
@@ -109,12 +112,13 @@ public sealed partial class LoginViewModel : ObservableObject
 
         var mainMenuViewModel = new MainMenuViewModel(_session, _navigation)
         {
-            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory, _salesReportViewModelFactory, _settingsViewModelFactory, _paymentManagementViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory, _salesReportViewModelFactory, _settingsViewModelFactory, _paymentManagementViewModelFactory, _cashDrawerViewModelFactory),
             PosViewModelFactory = _posViewModelFactory,
             InventoryViewModelFactory = _inventoryViewModelFactory,
             SalesReportViewModelFactory = _salesReportViewModelFactory,
             SettingsViewModelFactory = _settingsViewModelFactory,
             PaymentManagementViewModelFactory = _paymentManagementViewModelFactory,
+            CashDrawerViewModelFactory = _cashDrawerViewModelFactory,
         };
         _navigation.NavigateTo(mainMenuViewModel);
     }

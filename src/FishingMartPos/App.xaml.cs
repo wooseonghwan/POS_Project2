@@ -64,6 +64,7 @@ public partial class App : Application
         services.AddSingleton<IPrinterConfigRepository, PrinterConfigRepository>();
         services.AddSingleton<IReceiptConfigRepository, ReceiptConfigRepository>();
         services.AddSingleton<ISystemInfoRepository, SystemInfoRepository>();
+        services.AddSingleton<ICashDrawerRepository, CashDrawerRepository>();
         services.AddSingleton<ISalesRepository, SalesRepository>();
         services.AddSingleton<IHeldOrderRepository, HeldOrderRepository>();
         services.AddSingleton<IVanConfigRepository, VanConfigRepository>();
@@ -96,6 +97,7 @@ public partial class App : Application
         var printerConfigRepository = _services.GetRequiredService<IPrinterConfigRepository>();
         var receiptConfigRepository = _services.GetRequiredService<IReceiptConfigRepository>();
         var systemInfoRepository = _services.GetRequiredService<ISystemInfoRepository>();
+        var cashDrawerRepository = _services.GetRequiredService<ICashDrawerRepository>();
         var delayProvider = _services.GetRequiredService<IDelayProvider>();
         IVanPaymentGateway vanGateway = _services.GetRequiredService<IVanPaymentGateway>(); // StubVanPaymentGateway (기본값)
         ICashReceiptGateway cashReceiptGateway = _services.GetRequiredService<ICashReceiptGateway>(); // StubCashReceiptGateway (기본값)
@@ -188,8 +190,15 @@ public partial class App : Application
             return vm;
         }
 
+        async Task<CashDrawerViewModel> CreateCashDrawerViewModelAsync(MainMenuViewModel mainMenu)
+        {
+            var vm = new CashDrawerViewModel(cashDrawerRepository, session, delayProvider, navigation, mainMenu);
+            await vm.LoadAsync();
+            return vm;
+        }
+
         LoginViewModel CreateLoginViewModel() =>
-            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync, CreatePaymentManagementViewModelAsync);
+            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync, CreatePaymentManagementViewModelAsync, CreateCashDrawerViewModelAsync);
 
         Log("LoginViewModel 생성 직전");
         navigation.NavigateTo(CreateLoginViewModel());

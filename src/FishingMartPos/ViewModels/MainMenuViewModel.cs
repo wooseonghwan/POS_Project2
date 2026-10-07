@@ -41,6 +41,9 @@ public sealed partial class MainMenuViewModel : ObservableObject
     /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 PaymentManagementViewModel 팩토리 — "결제관리" 진입 시 사용. 자신(this)을 넘겨줘 PaymentManagementViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
     public Func<MainMenuViewModel, Task<PaymentManagementViewModel>>? PaymentManagementViewModelFactory { get; init; }
 
+    /// <summary>App.xaml.cs(또는 테스트)에서 주입하는 CashDrawerViewModel 팩토리 — "시재" 진입 시 사용. 자신(this)을 넘겨줘 CashDrawerViewModel이 "메인메뉴로" 복귀 시 재사용한다.</summary>
+    public Func<MainMenuViewModel, Task<CashDrawerViewModel>>? CashDrawerViewModelFactory { get; init; }
+
     [RelayCommand]
     private async Task GoToSales()
     {
@@ -76,6 +79,13 @@ public sealed partial class MainMenuViewModel : ObservableObject
     {
         var paymentManagementViewModel = await PaymentManagementViewModelFactory!.Invoke(this);
         _navigation.NavigateTo(paymentManagementViewModel);
+    }
+
+    [RelayCommand]
+    private async Task GoToCashDrawer()
+    {
+        var cashDrawerViewModel = await CashDrawerViewModelFactory!.Invoke(this);
+        _navigation.NavigateTo(cashDrawerViewModel);
     }
 
     [RelayCommand]
