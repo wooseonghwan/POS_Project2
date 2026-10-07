@@ -101,6 +101,114 @@ public class InventoryFormViewModelTests
     }
 
     [Fact]
+    public async Task LoadAsync_AddMode_DefaultsShowInGridToTrue()
+    {
+        var (vm, _, _, _, _, _, _) = CreateForAdd();
+
+        await vm.LoadAsync();
+
+        Assert.True(vm.ShowInGrid);
+    }
+
+    [Fact]
+    public async Task LoadAsync_EditMode_FillsShowInGridFromExistingProduct()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
+            ShowInGrid = false,
+        };
+        var (vm, _, _, _, _, _, _) = CreateForEdit(editing);
+
+        await vm.LoadAsync();
+
+        Assert.False(vm.ShowInGrid);
+    }
+
+    [Fact]
+    public async Task Save_AddMode_DefaultsShowInGridToTrue()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.True(saved.ShowInGrid);
+    }
+
+    [Fact]
+    public async Task Save_AddMode_WhenUnchecked_PersistsShowInGridFalse()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        vm.ShowInGrid = false;
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.False(saved.ShowInGrid);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_WithoutTouchingShowInGrid_PreservesOriginalValue()
+    {
+        // 상품등록/수정 화면이 ShowInGrid를 처리하지 않던 버그: 단가 등 다른 값만 고쳐도
+        // 판매화면 노출여부가 항상 꺼짐(N)으로 저장되던 문제의 회귀 테스트.
+        var editing = new Product
+        {
+            Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
+            ShowInGrid = true,
+        };
+        var (vm, products, _, _, _, _, _) = CreateForEdit(editing);
+        await vm.LoadAsync();
+        vm.PriceInput = "6000"; // 노출여부 체크박스는 건드리지 않음
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.True(saved.ShowInGrid);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_PreservesExistingSortNo()
+    {
+        // 재고관리 화면 ▲▼로 바꿔둔 같은 분류 안 노출 순서가, 단순 수정 저장으로 0으로
+        // 리셋되지 않아야 한다.
+        var editing = new Product
+        {
+            Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
+            SortNo = 7,
+        };
+        var (vm, products, _, _, _, _, _) = CreateForEdit(editing);
+        await vm.LoadAsync();
+        vm.PriceInput = "6000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(7, saved.SortNo);
+    }
+
+    [Fact]
+    public async Task Save_AddMode_NewProductStartsAtSortNoZero()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(0, saved.SortNo);
+    }
+
+    [Fact]
     public async Task Save_WithoutName_ShowsErrorAndDoesNotSave()
     {
         var (vm, products, _, _, _, _, _) = CreateForAdd();

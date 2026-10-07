@@ -51,10 +51,24 @@ public sealed class FakeCodeRepository : ICodeRepository
         {
             if (byCode.TryGetValue(orderedCodeCds[i], out var existing))
             {
-                reordered.Add(new CodeItem { Code = existing.Code, Name = existing.Name, SortNo = i });
+                reordered.Add(new CodeItem { Code = existing.Code, Name = existing.Name, SortNo = i, UseYn = existing.UseYn });
             }
         }
         _byGroup[codeGbn] = reordered;
+        return Task.CompletedTask;
+    }
+
+    public Task SetUseYnAsync(string codeGbn, string codeCd, bool useYn)
+    {
+        if (_byGroup.TryGetValue(codeGbn, out var list))
+        {
+            int index = list.FindIndex(c => c.Code == codeCd);
+            if (index >= 0)
+            {
+                var existing = list[index];
+                list[index] = new CodeItem { Code = existing.Code, Name = existing.Name, SortNo = existing.SortNo, UseYn = useYn };
+            }
+        }
         return Task.CompletedTask;
     }
 }

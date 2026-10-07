@@ -17,7 +17,7 @@ public sealed class CodeRepository : ICodeRepository
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
-            SELECT code_cd AS Code, code_nm AS Name, sort_no AS SortNo
+            SELECT code_cd AS Code, code_nm AS Name, sort_no AS SortNo, (use_yn = 'Y') AS UseYn
             FROM code_tb
             WHERE code_gbn = @CodeGbn
             ORDER BY sort_no, code_cd
@@ -31,8 +31,8 @@ public sealed class CodeRepository : ICodeRepository
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
-            INSERT INTO code_tb (code_gbn, code_cd, code_nm, sort_no)
-            VALUES (@CodeGbn, @CodeCd, @CodeNm, 0)
+            INSERT INTO code_tb (code_gbn, code_cd, code_nm, sort_no, use_yn)
+            VALUES (@CodeGbn, @CodeCd, @CodeNm, 0, 'Y')
             """;
         await connection.ExecuteAsync(sql, new { CodeGbn = codeGbn, CodeCd = codeCd, CodeNm = codeNm });
     }
@@ -52,5 +52,12 @@ public sealed class CodeRepository : ICodeRepository
         {
             await connection.ExecuteAsync(sql, new { SortNo = i, CodeGbn = codeGbn, CodeCd = orderedCodeCds[i] });
         }
+    }
+
+    public async Task SetUseYnAsync(string codeGbn, string codeCd, bool useYn)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
+        const string sql = "UPDATE code_tb SET use_yn = @UseYn WHERE code_gbn = @CodeGbn AND code_cd = @CodeCd";
+        await connection.ExecuteAsync(sql, new { UseYn = useYn ? "Y" : "N", CodeGbn = codeGbn, CodeCd = codeCd });
     }
 }

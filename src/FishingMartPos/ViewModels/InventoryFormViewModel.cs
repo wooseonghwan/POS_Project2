@@ -39,6 +39,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     [ObservableProperty] private bool _isPosCatCodeManagerOpen;
     [ObservableProperty] private string _newCodeCode = string.Empty;
     [ObservableProperty] private string _newCodeName = string.Empty;
+    // 판매화면 상품목록(타일)에 노출할지 여부. 등록 모드 기본값은 노출(Y) — 신규 상품은 보통 바로 팔아야 하므로.
+    [ObservableProperty] private bool _showInGrid = true;
 
     public ObservableCollection<CodeItem> PosCatCodes { get; } = new();
 
@@ -73,6 +75,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             BarcodeInput = editingProduct.Barcode;
             PriceInput = editingProduct.Price.ToString("N0");
             StockInput = editingProduct.StockQty.ToString();
+            ShowInGrid = editingProduct.ShowInGrid;
             if (editingProduct.PhotoPath is not null)
             {
                 PhotoPreviewPath = System.IO.Path.Combine(AppContext.BaseDirectory, editingProduct.PhotoPath);
@@ -172,9 +175,11 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             barcode = BarcodeInput;
         }
 
-        string? photoPath = _editingBarcode is not null
-            ? _allProducts.FirstOrDefault(p => p.Barcode == _editingBarcode)?.PhotoPath
+        var originalProduct = _editingBarcode is not null
+            ? _allProducts.FirstOrDefault(p => p.Barcode == _editingBarcode)
             : null;
+
+        string? photoPath = originalProduct?.PhotoPath;
         if (_pickedPhotoFilePath is not null)
         {
             photoPath = _photoStorage.SavePhoto(barcode, _pickedPhotoFilePath);
@@ -188,6 +193,10 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             Price = price,
             StockQty = stock,
             PhotoPath = photoPath,
+            ShowInGrid = ShowInGrid,
+            // 같은 분류 안 노출 순서는 재고관리 화면의 ▲▼ 버튼으로만 바꾼다 — 등록/수정 화면에서 저장할 때
+            // 기존 값을 그대로 보존해야 순서가 흐트러지지 않는다. 신규 등록은 0(기본값)에서 시작.
+            SortNo = originalProduct?.SortNo ?? 0,
         };
 
         await _productRepository.SaveAsync(product);

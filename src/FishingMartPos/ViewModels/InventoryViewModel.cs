@@ -140,6 +140,10 @@ public sealed partial class InventoryViewModel : ObservableObject
         OnPropertyChanged(nameof(CanGoToPreviousPage));
         OnPropertyChanged(nameof(CanGoToNextPage));
 
+        // "전체" 보기나 검색 중에는 어느 탭 기준으로 순서를 바꾸는 건지 애매해지므로, 특정 POS분류 하나로
+        // 필터링했을 때만(그리고 관리자만) 순서 변경 버튼을 쓸 수 있게 한다.
+        bool canReorder = isAdmin && categoryFilter != AllCategoriesCode && search.Length == 0;
+
         Rows.Clear();
         int swatchIndex = (CurrentPage - 1) * PageSize;
         foreach (var product in _filteredProducts.Skip((CurrentPage - 1) * PageSize).Take(PageSize))
@@ -159,12 +163,34 @@ public sealed partial class InventoryViewModel : ObservableObject
                     : null,
                 CanDelete = isAdmin,
                 CanEdit = isAdmin,
+                CanReorder = canReorder,
                 DeleteCommand = new RelayCommand(() => RequestDelete(captured)),
                 EditCommand = new AsyncRelayCommand(() => GoToEditProduct(captured)),
                 ShowDetailCommand = new RelayCommand(() => ShowDetail(captured, swatch)),
+                MoveUpCommand = new AsyncRelayCommand(() => MoveProductAsync(captured, -1)),
+                MoveDownCommand = new AsyncRelayCommand(() => MoveProductAsync(captured, 1)),
             });
             swatchIndex++;
         }
+    }
+
+    /// <summary>같은 POS분류 탭 안에서 상품을 한 칸 위/아래로 옮기고 즉시 저장한다. "전체" 보기나 검색 중에는 호출되지 않는다(CanReorder=false).</summary>
+    private async Task MoveProductAsync(Product product, int direction)
+    {
+        if (!IsAdmin) return;
+        string categoryFilter = SelectedCategoryOption?.Code ?? AllCategoriesCode;
+        if (categoryFilter == AllCategoriesCode || SearchText.Trim().Length > 0) return;
+
+        var ordered = _filteredProducts.ToList();
+        int index = ordered.FindIndex(p => p.Barcode == product.Barcode);
+        int newIndex = index + direction;
+        if (index < 0 || newIndex < 0 || newIndex >= ordered.Count) return;
+
+        (ordered[index], ordered[newIndex]) = (ordered[newIndex], ordered[index]);
+
+        await _productRepository.UpdateSortOrderAsync(categoryFilter, ordered.Select(p => p.Barcode).ToList());
+        _allProducts = await _productRepository.GetActiveAsync();
+        RefreshRows();
     }
 
     private void ShowDetail(Product product, Brush swatch)

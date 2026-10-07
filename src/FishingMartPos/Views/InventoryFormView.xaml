@@ -104,6 +104,9 @@
                         </StackPanel>
                     </Grid>
 
+                    <CheckBox Content="판매화면 상품목록에 노출(끄면 바코드 스캔으로만 판매 가능)"
+                              IsChecked="{Binding ShowInGrid}" FontSize="12" Margin="0,0,0,16" />
+
                     <Button Content="{Binding SaveButtonText}" Padding="0,12" Background="{DynamicResource Accent}" Foreground="White"
                             FontSize="14" FontWeight="Bold" Command="{Binding SaveCommand}" />
                 </StackPanel>

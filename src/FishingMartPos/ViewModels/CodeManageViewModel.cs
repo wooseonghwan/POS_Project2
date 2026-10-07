@@ -114,6 +114,21 @@ public sealed partial class CodeManageViewModel : ObservableObject
         await _codeRepository.UpdateSortOrderAsync("POSCAT", PosCatCodes.Select(c => c.Code).ToList());
     }
 
+    /// <summary>판매화면 메뉴 탭 노출을 켜거나 끈다. 꺼도 코드와 그 분류에 속한 상품은 그대로 남아있고,
+    /// 바코드 스캔으로는 계속 판매할 수 있다 — 탭에만 보이지 않는다.</summary>
+    [RelayCommand]
+    private async Task TogglePosCatVisibility(CodeItem code)
+    {
+        bool newUseYn = !code.UseYn;
+        await _codeRepository.SetUseYnAsync("POSCAT", code.Code, newUseYn);
+
+        int index = PosCatCodes.IndexOf(code);
+        if (index >= 0)
+        {
+            PosCatCodes[index] = new CodeItem { Code = code.Code, Name = code.Name, SortNo = code.SortNo, UseYn = newUseYn };
+        }
+    }
+
     [RelayCommand]
     private void GoToSettings() => _navigation.NavigateTo(_returnTo);
 }

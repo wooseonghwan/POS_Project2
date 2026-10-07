@@ -173,6 +173,37 @@ public class CodeManageViewModelTests
     }
 
     [Fact]
+    public async Task TogglePosCatVisibility_OnVisibleCode_HidesItAndPersists()
+    {
+        var (vm, codes, _, _, _) = Create();
+        await vm.LoadAsync();
+        var visibleCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
+        Assert.True(visibleCode.UseYn);
+
+        await vm.TogglePosCatVisibilityCommand.ExecuteAsync(visibleCode);
+
+        Assert.False(vm.PosCatCodes.Single(c => c.Code == "BAIT").UseYn);
+        var persisted = await codes.GetByGroupAsync("POSCAT");
+        Assert.False(persisted.Single(c => c.Code == "BAIT").UseYn);
+    }
+
+    [Fact]
+    public async Task TogglePosCatVisibility_Twice_RestoresVisible()
+    {
+        var (vm, codes, _, _, _) = Create();
+        await vm.LoadAsync();
+        var visibleCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
+
+        await vm.TogglePosCatVisibilityCommand.ExecuteAsync(visibleCode);
+        var hiddenCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
+        await vm.TogglePosCatVisibilityCommand.ExecuteAsync(hiddenCode);
+
+        Assert.True(vm.PosCatCodes.Single(c => c.Code == "BAIT").UseYn);
+        var persisted = await codes.GetByGroupAsync("POSCAT");
+        Assert.True(persisted.Single(c => c.Code == "BAIT").UseYn);
+    }
+
+    [Fact]
     public void GoToSettings_NavigatesBackToSettingsViewModel()
     {
         var (vm, _, _, navigation, settings) = Create();

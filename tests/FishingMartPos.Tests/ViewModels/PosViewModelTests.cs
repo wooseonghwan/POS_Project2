@@ -39,13 +39,14 @@ public class PosViewModelTests
         IKiccPosClient? kiccPosClient = null,
         ICashReceiptGateway? cashReceiptGateway = null,
         IReceiptPrinter? receiptPrinter = null,
-        ISignatureConverter? signatureConverter = null)
+        ISignatureConverter? signatureConverter = null,
+        IReadOnlyList<CodeItem>? posCatCodes = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
         var codes = new Dictionary<string, IReadOnlyList<CodeItem>>
         {
-            ["POSCAT"] = new List<CodeItem>
+            ["POSCAT"] = posCatCodes ?? new List<CodeItem>
             {
                 new() { Code = "BAIT", Name = "미끼", SortNo = 1 },
                 new() { Code = "FLOAT", Name = "찌세트", SortNo = 2 },
@@ -95,6 +96,23 @@ public class PosViewModelTests
         Assert.Equal(2, vm.Categories.Count);
         Assert.Single(vm.VisibleProducts);
         Assert.Equal("지렁이", vm.VisibleProducts[0].Name);
+    }
+
+    [Fact]
+    public async Task LoadAsync_HiddenCategory_IsExcludedFromTabsButFirstVisibleCategoryBecomesActive()
+    {
+        var vm = CreateViewModel(out _, out _, out _, out _, posCatCodes: new List<CodeItem>
+        {
+            new() { Code = "BAIT", Name = "미끼", SortNo = 1, UseYn = false },
+            new() { Code = "FLOAT", Name = "찌세트", SortNo = 2, UseYn = true },
+        });
+
+        await vm.LoadAsync();
+
+        Assert.Single(vm.Categories);
+        Assert.Equal("찌세트", vm.Categories[0].Name);
+        Assert.Single(vm.VisibleProducts);
+        Assert.Equal("막대찌 세트", vm.VisibleProducts[0].Name);
     }
 
     [Fact]

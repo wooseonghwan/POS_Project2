@@ -172,7 +172,9 @@ public sealed partial class PosViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
-        var codes = await _codeRepository.GetByGroupAsync("POSCAT");
+        // 노출 꺼진(UseYn=false) 분류는 판매화면 메뉴 탭에서 숨긴다. 단, 그 분류의 상품은
+        // 바코드 스캔으로는 여전히 담을 수 있다(_allProducts에서 걸러내지 않음).
+        var codes = (await _codeRepository.GetByGroupAsync("POSCAT")).Where(c => c.UseYn).ToList();
         _allProducts = await _productRepository.GetActiveAsync();
 
         Categories.Clear();

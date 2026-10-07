@@ -19,10 +19,10 @@ public sealed class ProductRepository : IProductRepository
         const string sql = """
             SELECT barcode AS Barcode, poscat_cd AS PosCatCd,
                    name AS Name, price AS Price, stock_qty AS StockQty, photo_path AS PhotoPath,
-                   (pos_grid_yn = 'Y') AS ShowInGrid
+                   (pos_grid_yn = 'Y') AS ShowInGrid, sort_no AS SortNo
             FROM product_tb
             WHERE use_yn = 'Y'
-            ORDER BY poscat_cd, name
+            ORDER BY poscat_cd, sort_no, name
             """;
 
         var result = await connection.QueryAsync<Product>(sql);
@@ -40,14 +40,25 @@ public sealed class ProductRepository : IProductRepository
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync();
         const string sql = """
-            INSERT INTO product_tb (barcode, poscat_cd, name, price, stock_qty, photo_path, use_yn, pos_grid_yn)
+            INSERT INTO product_tb (barcode, poscat_cd, name, price, stock_qty, photo_path, use_yn, pos_grid_yn, sort_no)
             VALUES (@Barcode, @PosCatCd, @Name, @Price, @StockQty, @PhotoPath, 'Y',
-                    CASE WHEN @ShowInGrid THEN 'Y' ELSE 'N' END)
+                    CASE WHEN @ShowInGrid THEN 'Y' ELSE 'N' END, @SortNo)
             ON DUPLICATE KEY UPDATE
                 poscat_cd = VALUES(poscat_cd),
                 name = VALUES(name), price = VALUES(price), stock_qty = VALUES(stock_qty),
-                photo_path = VALUES(photo_path), use_yn = 'Y', pos_grid_yn = VALUES(pos_grid_yn)
+                photo_path = VALUES(photo_path), use_yn = 'Y', pos_grid_yn = VALUES(pos_grid_yn),
+                sort_no = VALUES(sort_no)
             """;
         await connection.ExecuteAsync(sql, product);
+    }
+
+    public async Task UpdateSortOrderAsync(string posCatCd, IReadOnlyList<string> orderedBarcodes)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
+        const string sql = "UPDATE product_tb SET sort_no = @SortNo WHERE poscat_cd = @PosCatCd AND barcode = @Barcode";
+        for (int i = 0; i < orderedBarcodes.Count; i++)
+        {
+            await connection.ExecuteAsync(sql, new { SortNo = i, PosCatCd = posCatCd, Barcode = orderedBarcodes[i] });
+        }
     }
 }

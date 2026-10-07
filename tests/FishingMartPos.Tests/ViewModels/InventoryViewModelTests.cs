@@ -443,4 +443,120 @@ public class InventoryViewModelTests
 
         Assert.False(vm.IsDetailVisible);
     }
+
+    private static (InventoryViewModel vm, FakeProductRepository products) CreateAdminFilteredToBait(IReadOnlyList<Product> products)
+    {
+        var session = new CurrentSession();
+        session.SignIn(
+            new Staff { StaffCode = "ADMIN1", StaffName = "관리자", Role = "ADMIN", UseYn = "Y" },
+            new PosTerminal { PosCode = "1", PosName = "POS1" });
+        var navigation = new NavigationService();
+        var mainMenu = DummyMainMenu(session, navigation);
+        var fakeProducts = new FakeProductRepository(products);
+        var vm = new InventoryViewModel(fakeProducts, new FakeCodeRepository(SampleCodes()), session, navigation, mainMenu);
+        return (vm, fakeProducts);
+    }
+
+    [Fact]
+    public async Task CanReorder_WhenAllCategoriesSelected_IsFalse()
+    {
+        var (vm, _, _, _) = CreateAdmin();
+        await vm.LoadAsync(); // SelectedCategoryOption은 기본값 "전체"
+
+        Assert.All(vm.Rows, r => Assert.False(r.CanReorder));
+    }
+
+    [Fact]
+    public async Task CanReorder_WhenSpecificCategorySelectedAndNoSearch_IsTrueForAdmin()
+    {
+        var (vm, _) = CreateAdminFilteredToBait(ManyProducts(3));
+        await vm.LoadAsync();
+
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+
+        Assert.All(vm.Rows, r => Assert.True(r.CanReorder));
+    }
+
+    [Fact]
+    public async Task CanReorder_WhileSearching_IsFalseEvenWithCategoryFiltered()
+    {
+        var (vm, _) = CreateAdminFilteredToBait(ManyProducts(3));
+        await vm.LoadAsync();
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+
+        vm.SearchText = "상품0";
+
+        Assert.All(vm.Rows, r => Assert.False(r.CanReorder));
+    }
+
+    [Fact]
+    public async Task CanReorder_ForStaffSession_IsFalseEvenWithCategoryFiltered()
+    {
+        var (vm, _, _) = CreateStaff();
+        await vm.LoadAsync();
+
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+
+        Assert.All(vm.Rows, r => Assert.False(r.CanReorder));
+    }
+
+    [Fact]
+    public async Task MoveUpCommand_SwapsWithPreviousItemAndPersistsOrder()
+    {
+        var (vm, products) = CreateAdminFilteredToBait(ManyProducts(3));
+        await vm.LoadAsync();
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+        var second = vm.Rows.Single(r => r.Barcode == "P002");
+
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)second.MoveUpCommand).ExecuteAsync(null);
+
+        Assert.Equal(new[] { "P002", "P001", "P003" }, vm.Rows.Select(r => r.Barcode));
+        var (posCatCd, barcodes) = Assert.Single(products.SortOrderUpdates);
+        Assert.Equal("BAIT", posCatCd);
+        Assert.Equal(new[] { "P002", "P001", "P003" }, barcodes);
+    }
+
+    [Fact]
+    public async Task MoveDownCommand_SwapsWithNextItemAndPersistsOrder()
+    {
+        var (vm, products) = CreateAdminFilteredToBait(ManyProducts(3));
+        await vm.LoadAsync();
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+        var first = vm.Rows.Single(r => r.Barcode == "P001");
+
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)first.MoveDownCommand).ExecuteAsync(null);
+
+        Assert.Equal(new[] { "P002", "P001", "P003" }, vm.Rows.Select(r => r.Barcode));
+        var (posCatCd, barcodes) = Assert.Single(products.SortOrderUpdates);
+        Assert.Equal("BAIT", posCatCd);
+        Assert.Equal(new[] { "P002", "P001", "P003" }, barcodes);
+    }
+
+    [Fact]
+    public async Task MoveUpCommand_OnFirstItem_DoesNothing()
+    {
+        var (vm, products) = CreateAdminFilteredToBait(ManyProducts(3));
+        await vm.LoadAsync();
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+        var first = vm.Rows.Single(r => r.Barcode == "P001");
+
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)first.MoveUpCommand).ExecuteAsync(null);
+
+        Assert.Equal(new[] { "P001", "P002", "P003" }, vm.Rows.Select(r => r.Barcode));
+        Assert.Empty(products.SortOrderUpdates);
+    }
+
+    [Fact]
+    public async Task MoveDownCommand_OnLastItem_DoesNothing()
+    {
+        var (vm, products) = CreateAdminFilteredToBait(ManyProducts(3));
+        await vm.LoadAsync();
+        vm.SelectedCategoryOption = vm.CategoryOptions.Single(c => c.Name == "미끼");
+        var last = vm.Rows.Single(r => r.Barcode == "P003");
+
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)last.MoveDownCommand).ExecuteAsync(null);
+
+        Assert.Equal(new[] { "P001", "P002", "P003" }, vm.Rows.Select(r => r.Barcode));
+        Assert.Empty(products.SortOrderUpdates);
+    }
 }
