@@ -15,7 +15,6 @@
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:CashReceiptTypeToMerchantPickerVisibilityConverter x:Key="CashReceiptTypeToMerchantPickerVisibilityConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:InverseBooleanConverter x:Key="InverseBooleanConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
-        <local:CategoryCodeToIconGeometryConverter x:Key="CategoryCodeToIconGeometryConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <local:QuarterWidthConverter x:Key="QuarterWidthConverter" xmlns:local="clr-namespace:FishingMartPos.Converters" />
         <Style x:Key="InstallmentOptionButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="3" />
@@ -49,14 +48,6 @@
                 <DataTrigger Binding="{Binding IsActive}" Value="True">
                     <Setter Property="Background" Value="{DynamicResource Accent}" />
                     <Setter Property="Foreground" Value="White" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="CategoryTabIconStyle" TargetType="Path">
-            <Setter Property="Stroke" Value="{DynamicResource MutedText}" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsActive}" Value="True">
-                    <Setter Property="Stroke" Value="White" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -179,15 +170,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Command="{Binding SelectCommand}" Style="{StaticResource CategoryTabButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Path Data="{Binding Code, Converter={StaticResource CategoryCodeToIconGeometryConverter}}"
-                                          Width="15" Height="15" Stretch="Uniform" Margin="0,0,5,0"
-                                          StrokeThickness="1.6" StrokeLineJoin="Round"
-                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                          Fill="Transparent" VerticalAlignment="Center"
-                                          Style="{StaticResource CategoryTabIconStyle}" />
-                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                </StackPanel>
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
