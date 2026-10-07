@@ -88,7 +88,7 @@
                     <TextBlock Text="바코드 번호 (미입력 시 자동 생성)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
                     <TextBox Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsEditMode}" Padding="8,6" Margin="0,0,0,14" />
 
-                    <Grid Margin="0,0,0,20">
+                    <Grid Margin="0,0,0,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="14" />
@@ -103,6 +103,11 @@
                             <TextBox Text="{Binding StockInput, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" />
                         </StackPanel>
                     </Grid>
+
+                    <TextBlock Text="노출순서 (같은 분류 안에서 작은 숫자가 먼저 노출됨)" FontSize="12" FontWeight="Bold"
+                               Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding SortNoInput, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,14"
+                             HorizontalAlignment="Left" Width="100" />
 
                     <CheckBox Content="판매화면 상품목록에 노출(끄면 바코드 스캔으로만 판매 가능)"
                               IsChecked="{Binding ShowInGrid}" FontSize="12" Margin="0,0,0,16" />

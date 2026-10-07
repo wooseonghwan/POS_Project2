@@ -10,6 +10,8 @@ public sealed class InventoryRowViewModel
     public required string PosCatName { get; init; }
     public required string PriceStr { get; init; }
     public required string StockQtyStr { get; init; }
+    // 같은 POS분류 탭 안에서의 노출 순서(상품등록/수정 화면의 "노출순서" 입력값). 작을수록 먼저 노출.
+    public required string SortNoStr { get; init; }
     public required Brush Swatch { get; init; }
     public string? PhotoAbsolutePath { get; init; }
     public required bool CanDelete { get; init; }

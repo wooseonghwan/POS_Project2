@@ -175,10 +175,35 @@ public class InventoryFormViewModelTests
     }
 
     [Fact]
-    public async Task Save_EditMode_PreservesExistingSortNo()
+    public async Task LoadAsync_EditMode_FillsSortNoInputFromExistingProduct()
     {
-        // 재고관리 화면 ▲▼로 바꿔둔 같은 분류 안 노출 순서가, 단순 수정 저장으로 0으로
-        // 리셋되지 않아야 한다.
+        var editing = new Product
+        {
+            Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
+            SortNo = 7,
+        };
+        var (vm, _, _, _, _, _, _) = CreateForEdit(editing);
+
+        await vm.LoadAsync();
+
+        Assert.Equal("7", vm.SortNoInput);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AddMode_DefaultsSortNoInputToZero()
+    {
+        var (vm, _, _, _, _, _, _) = CreateForAdd();
+
+        await vm.LoadAsync();
+
+        Assert.Equal("0", vm.SortNoInput);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_WithoutTouchingSortNoInput_PreservesExistingSortNo()
+    {
+        // 재고관리 화면 ▲▼나 직접 입력으로 바꿔둔 같은 분류 안 노출 순서가, 단가 등 다른 값만
+        // 고쳐도 0으로 리셋되지 않아야 한다.
         var editing = new Product
         {
             Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
@@ -186,12 +211,31 @@ public class InventoryFormViewModelTests
         };
         var (vm, products, _, _, _, _, _) = CreateForEdit(editing);
         await vm.LoadAsync();
-        vm.PriceInput = "6000";
+        vm.PriceInput = "6000"; // 노출순서는 건드리지 않음
 
         await vm.SaveCommand.ExecuteAsync(null);
 
         var saved = Assert.Single(products.SavedProducts);
         Assert.Equal(7, saved.SortNo);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_WhenSortNoInputChanged_PersistsTypedValue()
+    {
+        // 핵심 기능: ▲▼를 여러 번 누르지 않고 숫자를 직접 입력해서 바로 노출 순서를 정할 수 있어야 한다.
+        var editing = new Product
+        {
+            Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
+            SortNo = 7,
+        };
+        var (vm, products, _, _, _, _, _) = CreateForEdit(editing);
+        await vm.LoadAsync();
+
+        vm.SortNoInput = "2";
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(2, saved.SortNo);
     }
 
     [Fact]
@@ -201,6 +245,36 @@ public class InventoryFormViewModelTests
         await vm.LoadAsync();
         vm.Name = "새우";
         vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(0, saved.SortNo);
+    }
+
+    [Fact]
+    public async Task Save_AddMode_WithTypedSortNo_PersistsThatValue()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        vm.SortNoInput = "5";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(products.SavedProducts);
+        Assert.Equal(5, saved.SortNo);
+    }
+
+    [Fact]
+    public async Task Save_WithNonNumericSortNoInput_DefaultsToZero()
+    {
+        var (vm, products, _, _, _, _, _) = CreateForAdd();
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+        vm.SortNoInput = "abc";
 
         await vm.SaveCommand.ExecuteAsync(null);
 

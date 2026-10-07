@@ -123,12 +123,16 @@
                                         <TextBlock Grid.Column="3" Text="{Binding Barcode}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MutedText}" />
                                         <TextBlock Grid.Column="4" Text="{Binding PriceStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="5" Text="{Binding StockQtyStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center"
-                                                    Visibility="{Binding CanReorder, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <Button Content="▲" FontSize="10" Padding="4,2" Margin="0,0,2,0"
-                                                    Command="{Binding MoveUpCommand}" />
-                                            <Button Content="▼" FontSize="10" Padding="4,2"
-                                                    Command="{Binding MoveDownCommand}" />
+                                        <StackPanel Grid.Column="6" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding SortNoStr}" FontSize="12" HorizontalAlignment="Center"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0"
+                                                        Visibility="{Binding CanReorder, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <Button Content="▲" FontSize="10" Padding="4,2" Margin="0,0,2,0"
+                                                        Command="{Binding MoveUpCommand}" />
+                                                <Button Content="▼" FontSize="10" Padding="4,2"
+                                                        Command="{Binding MoveDownCommand}" />
+                                            </StackPanel>
                                         </StackPanel>
                                         <StackPanel Grid.Column="7" Orientation="Horizontal" HorizontalAlignment="Center">
                                             <Button Content="수정" FontSize="11" Padding="8,4" Margin="0,0,4,0"

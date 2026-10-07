@@ -157,6 +157,7 @@ public sealed partial class InventoryViewModel : ObservableObject
                 PosCatName = LookupName(_posCatNames, captured.PosCatCd),
                 PriceStr = CurrencyFormat.Format(captured.Price),
                 StockQtyStr = captured.StockQty.ToString("N0"),
+                SortNoStr = captured.SortNo.ToString(),
                 Swatch = swatch,
                 PhotoAbsolutePath = captured.PhotoPath is not null
                     ? System.IO.Path.Combine(AppContext.BaseDirectory, captured.PhotoPath)

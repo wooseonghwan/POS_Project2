@@ -33,6 +33,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     [ObservableProperty] private string _barcodeInput = string.Empty;
     [ObservableProperty] private string _priceInput = string.Empty;
     [ObservableProperty] private string _stockInput = string.Empty;
+    // 같은 POS분류 탭 안에서 노출되는 순서. 작은 숫자가 먼저 노출된다. 직접 숫자를 입력해서 바로 바꿀 수 있다.
+    [ObservableProperty] private string _sortNoInput = "0";
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private string? _photoPreviewPath;
     [ObservableProperty] private string? _toastMessage;
@@ -75,6 +77,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             BarcodeInput = editingProduct.Barcode;
             PriceInput = editingProduct.Price.ToString("N0");
             StockInput = editingProduct.StockQty.ToString();
+            SortNoInput = editingProduct.SortNo.ToString();
             ShowInGrid = editingProduct.ShowInGrid;
             if (editingProduct.PhotoPath is not null)
             {
@@ -175,6 +178,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             barcode = BarcodeInput;
         }
 
+        int sortNo = int.TryParse(SortNoInput, out int parsedSortNo) ? parsedSortNo : 0;
+
         var originalProduct = _editingBarcode is not null
             ? _allProducts.FirstOrDefault(p => p.Barcode == _editingBarcode)
             : null;
@@ -194,9 +199,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             StockQty = stock,
             PhotoPath = photoPath,
             ShowInGrid = ShowInGrid,
-            // 같은 분류 안 노출 순서는 재고관리 화면의 ▲▼ 버튼으로만 바꾼다 — 등록/수정 화면에서 저장할 때
-            // 기존 값을 그대로 보존해야 순서가 흐트러지지 않는다. 신규 등록은 0(기본값)에서 시작.
-            SortNo = originalProduct?.SortNo ?? 0,
+            // 같은 POS분류 탭 안 노출 순서. 작은 숫자가 먼저 노출된다 — 입력란에 직접 숫자를 적어서 정한다.
+            SortNo = sortNo,
         };
 
         await _productRepository.SaveAsync(product);
