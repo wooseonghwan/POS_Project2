@@ -16,16 +16,10 @@ public sealed partial class CodeManageViewModel : ObservableObject
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
 
-    [ObservableProperty] private string _newMajorCode = string.Empty;
-    [ObservableProperty] private string _newMajorName = string.Empty;
-    [ObservableProperty] private string _newMinorCode = string.Empty;
-    [ObservableProperty] private string _newMinorName = string.Empty;
     [ObservableProperty] private string _newPosCatCode = string.Empty;
     [ObservableProperty] private string _newPosCatName = string.Empty;
     [ObservableProperty] private string? _errorMessage;
 
-    public ObservableCollection<CodeItem> MajorCodes { get; } = new();
-    public ObservableCollection<CodeItem> MinorCodes { get; } = new();
     public ObservableCollection<CodeItem> PosCatCodes { get; } = new();
 
     public CodeManageViewModel(
@@ -53,18 +47,8 @@ public sealed partial class CodeManageViewModel : ObservableObject
             }
         }
 
-        await FillAsync("MAJOR", MajorCodes);
-        await FillAsync("MINOR", MinorCodes);
         await FillAsync("POSCAT", PosCatCodes);
     }
-
-    [RelayCommand]
-    private async Task AddMajorCode() =>
-        await AddCodeAsync("MAJOR", MajorCodes, NewMajorCode, NewMajorName, () => { NewMajorCode = string.Empty; NewMajorName = string.Empty; });
-
-    [RelayCommand]
-    private async Task AddMinorCode() =>
-        await AddCodeAsync("MINOR", MinorCodes, NewMinorCode, NewMinorName, () => { NewMinorCode = string.Empty; NewMinorName = string.Empty; });
 
     [RelayCommand]
     private async Task AddPosCatCode() =>
@@ -89,12 +73,6 @@ public sealed partial class CodeManageViewModel : ObservableObject
         clearInputs();
         ErrorMessage = null;
     }
-
-    [RelayCommand]
-    private async Task DeleteMajorCode(CodeItem code) => await DeleteCodeAsync("MAJOR", MajorCodes, code, p => p.MajorCd);
-
-    [RelayCommand]
-    private async Task DeleteMinorCode(CodeItem code) => await DeleteCodeAsync("MINOR", MinorCodes, code, p => p.MinorCd);
 
     [RelayCommand]
     private async Task DeletePosCatCode(CodeItem code) => await DeleteCodeAsync("POSCAT", PosCatCodes, code, p => p.PosCatCd);

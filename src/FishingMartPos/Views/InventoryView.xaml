@@ -67,23 +67,19 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="60" />
                         <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="1*" />
-                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="3*" />
                         <ColumnDefinition Width="1.5*" />
                         <ColumnDefinition Width="1*" />
                         <ColumnDefinition Width="0.8*" />
                         <ColumnDefinition Width="110" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="사진" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="대분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="소분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="3" Text="POS분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="4" Text="상품명" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
-                    <TextBlock Grid.Column="5" Text="바코드" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
-                    <TextBlock Grid.Column="6" Text="단가" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="7" Text="재고" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="8" Text="수정/삭제" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="POS분류" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="상품명" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                    <TextBlock Grid.Column="3" Text="바코드" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="4" Text="단가" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="5" Text="재고" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="6" Text="수정/삭제" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Center" />
                 </Grid>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -103,9 +99,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="60" />
                                             <ColumnDefinition Width="1*" />
-                                            <ColumnDefinition Width="1*" />
-                                            <ColumnDefinition Width="1*" />
-                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="3*" />
                                             <ColumnDefinition Width="1.5*" />
                                             <ColumnDefinition Width="1*" />
                                             <ColumnDefinition Width="0.8*" />
@@ -117,14 +111,12 @@
                                             <Image Source="{Binding PhotoAbsolutePath}" Stretch="UniformToFill"
                                                    Visibility="{Binding PhotoAbsolutePath, Converter={StaticResource NullToVisibilityConverter}}" />
                                         </Grid>
-                                        <TextBlock Grid.Column="1" Text="{Binding MajorName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="2" Text="{Binding MinorName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="3" Text="{Binding PosCatName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="4" Text="{Binding Name}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource TitleText}" />
-                                        <TextBlock Grid.Column="5" Text="{Binding Barcode}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MutedText}" />
-                                        <TextBlock Grid.Column="6" Text="{Binding PriceStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="7" Text="{Binding StockQtyStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        <StackPanel Grid.Column="8" Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Grid.Column="1" Text="{Binding PosCatName}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource TitleText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Barcode}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MutedText}" />
+                                        <TextBlock Grid.Column="4" Text="{Binding PriceStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="5" Text="{Binding StockQtyStr}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center">
                                             <Button Content="수정" FontSize="11" Padding="8,4" Margin="0,0,4,0"
                                                     Command="{Binding EditCommand}"
                                                     Visibility="{Binding CanEdit, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -185,22 +177,6 @@
                     <TextBlock Text="{Binding DetailProduct.Name}" FontSize="18" FontWeight="Bold"
                                Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,16" />
 
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="대분류" FontSize="12" Foreground="{DynamicResource MutedText}" />
-                        <TextBlock Grid.Column="1" Text="{Binding DetailProduct.MajorName}" FontSize="13" />
-                    </Grid>
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="소분류" FontSize="12" Foreground="{DynamicResource MutedText}" />
-                        <TextBlock Grid.Column="1" Text="{Binding DetailProduct.MinorName}" FontSize="13" />
-                    </Grid>
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90" />

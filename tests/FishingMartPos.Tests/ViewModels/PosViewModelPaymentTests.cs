@@ -11,7 +11,7 @@ public class PosViewModelPaymentTests
 {
     private static readonly Product Bait1 = new()
     {
-        Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 50, ShowInGrid = true
+        Barcode = "B1", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 50, ShowInGrid = true
     };
 
     private static PosViewModel CreateViewModel(

@@ -23,11 +23,9 @@ public sealed partial class InventoryViewModel : ObservableObject
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
     private IReadOnlyList<Product> _filteredProducts = Array.Empty<Product>();
-    private Dictionary<string, string> _majorNames = new();
-    private Dictionary<string, string> _minorNames = new();
     private Dictionary<string, string> _posCatNames = new();
 
-    // 대/소/POS분류가 비어 있는(NULL) 상품도 있으므로(예: 바코드 일괄등록), null을 그대로 Dictionary에 조회하면
+    // POS분류가 비어 있는(NULL) 상품도 있으므로(예: 바코드 일괄등록), null을 그대로 Dictionary에 조회하면
     // ArgumentNullException이 난다. 코드가 없으면 빈 문자열로 표시한다.
     private static string LookupName(Dictionary<string, string> names, string? code)
     {
@@ -111,12 +109,8 @@ public sealed partial class InventoryViewModel : ObservableObject
     public async Task LoadAsync()
     {
         _allProducts = await _productRepository.GetActiveAsync();
-        var majorCodes = await _codeRepository.GetByGroupAsync("MAJOR");
-        var minorCodes = await _codeRepository.GetByGroupAsync("MINOR");
         var posCats = await _codeRepository.GetByGroupAsync("POSCAT");
 
-        _majorNames = majorCodes.ToDictionary(c => c.Code, c => c.Name);
-        _minorNames = minorCodes.ToDictionary(c => c.Code, c => c.Name);
         _posCatNames = posCats.ToDictionary(c => c.Code, c => c.Name);
 
         CategoryOptions.Clear();
@@ -156,8 +150,6 @@ public sealed partial class InventoryViewModel : ObservableObject
             {
                 Barcode = captured.Barcode,
                 Name = captured.Name,
-                MajorName = LookupName(_majorNames, captured.MajorCd),
-                MinorName = LookupName(_minorNames, captured.MinorCd),
                 PosCatName = LookupName(_posCatNames, captured.PosCatCd),
                 PriceStr = CurrencyFormat.Format(captured.Price),
                 StockQtyStr = captured.StockQty.ToString("N0"),
@@ -181,8 +173,6 @@ public sealed partial class InventoryViewModel : ObservableObject
         {
             Barcode = product.Barcode,
             Name = product.Name,
-            MajorName = LookupName(_majorNames, product.MajorCd),
-            MinorName = LookupName(_minorNames, product.MinorCd),
             PosCatName = LookupName(_posCatNames, product.PosCatCd),
             PriceStr = CurrencyFormat.Format(product.Price),
             StockQtyStr = product.StockQty.ToString("N0"),

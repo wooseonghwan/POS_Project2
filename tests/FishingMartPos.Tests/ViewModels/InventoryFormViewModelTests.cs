@@ -19,8 +19,6 @@ public class InventoryFormViewModelTests
 
     private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
     {
-        ["MAJOR"] = new List<CodeItem> { new() { Code = "FISH", Name = "낚시용품", SortNo = 1 } },
-        ["MINOR"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
         ["POSCAT"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
     };
 
@@ -29,7 +27,7 @@ public class InventoryFormViewModelTests
     {
         var products = new FakeProductRepository(new List<Product>
         {
-            new() { Barcode = "8800000020001", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
+            new() { Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
         });
         var codes = new FakeCodeRepository(SampleCodes());
         var photoStorage = new FakeProductPhotoStorage();
@@ -89,7 +87,7 @@ public class InventoryFormViewModelTests
         var navigation = new NavigationService();
         var mainMenu = new MainMenuViewModel(session, navigation);
         var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
-        var editing = new Product { Barcode = "8800000020001", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 };
+        var editing = new Product { Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 };
 
         var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: editing);
         await vm.LoadAsync();
@@ -99,8 +97,6 @@ public class InventoryFormViewModelTests
         Assert.Equal("8800000020001", vm.BarcodeInput);
         Assert.Equal("5,000", vm.PriceInput);
         Assert.Equal("10", vm.StockInput);
-        Assert.Equal(editing.MajorCd, vm.MajorCd);
-        Assert.Equal(editing.MinorCd, vm.MinorCd);
         Assert.Equal(editing.PosCatCd, vm.PosCatCd);
     }
 
@@ -137,8 +133,6 @@ public class InventoryFormViewModelTests
         await vm.LoadAsync();
         vm.Name = "새우";
         vm.PriceInput = "3000";
-        vm.MajorCd = "FISH";
-        vm.MinorCd = "BAIT";
         vm.PosCatCd = "BAIT";
 
         await vm.SaveCommand.ExecuteAsync(null);
@@ -216,8 +210,6 @@ public class InventoryFormViewModelTests
         var editing = new Product
         {
             Barcode = "8800000020001",
-            MajorCd = "FISH",
-            MinorCd = "BAIT",
             PosCatCd = "BAIT",
             Name = "지렁이",
             Price = 5000,
@@ -269,8 +261,6 @@ public class InventoryFormViewModelTests
         var editing = new Product
         {
             Barcode = "8800000020001",
-            MajorCd = "FISH",
-            MinorCd = "BAIT",
             PosCatCd = "BAIT",
             Name = "지렁이",
             Price = 5000,
@@ -293,8 +283,6 @@ public class InventoryFormViewModelTests
         var editing = new Product
         {
             Barcode = "8800000020001",
-            MajorCd = "FISH",
-            MinorCd = "BAIT",
             PosCatCd = "BAIT",
             Name = "지렁이",
             Price = 5000,
@@ -315,8 +303,6 @@ public class InventoryFormViewModelTests
         var editing = new Product
         {
             Barcode = "8800000020001",
-            MajorCd = "FISH",
-            MinorCd = "BAIT",
             PosCatCd = "BAIT",
             Name = "지렁이",
             Price = 5000,
@@ -336,8 +322,6 @@ public class InventoryFormViewModelTests
         var editing = new Product
         {
             Barcode = "8800000020001",
-            MajorCd = "FISH",
-            MinorCd = "BAIT",
             PosCatCd = "BAIT",
             Name = "지렁이",
             Price = 5000,
@@ -464,73 +448,73 @@ public class InventoryFormViewModelTests
     }
 
     [Fact]
-    public async Task AddMajorCode_AddsToMajorCodesAndRepository()
+    public async Task AddPosCatCode_AddsToPosCatCodesAndRepository()
     {
         var (vm, _, codes, _, _, _, _) = CreateForAdd();
         await vm.LoadAsync();
         vm.NewCodeCode = "TACKLE";
         vm.NewCodeName = "채비";
 
-        await vm.AddMajorCodeCommand.ExecuteAsync(null);
+        await vm.AddPosCatCodeCommand.ExecuteAsync(null);
 
-        Assert.Contains(vm.MajorCodes, c => c.Code == "TACKLE" && c.Name == "채비");
-        Assert.Contains((await codes.GetByGroupAsync("MAJOR")), c => c.Code == "TACKLE");
+        Assert.Contains(vm.PosCatCodes, c => c.Code == "TACKLE" && c.Name == "채비");
+        Assert.Contains((await codes.GetByGroupAsync("POSCAT")), c => c.Code == "TACKLE");
     }
 
     [Fact]
-    public async Task AddMajorCode_WithDuplicateCode_ShowsErrorAndDoesNotAddDuplicate()
+    public async Task AddPosCatCode_WithDuplicateCode_ShowsErrorAndDoesNotAddDuplicate()
     {
         var (vm, _, codes, _, _, _, _) = CreateForAdd();
         await vm.LoadAsync();
-        vm.NewCodeCode = "FISH";
+        vm.NewCodeCode = "BAIT";
         vm.NewCodeName = "중복코드";
 
-        await vm.AddMajorCodeCommand.ExecuteAsync(null);
+        await vm.AddPosCatCodeCommand.ExecuteAsync(null);
 
         Assert.Equal("이미 존재하는 코드입니다", vm.ErrorMessage);
-        Assert.Single(vm.MajorCodes, c => c.Code == "FISH");
-        var majorCodesInRepo = await codes.GetByGroupAsync("MAJOR");
-        Assert.Single(majorCodesInRepo, c => c.Code == "FISH");
+        Assert.Single(vm.PosCatCodes, c => c.Code == "BAIT");
+        var posCatCodesInRepo = await codes.GetByGroupAsync("POSCAT");
+        Assert.Single(posCatCodesInRepo, c => c.Code == "BAIT");
     }
 
     [Fact]
-    public async Task DeleteMajorCode_WhenUnused_RemovesFromListAndRepository()
+    public async Task DeletePosCatCode_WhenUnused_RemovesFromListAndRepository()
     {
         var (vm, _, codes, _, _, _, _) = CreateForAdd();
         await vm.LoadAsync();
         var unusedCode = new CodeItem { Code = "UNUSED", Name = "미사용", SortNo = 9 };
 
         // Add the code to the repository first so there's something to delete
-        await codes.AddAsync("MAJOR", "UNUSED", "미사용");
-        vm.MajorCodes.Add(unusedCode);
+        await codes.AddAsync("POSCAT", "UNUSED", "미사용");
+        vm.PosCatCodes.Add(unusedCode);
 
-        await vm.DeleteMajorCodeCommand.ExecuteAsync(unusedCode);
+        await vm.DeletePosCatCodeCommand.ExecuteAsync(unusedCode);
 
         // Verify removed from local list
-        Assert.DoesNotContain(vm.MajorCodes, c => c.Code == "UNUSED");
+        Assert.DoesNotContain(vm.PosCatCodes, c => c.Code == "UNUSED");
 
         // Verify removed from repository
-        var majorCodesInRepo = await codes.GetByGroupAsync("MAJOR");
-        Assert.DoesNotContain(majorCodesInRepo, c => c.Code == "UNUSED");
+        var posCatCodesInRepo = await codes.GetByGroupAsync("POSCAT");
+        Assert.DoesNotContain(posCatCodesInRepo, c => c.Code == "UNUSED");
     }
 
     [Fact]
-    public async Task DeleteMajorCode_WhenUsedByExistingProduct_ShowsErrorAndKeepsCode()
+    public async Task DeletePosCatCode_WhenUsedByExistingProduct_ShowsErrorAndKeepsCode()
     {
-        var (vm, _, codes, _, _, _, _) = CreateForAdd(); // 샘플 상품이 MajorCd="FISH" 사용 중
+        var (vm, _, codes, _, _, _, _) = CreateForAdd(); // 샘플 상품이 PosCatCd="BAIT" 사용 중
         await vm.LoadAsync();
-        var usedCode = vm.MajorCodes.Single(c => c.Code == "FISH");
+        var usedCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
 
-        await vm.DeleteMajorCodeCommand.ExecuteAsync(usedCode);
+        await vm.DeletePosCatCodeCommand.ExecuteAsync(usedCode);
 
         // Verify error message was set
         Assert.NotNull(vm.ErrorMessage);
 
         // Verify kept in local list
-        Assert.Contains(vm.MajorCodes, c => c.Code == "FISH");
+        Assert.Contains(vm.PosCatCodes, c => c.Code == "BAIT");
 
         // Verify kept in repository (delete should not have been called)
-        var majorCodesInRepo = await codes.GetByGroupAsync("MAJOR");
-        Assert.Contains(majorCodesInRepo, c => c.Code == "FISH");
+        var posCatCodesInRepo = await codes.GetByGroupAsync("POSCAT");
+        Assert.Contains(posCatCodesInRepo, c => c.Code == "BAIT");
     }
 }

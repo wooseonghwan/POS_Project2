@@ -11,8 +11,6 @@ public class CodeManageViewModelTests
 {
     private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
     {
-        ["MAJOR"] = new List<CodeItem> { new() { Code = "FISH", Name = "낚시용품", SortNo = 1 } },
-        ["MINOR"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
         ["POSCAT"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
     };
 
@@ -21,7 +19,7 @@ public class CodeManageViewModelTests
     {
         var products = new FakeProductRepository(new List<Product>
         {
-            new() { Barcode = "8800000020001", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
+            new() { Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
         });
         var codes = new FakeCodeRepository(SampleCodes());
         var navigation = new NavigationService();
@@ -31,45 +29,43 @@ public class CodeManageViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_FillsAllThreeColumnsFromRepository()
+    public async Task LoadAsync_FillsPosCatColumnFromRepository()
     {
         var (vm, _, _, _, _) = Create();
 
         await vm.LoadAsync();
 
-        Assert.Single(vm.MajorCodes, c => c.Code == "FISH");
-        Assert.Single(vm.MinorCodes, c => c.Code == "BAIT");
         Assert.Single(vm.PosCatCodes, c => c.Code == "BAIT");
     }
 
     [Fact]
-    public async Task AddMajorCode_AddsToMajorCodesAndRepositoryAndClearsInput()
+    public async Task AddPosCatCode_AddsToPosCatCodesAndRepositoryAndClearsInput()
     {
         var (vm, codes, _, _, _) = Create();
         await vm.LoadAsync();
-        vm.NewMajorCode = "TACKLE";
-        vm.NewMajorName = "채비";
+        vm.NewPosCatCode = "TACKLE";
+        vm.NewPosCatName = "채비";
 
-        await vm.AddMajorCodeCommand.ExecuteAsync(null);
+        await vm.AddPosCatCodeCommand.ExecuteAsync(null);
 
-        Assert.Contains(vm.MajorCodes, c => c.Code == "TACKLE" && c.Name == "채비");
-        Assert.Contains(await codes.GetByGroupAsync("MAJOR"), c => c.Code == "TACKLE");
-        Assert.Equal(string.Empty, vm.NewMajorCode);
-        Assert.Equal(string.Empty, vm.NewMajorName);
+        Assert.Contains(vm.PosCatCodes, c => c.Code == "TACKLE" && c.Name == "채비");
+        Assert.Contains(await codes.GetByGroupAsync("POSCAT"), c => c.Code == "TACKLE");
+        Assert.Equal(string.Empty, vm.NewPosCatCode);
+        Assert.Equal(string.Empty, vm.NewPosCatName);
     }
 
     [Fact]
-    public async Task AddMinorCode_WithDuplicateCode_ShowsErrorAndDoesNotAddDuplicate()
+    public async Task AddPosCatCode_WithDuplicateCode_ShowsErrorAndDoesNotAddDuplicate()
     {
         var (vm, codes, _, _, _) = Create();
         await vm.LoadAsync();
-        vm.NewMinorCode = "BAIT";
-        vm.NewMinorName = "중복코드";
+        vm.NewPosCatCode = "BAIT";
+        vm.NewPosCatName = "중복코드";
 
-        await vm.AddMinorCodeCommand.ExecuteAsync(null);
+        await vm.AddPosCatCodeCommand.ExecuteAsync(null);
 
         Assert.Equal("이미 존재하는 코드입니다", vm.ErrorMessage);
-        Assert.Single(vm.MinorCodes, c => c.Code == "BAIT");
+        Assert.Single(vm.PosCatCodes, c => c.Code == "BAIT");
     }
 
     [Fact]
@@ -102,17 +98,17 @@ public class CodeManageViewModelTests
     }
 
     [Fact]
-    public async Task DeleteMajorCode_WhenUsedByExistingProduct_ShowsErrorAndKeepsCode()
+    public async Task DeletePosCatCode_WhenUsedByExistingProduct_ShowsErrorAndKeepsCode()
     {
         var (vm, codes, _, _, _) = Create();
         await vm.LoadAsync();
-        var usedCode = vm.MajorCodes.Single(c => c.Code == "FISH");
+        var usedCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
 
-        await vm.DeleteMajorCodeCommand.ExecuteAsync(usedCode);
+        await vm.DeletePosCatCodeCommand.ExecuteAsync(usedCode);
 
         Assert.NotNull(vm.ErrorMessage);
-        Assert.Contains(vm.MajorCodes, c => c.Code == "FISH");
-        Assert.Contains(await codes.GetByGroupAsync("MAJOR"), c => c.Code == "FISH");
+        Assert.Contains(vm.PosCatCodes, c => c.Code == "BAIT");
+        Assert.Contains(await codes.GetByGroupAsync("POSCAT"), c => c.Code == "BAIT");
     }
 
     [Fact]

@@ -11,27 +11,21 @@ public class InventoryViewModelTests
 {
     private static IReadOnlyList<Product> SampleProducts() => new[]
     {
-        new Product { Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
-        new Product { Barcode = "B2", MajorCd = "FISH", MinorCd = "TACKLE", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 5 },
+        new Product { Barcode = "B1", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10 },
+        new Product { Barcode = "B2", PosCatCd = "FLOAT", Name = "막대찌 세트", Price = 8000, StockQty = 5 },
     };
 
     private static IReadOnlyList<Product> ManyProducts(int count) =>
         Enumerable.Range(1, count)
             .Select(i => new Product
             {
-                Barcode = $"P{i:D3}", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT",
+                Barcode = $"P{i:D3}", PosCatCd = "BAIT",
                 Name = $"상품{i:D3}", Price = 1000, StockQty = 1,
             })
             .ToList();
 
     private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
     {
-        ["MAJOR"] = new[] { new CodeItem { Code = "FISH", Name = "낚시용품", SortNo = 1 } },
-        ["MINOR"] = new[]
-        {
-            new CodeItem { Code = "BAIT", Name = "미끼", SortNo = 1 },
-            new CodeItem { Code = "TACKLE", Name = "채비", SortNo = 2 },
-        },
         ["POSCAT"] = new[]
         {
             new CodeItem { Code = "BAIT", Name = "미끼", SortNo = 1 },
@@ -88,8 +82,6 @@ public class InventoryViewModelTests
 
         Assert.Equal(2, vm.Rows.Count);
         var row = vm.Rows.Single(r => r.Barcode == "B1");
-        Assert.Equal("낚시용품", row.MajorName);
-        Assert.Equal("미끼", row.MinorName);
         Assert.Equal("미끼", row.PosCatName);
         Assert.Equal("5,000원", row.PriceStr);
         Assert.Equal("10", row.StockQtyStr);
@@ -287,7 +279,7 @@ public class InventoryViewModelTests
     {
         var (vm, _, navigation, _) = CreateAdmin();
         await vm.LoadAsync();
-        Product? capturedProduct = new Product { Barcode = "SENTINEL", MajorCd = "X", MinorCd = "X", PosCatCd = "X", Name = "sentinel", Price = 1, StockQty = 0 };
+        Product? capturedProduct = new Product { Barcode = "SENTINEL", PosCatCd = "X", Name = "sentinel", Price = 1, StockQty = 0 };
         InventoryFormViewModel? formVm = null;
         vm.InventoryFormViewModelFactory = (inv, product) =>
         {
@@ -314,7 +306,7 @@ public class InventoryViewModelTests
         var mainMenu = DummyMainMenu(session, navigation);
         var productsWithPhoto = new[]
         {
-            new Product { Barcode = "B1", MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10, PhotoPath = "ProductPhotos/B1.jpg" },
+            new Product { Barcode = "B1", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10, PhotoPath = "ProductPhotos/B1.jpg" },
         };
         var vm = new InventoryViewModel(new FakeProductRepository(productsWithPhoto), new FakeCodeRepository(SampleCodes()), session, navigation, mainMenu);
         await vm.LoadAsync();

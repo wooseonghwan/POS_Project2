@@ -28,8 +28,6 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     private string? _pickedPhotoFilePath;
     private bool _isFormattingPrice;
 
-    [ObservableProperty] private string _majorCd = string.Empty;
-    [ObservableProperty] private string _minorCd = string.Empty;
     [ObservableProperty] private string _posCatCd = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _barcodeInput = string.Empty;
@@ -38,14 +36,10 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private string? _photoPreviewPath;
     [ObservableProperty] private string? _toastMessage;
-    [ObservableProperty] private bool _isMajorCodeManagerOpen;
-    [ObservableProperty] private bool _isMinorCodeManagerOpen;
     [ObservableProperty] private bool _isPosCatCodeManagerOpen;
     [ObservableProperty] private string _newCodeCode = string.Empty;
     [ObservableProperty] private string _newCodeName = string.Empty;
 
-    public ObservableCollection<CodeItem> MajorCodes { get; } = new();
-    public ObservableCollection<CodeItem> MinorCodes { get; } = new();
     public ObservableCollection<CodeItem> PosCatCodes { get; } = new();
 
     public bool IsEditMode => _editingBarcode is not null;
@@ -73,9 +67,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
 
         if (editingProduct is not null)
         {
-            // 바코드 일괄등록 상품은 대/소/POS분류가 비어 있을(NULL) 수 있으므로 빈 문자열로 대체한다.
-            MajorCd = editingProduct.MajorCd ?? string.Empty;
-            MinorCd = editingProduct.MinorCd ?? string.Empty;
+            // 바코드 일괄등록 상품은 POS분류가 비어 있을(NULL) 수 있으므로 빈 문자열로 대체한다.
             PosCatCd = editingProduct.PosCatCd ?? string.Empty;
             Name = editingProduct.Name;
             BarcodeInput = editingProduct.Barcode;
@@ -116,8 +108,6 @@ public sealed partial class InventoryFormViewModel : ObservableObject
             }
         }
 
-        await FillAsync("MAJOR", MajorCodes);
-        await FillAsync("MINOR", MinorCodes);
         await FillAsync("POSCAT", PosCatCodes);
     }
 
@@ -193,8 +183,6 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         var product = new Product
         {
             Barcode = barcode,
-            MajorCd = MajorCd,
-            MinorCd = MinorCd,
             PosCatCd = PosCatCd,
             Name = Name,
             Price = price,
@@ -221,19 +209,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ToggleMajorCodeManager() => IsMajorCodeManagerOpen = !IsMajorCodeManagerOpen;
-
-    [RelayCommand]
-    private void ToggleMinorCodeManager() => IsMinorCodeManagerOpen = !IsMinorCodeManagerOpen;
-
-    [RelayCommand]
     private void TogglePosCatCodeManager() => IsPosCatCodeManagerOpen = !IsPosCatCodeManagerOpen;
-
-    [RelayCommand]
-    private async Task AddMajorCode() => await AddCodeAsync("MAJOR", MajorCodes);
-
-    [RelayCommand]
-    private async Task AddMinorCode() => await AddCodeAsync("MINOR", MinorCodes);
 
     [RelayCommand]
     private async Task AddPosCatCode() => await AddCodeAsync("POSCAT", PosCatCodes);
@@ -258,12 +234,6 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         NewCodeName = string.Empty;
         ErrorMessage = null;
     }
-
-    [RelayCommand]
-    private async Task DeleteMajorCode(CodeItem code) => await DeleteCodeAsync("MAJOR", MajorCodes, code, p => p.MajorCd);
-
-    [RelayCommand]
-    private async Task DeleteMinorCode(CodeItem code) => await DeleteCodeAsync("MINOR", MinorCodes, code, p => p.MinorCd);
 
     [RelayCommand]
     private async Task DeletePosCatCode(CodeItem code) => await DeleteCodeAsync("POSCAT", PosCatCodes, code, p => p.PosCatCd);

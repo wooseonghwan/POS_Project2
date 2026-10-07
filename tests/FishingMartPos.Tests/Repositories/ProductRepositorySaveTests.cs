@@ -24,7 +24,7 @@ public class ProductRepositorySaveTests
         {
             await repository.SaveAsync(new Product
             {
-                Barcode = barcode, MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT",
+                Barcode = barcode, PosCatCd = "BAIT",
                 Name = "테스트상품", Price = 1000, StockQty = 5, PhotoPath = null,
             });
 
@@ -35,7 +35,7 @@ public class ProductRepositorySaveTests
 
             await repository.SaveAsync(new Product
             {
-                Barcode = barcode, MajorCd = "FISH", MinorCd = "BAIT", PosCatCd = "BAIT",
+                Barcode = barcode, PosCatCd = "BAIT",
                 Name = "테스트상품(수정)", Price = 2000, StockQty = 9, PhotoPath = "ProductPhotos/TEST_SAVE_0001.jpg",
             });
 
