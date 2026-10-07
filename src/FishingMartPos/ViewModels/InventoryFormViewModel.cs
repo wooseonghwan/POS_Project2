@@ -230,6 +230,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
 
         await _codeRepository.AddAsync(codeGbn, NewCodeCode, NewCodeName);
         target.Add(new CodeItem { Code = NewCodeCode, Name = NewCodeName, SortNo = 0 });
+        // 새 코드는 목록 맨 끝에 추가되므로, 판매화면 메뉴 탭에서도 맨 끝에 나오도록 sort_no를 다시 매긴다.
+        await _codeRepository.UpdateSortOrderAsync(codeGbn, target.Select(c => c.Code).ToList());
         NewCodeCode = string.Empty;
         NewCodeName = string.Empty;
         ErrorMessage = null;

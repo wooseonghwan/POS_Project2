@@ -43,4 +43,14 @@ public sealed class CodeRepository : ICodeRepository
         const string sql = "DELETE FROM code_tb WHERE code_gbn = @CodeGbn AND code_cd = @CodeCd";
         await connection.ExecuteAsync(sql, new { CodeGbn = codeGbn, CodeCd = codeCd });
     }
+
+    public async Task UpdateSortOrderAsync(string codeGbn, IReadOnlyList<string> orderedCodeCds)
+    {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync();
+        const string sql = "UPDATE code_tb SET sort_no = @SortNo WHERE code_gbn = @CodeGbn AND code_cd = @CodeCd";
+        for (int i = 0; i < orderedCodeCds.Count; i++)
+        {
+            await connection.ExecuteAsync(sql, new { SortNo = i, CodeGbn = codeGbn, CodeCd = orderedCodeCds[i] });
+        }
+    }
 }

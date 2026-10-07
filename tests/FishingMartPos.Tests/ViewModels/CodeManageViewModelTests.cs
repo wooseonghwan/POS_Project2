@@ -11,7 +11,12 @@ public class CodeManageViewModelTests
 {
     private static Dictionary<string, IReadOnlyList<CodeItem>> SampleCodes() => new()
     {
-        ["POSCAT"] = new List<CodeItem> { new() { Code = "BAIT", Name = "미끼", SortNo = 1 } },
+        ["POSCAT"] = new List<CodeItem>
+        {
+            new() { Code = "BAIT", Name = "미끼", SortNo = 1 },
+            new() { Code = "FLOAT", Name = "찌세트", SortNo = 2 },
+            new() { Code = "HAT", Name = "모자", SortNo = 3 },
+        },
     };
 
     private static (CodeManageViewModel vm, FakeCodeRepository codes, FakeProductRepository products, INavigationService navigation, SettingsViewModel settings)
@@ -109,6 +114,62 @@ public class CodeManageViewModelTests
         Assert.NotNull(vm.ErrorMessage);
         Assert.Contains(vm.PosCatCodes, c => c.Code == "BAIT");
         Assert.Contains(await codes.GetByGroupAsync("POSCAT"), c => c.Code == "BAIT");
+    }
+
+    [Fact]
+    public async Task MovePosCatCodeUp_SwapsWithPreviousItemAndPersistsOrder()
+    {
+        var (vm, codes, _, _, _) = Create();
+        await vm.LoadAsync();
+        var floatCode = vm.PosCatCodes.Single(c => c.Code == "FLOAT");
+
+        await vm.MovePosCatCodeUpCommand.ExecuteAsync(floatCode);
+
+        Assert.Equal(new[] { "FLOAT", "BAIT", "HAT" }, vm.PosCatCodes.Select(c => c.Code));
+        var persisted = await codes.GetByGroupAsync("POSCAT");
+        Assert.Equal(0, persisted.Single(c => c.Code == "FLOAT").SortNo);
+        Assert.Equal(1, persisted.Single(c => c.Code == "BAIT").SortNo);
+        Assert.Equal(2, persisted.Single(c => c.Code == "HAT").SortNo);
+    }
+
+    [Fact]
+    public async Task MovePosCatCodeUp_OnFirstItem_DoesNothing()
+    {
+        var (vm, _, _, _, _) = Create();
+        await vm.LoadAsync();
+        var firstCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
+
+        await vm.MovePosCatCodeUpCommand.ExecuteAsync(firstCode);
+
+        Assert.Equal(new[] { "BAIT", "FLOAT", "HAT" }, vm.PosCatCodes.Select(c => c.Code));
+    }
+
+    [Fact]
+    public async Task MovePosCatCodeDown_SwapsWithNextItemAndPersistsOrder()
+    {
+        var (vm, codes, _, _, _) = Create();
+        await vm.LoadAsync();
+        var baitCode = vm.PosCatCodes.Single(c => c.Code == "BAIT");
+
+        await vm.MovePosCatCodeDownCommand.ExecuteAsync(baitCode);
+
+        Assert.Equal(new[] { "FLOAT", "BAIT", "HAT" }, vm.PosCatCodes.Select(c => c.Code));
+        var persisted = await codes.GetByGroupAsync("POSCAT");
+        Assert.Equal(0, persisted.Single(c => c.Code == "FLOAT").SortNo);
+        Assert.Equal(1, persisted.Single(c => c.Code == "BAIT").SortNo);
+        Assert.Equal(2, persisted.Single(c => c.Code == "HAT").SortNo);
+    }
+
+    [Fact]
+    public async Task MovePosCatCodeDown_OnLastItem_DoesNothing()
+    {
+        var (vm, _, _, _, _) = Create();
+        await vm.LoadAsync();
+        var lastCode = vm.PosCatCodes.Single(c => c.Code == "HAT");
+
+        await vm.MovePosCatCodeDownCommand.ExecuteAsync(lastCode);
+
+        Assert.Equal(new[] { "BAIT", "FLOAT", "HAT" }, vm.PosCatCodes.Select(c => c.Code));
     }
 
     [Fact]

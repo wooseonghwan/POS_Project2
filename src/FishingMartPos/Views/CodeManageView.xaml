@@ -29,7 +29,9 @@
             <Border Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="16"
                     MaxWidth="360" HorizontalAlignment="Left">
                 <StackPanel>
-                    <TextBlock Text="POS분류" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,0,0,10" />
+                    <TextBlock Text="POS분류" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,0,0,2" />
+                    <TextBlock Text="▲▼ 버튼으로 판매화면 메뉴 탭이 노출되는 순서를 바꿀 수 있습니다" FontSize="10"
+                               Foreground="{DynamicResource MutedText}" Margin="0,0,0,10" TextWrapping="Wrap" />
                     <Border Background="{DynamicResource CardBorder}" BorderBrush="{DynamicResource ErrorBorder}" BorderThickness="1"
                             Padding="8,6" Margin="0,0,0,10"
                             Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}">
@@ -39,8 +41,20 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="0,4">
-                                    <TextBlock Text="{Binding Name}" FontSize="12" />
-                                    <Button Content="삭제" HorizontalAlignment="Right" Padding="6,2" FontSize="10"
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Content="▲" Padding="6,2" FontSize="10" Margin="0,0,2,0"
+                                            Command="{Binding DataContext.MovePosCatCodeUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Grid.Column="2" Content="▼" Padding="6,2" FontSize="10" Margin="0,0,6,0"
+                                            Command="{Binding DataContext.MovePosCatCodeDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Grid.Column="3" Content="삭제" Padding="6,2" FontSize="10"
                                             Command="{Binding DataContext.DeletePosCatCodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}" />
                                 </Grid>

@@ -70,6 +70,9 @@ public sealed partial class CodeManageViewModel : ObservableObject
 
         await _codeRepository.AddAsync(codeGbn, newCode, newName);
         target.Add(new CodeItem { Code = newCode, Name = newName, SortNo = 0 });
+        // 새 코드는 항상 목록 맨 끝에 추가되므로, 표시 순서(= 목록 순서) 그대로 sort_no를 다시 매겨
+        // 판매화면 메뉴 탭에서도 맨 끝에 나오도록 맞춘다.
+        await _codeRepository.UpdateSortOrderAsync(codeGbn, target.Select(c => c.Code).ToList());
         clearInputs();
         ErrorMessage = null;
     }
@@ -88,6 +91,27 @@ public sealed partial class CodeManageViewModel : ObservableObject
         await _codeRepository.DeleteAsync(codeGbn, code.Code);
         target.Remove(code);
         ErrorMessage = null;
+    }
+
+    /// <summary>판매화면 메뉴 탭 노출 순서를 위/아래로 한 칸 옮긴다. POS분류에만 의미가 있다(대/소분류는 화면에 노출되지 않음).</summary>
+    [RelayCommand]
+    private async Task MovePosCatCodeUp(CodeItem code)
+    {
+        int index = PosCatCodes.IndexOf(code);
+        if (index <= 0) return;
+
+        PosCatCodes.Move(index, index - 1);
+        await _codeRepository.UpdateSortOrderAsync("POSCAT", PosCatCodes.Select(c => c.Code).ToList());
+    }
+
+    [RelayCommand]
+    private async Task MovePosCatCodeDown(CodeItem code)
+    {
+        int index = PosCatCodes.IndexOf(code);
+        if (index < 0 || index >= PosCatCodes.Count - 1) return;
+
+        PosCatCodes.Move(index, index + 1);
+        await _codeRepository.UpdateSortOrderAsync("POSCAT", PosCatCodes.Select(c => c.Code).ToList());
     }
 
     [RelayCommand]

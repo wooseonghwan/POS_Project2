@@ -37,4 +37,24 @@ public sealed class FakeCodeRepository : ICodeRepository
         }
         return Task.CompletedTask;
     }
+
+    public Task UpdateSortOrderAsync(string codeGbn, IReadOnlyList<string> orderedCodeCds)
+    {
+        if (!_byGroup.TryGetValue(codeGbn, out var list))
+        {
+            return Task.CompletedTask;
+        }
+
+        var byCode = list.ToDictionary(c => c.Code);
+        var reordered = new List<CodeItem>();
+        for (int i = 0; i < orderedCodeCds.Count; i++)
+        {
+            if (byCode.TryGetValue(orderedCodeCds[i], out var existing))
+            {
+                reordered.Add(new CodeItem { Code = existing.Code, Name = existing.Name, SortNo = i });
+            }
+        }
+        _byGroup[codeGbn] = reordered;
+        return Task.CompletedTask;
+    }
 }
