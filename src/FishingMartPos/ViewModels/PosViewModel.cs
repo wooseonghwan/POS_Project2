@@ -35,10 +35,6 @@ public sealed partial class PosViewModel : ObservableObject
     private static readonly int[] FixedInstallmentMonths = { 0, 2, 3, 4, 6, 12 };
     private const decimal InstallmentMinimumAmount = 50000m;
 
-    // 할부 자격과 서명 필요 여부는 서로 다른 업무 규칙이라 개념적으로 분리되어 있다.
-    // 현재 값이 InstallmentMinimumAmount와 우연히 같을 뿐, 하나로 합치지 말 것 — 향후 각기 다른 정책으로 바뀔 수 있다.
-    private const decimal CardSignatureMinimumAmount = 50000m;
-
     [ObservableProperty]
     private string? _selectedBarcode;
 
@@ -462,12 +458,11 @@ public sealed partial class PosViewModel : ObservableObject
         if (!CanPay) return;
         if (_pendingCardPayType is null) return;
 
-        if (_cart.Total >= CardSignatureMinimumAmount)
-        {
-            IsSignatureCaptureVisible = true;
-            return;
-        }
-
+        // 5만원 이상이면 이 화면에서 먼저 서명을 받던 단계가 있었지만, 카드를 꽂기도 전에
+        // 서명부터 하라는 순서가 되어 실제 매장에서 혼란을 줬다(손님이 카드 넣기 전에 서명함).
+        // 이 가게는 EasyCard2가 카드단말기 자체 화면/패드에서 서명을 직접 받으므로(카드를
+        // 꽂은 "이후"에 자연스럽게 뜸), 앱에서 별도로 서명을 또 받을 필요가 없다 — 곧바로
+        // 승인 요청으로 넘어간다("카드 리더기에 카드를 꽂아주세요" 안내가 이때 뜸).
         await ProceedWithCardApprovalAsync(null);
     }
 
