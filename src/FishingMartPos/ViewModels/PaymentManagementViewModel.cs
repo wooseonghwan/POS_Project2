@@ -96,8 +96,8 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
                 PayTypeLabel = captured.PayType switch
                 {
                     "CASH" => "현금",
-                    "CARD1" => "카드결제1",
-                    "CARD2" => "카드결제2",
+                    "CARD1" => "대원수산",
+                    "CARD2" => "대원낚시마트",
                     _ => captured.PayType,
                 },
                 TotalAmtStr = CurrencyFormat.Format(captured.TotalAmt),

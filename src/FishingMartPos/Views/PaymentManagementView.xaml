@@ -67,7 +67,7 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="카드결제1" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD1">
+                    <Button Content="대원수산" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD1">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource PayTypeFilterButtonStyle}">
                                 <Style.Triggers>
@@ -79,7 +79,7 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="카드결제2" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD2" Margin="0" Padding="10,4">
+                    <Button Content="대원낚시마트" Command="{Binding SelectPayTypeFilterCommand}" CommandParameter="CARD2" Margin="0" Padding="10,4">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource PayTypeFilterButtonStyle}">
                                 <Style.Triggers>

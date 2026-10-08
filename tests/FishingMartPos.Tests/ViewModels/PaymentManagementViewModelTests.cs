@@ -89,6 +89,6 @@ public class PaymentManagementViewModelTests
 
         var row = Assert.Single(vm.Rows);
         Assert.Equal(2, row.SaleNo);
-        Assert.Equal("카드결제1", row.PayTypeLabel);
+        Assert.Equal("대원수산", row.PayTypeLabel);
     }
 }

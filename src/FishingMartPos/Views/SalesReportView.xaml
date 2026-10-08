@@ -110,13 +110,13 @@
                 </Border>
                 <Border Grid.Column="4" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="카드결제1" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="대원수산" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
                         <TextBlock Text="{Binding TotalCard1Str}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,6,0,0" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="6" Background="White" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="카드결제2" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
+                        <TextBlock Text="대원낚시마트" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
                         <TextBlock Text="{Binding TotalCard2Str}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TitleText}" Margin="0,6,0,0" />
                     </StackPanel>
                 </Border>
@@ -138,8 +138,8 @@
                         <TextBlock Text="날짜" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" />
                         <TextBlock Grid.Column="1" Text="건수" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
                         <TextBlock Grid.Column="2" Text="현금" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="3" Text="카드결제1" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="4" Text="카드결제2" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="대원수산" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="대원낚시마트" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
                         <TextBlock Grid.Column="5" Text="할부건수" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
                         <TextBlock Grid.Column="6" Text="합계" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" HorizontalAlignment="Right" />
                     </Grid>

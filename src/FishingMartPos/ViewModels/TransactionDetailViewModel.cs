@@ -95,8 +95,8 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     public string PayTypeLabelStr => Header.PayType switch
     {
         "CASH" => "현금",
-        "CARD1" => "카드결제1",
-        "CARD2" => "카드결제2",
+        "CARD1" => "대원수산",
+        "CARD2" => "대원낚시마트",
         _ => Header.PayType,
     };
     public string TotalAmtStr => CurrencyFormat.Format(Header.TotalAmt);
