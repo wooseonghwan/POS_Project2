@@ -483,18 +483,15 @@ public sealed partial class PosViewModel : ObservableObject
             return;
         }
 
-        string? signatureHex = await _signatureConverter.ConvertToHexAsync(bmpBytes);
-        if (signatureHex is null)
-        {
-            IsToastWarning = true;
-            ToastMessage = "서명 처리에 실패했습니다. 다시 시도해주세요";
-            await _delay.Delay(TimeSpan.FromMilliseconds(1200));
-            ToastMessage = null;
-            return;
-        }
-
+        // 서명 이미지를 KiccPos.dll(Kicc_Bmp2SignDataN)로 변환해 승인 요청에 실어 보내는 절차는
+        // 벤더 문서가 없어 추정으로 구현했었고, 실제 매장에서 5만원 이상 서명 결제 시 이 변환이
+        // 실패해 결제가 전혀 진행되지 않는 문제로 이어졌다. 이 가게는 카드결제를 EasyCard2 로컬
+        // HTTP(KiccHttpVanPaymentGateway)로 처리하는데, 그 경로는 서명 데이터를 아예 쓰지 않는다
+        // (서명은 EasyCard2가 카드단말기 자체 화면/패드에서 따로 받는다) — 변환이 성공해도 그 결과는
+        // 버려지고 있었다. 화면에서 서명을 받는 절차(정책상 요구) 자체는 유지하되, 실패 소지가 있고
+        // 실제로는 쓰이지도 않는 네이티브 변환은 거치지 않고 바로 승인 요청으로 넘어간다.
         IsSignatureCaptureVisible = false;
-        await ProceedWithCardApprovalAsync(signatureHex);
+        await ProceedWithCardApprovalAsync(null);
     }
 
     [RelayCommand]

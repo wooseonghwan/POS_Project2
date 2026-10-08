@@ -643,8 +643,14 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public async Task ConfirmSignature_WithBytes_ConvertsAndSendsHexToGateway()
+    public async Task ConfirmSignature_WithBytes_SkipsNativeConversionAndProceedsWithNullSignatureHex()
     {
+        // 실매장 회귀 테스트: 서명 이미지를 KiccPos.dll(Kicc_Bmp2SignDataN)로 변환하는 절차는 벤더
+        // 문서가 없는 추정 구현이었고, 실제 매장에서 5만원 이상 서명 결제가 이 변환 실패로 전혀
+        // 진행되지 않는 문제가 있었다. 이 매장이 쓰는 EasyCard2 HTTP 결제 경로는 애초에
+        // SignatureHex를 쓰지 않으므로(서명은 EasyCard2가 카드단말기 자체에서 받음), 네이티브
+        // 변환을 거치지 않고 곧바로 승인 요청으로 넘어가야 한다 — 변환기가 설정돼 있어도 호출되면
+        // 안 된다.
         var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
         var signatureConverter = new FakeSignatureConverter("HEXDATA1");
         var vm = CreateViewModel(out var sales, out _, out _, out _, vanGateway, signatureConverter: signatureConverter);
@@ -656,35 +662,11 @@ public class PosViewModelTests
 
         await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 9, 9, 9 });
 
-        Assert.Single(signatureConverter.ConvertedBytes);
+        Assert.Empty(signatureConverter.ConvertedBytes);
         var request = Assert.Single(vanGateway.Requests);
-        Assert.Equal("HEXDATA1", request.SignatureHex);
+        Assert.Null(request.SignatureHex);
         Assert.Single(sales.CreatedSales);
-    }
-
-    [Fact]
-    public async Task ConfirmSignature_WhenConverterFails_ShowsWarningAndStaysInSignatureStateWithoutCallingGateway()
-    {
-        var vanGateway = new FakeVanPaymentGateway(ApprovedResult);
-        var signatureConverter = new FakeSignatureConverter(hexResult: null);
-        var vm = CreateViewModel(out _, out _, out _, out _, vanGateway, signatureConverter: signatureConverter);
-        await vm.LoadAsync();
-        vm.VisibleProducts[0].AddCommand.Execute(null);
-        for (int i = 0; i < 9; i++) vm.IncSelectedCommand.Execute(null); // 50,000원
-        await vm.PayCard1Command.ExecuteAsync(null);
-        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
-        var toastValues = new List<string?>();
-        vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(PosViewModel.ToastMessage) && vm.ToastMessage is not null)
-                toastValues.Add(vm.ToastMessage);
-        };
-
-        await vm.ConfirmSignatureCommand.ExecuteAsync(new byte[] { 1, 2, 3 });
-
-        Assert.Empty(vanGateway.Requests);
-        Assert.True(vm.IsSignatureCaptureVisible);
-        Assert.Equal("서명 처리에 실패했습니다. 다시 시도해주세요", Assert.Single(toastValues));
+        Assert.False(vm.IsSignatureCaptureVisible);
     }
 
     [Fact]
