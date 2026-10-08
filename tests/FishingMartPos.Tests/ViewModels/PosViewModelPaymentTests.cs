@@ -438,9 +438,9 @@ public class PosViewModelPaymentTests
     }
 
     [Fact]
-    public async Task PrintReceipt_WithStubPrinter_ShowsNotSupportedToastAndKeepsPreviewOpen()
+    public async Task PrintReceipt_WhenPrinterFails_ShowsErrorToastAndKeepsPreviewOpen()
     {
-        var vm = CreateViewModel(out _, out _);
+        var vm = CreateViewModel(out _, out _, receiptPrinter: new FakeReceiptPrinter(false));
         await vm.LoadAsync();
         vm.VisibleProducts[0].AddCommand.Execute(null);
         await vm.PayCashCommand.ExecuteAsync(null);
@@ -454,7 +454,22 @@ public class PosViewModelPaymentTests
 
         await vm.PrintReceiptCommand.ExecuteAsync(null);
 
-        Assert.Equal("프린터 연동은 지원 예정입니다", Assert.Single(toastValues));
+        Assert.Equal("영수증 인쇄에 실패했습니다", Assert.Single(toastValues));
         Assert.True(vm.IsReceiptPreviewVisible);
+    }
+
+    [Fact]
+    public async Task PrintReceipt_WhenPrinterSucceeds_ClosesPreviewAutomatically()
+    {
+        var vm = CreateViewModel(out _, out _, receiptPrinter: new FakeReceiptPrinter(true));
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+        Assert.True(vm.IsReceiptPreviewVisible);
+
+        await vm.PrintReceiptCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsReceiptPreviewVisible);
     }
 }

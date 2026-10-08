@@ -52,14 +52,15 @@ public class TransactionDetailViewModelTests
         SaleHeader header,
         out FakeSalesRepository sales,
         out FakeVanPaymentGateway van,
-        out FakeCashReceiptGateway cashReceipt)
+        out FakeCashReceiptGateway cashReceipt,
+        IReceiptPrinter? receiptPrinter = null)
     {
         sales = new FakeSalesRepository();
         van = new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" });
         cashReceipt = new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ApprovalNo = "APR1", ApprovalDateYyMmDd = "260726", ResponseMessage = "발급완료" });
         return new TransactionDetailViewModel(
             header, new List<SaleDetailLine>(), "1", sales, van, cashReceipt,
-            new FakeReceiptPrinter(true), new FakeDelayProvider());
+            receiptPrinter ?? new FakeReceiptPrinter(true), new FakeDelayProvider());
     }
 
     [Fact]
@@ -315,5 +316,30 @@ public class TransactionDetailViewModelTests
         vm.CloseReceiptPreviewCommand.Execute(null);
 
         Assert.False(vm.IsReceiptPreviewVisible);
+    }
+
+    [Fact]
+    public async Task PrintReceiptCommand_WhenPrinterSucceeds_ClosesPreviewAutomatically()
+    {
+        var vm = CreateViewModel(CardHeader(), out _, out _, out _, new FakeReceiptPrinter(true));
+        vm.ReissueReceiptCommand.Execute(null);
+        Assert.True(vm.IsReceiptPreviewVisible);
+
+        await vm.PrintReceiptCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsReceiptPreviewVisible);
+    }
+
+    [Fact]
+    public async Task PrintReceiptCommand_WhenPrinterFails_ShowsErrorAndKeepsPreviewOpen()
+    {
+        var vm = CreateViewModel(CardHeader(), out _, out _, out _, new FakeReceiptPrinter(false));
+        vm.ReissueReceiptCommand.Execute(null);
+
+        await vm.PrintReceiptCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsReceiptPreviewVisible);
+        Assert.True(vm.IsStatusError);
+        Assert.Equal("영수증 인쇄에 실패했습니다", vm.StatusMessage);
     }
 }

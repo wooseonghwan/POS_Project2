@@ -275,10 +275,15 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     {
         if (PreviewedReceipt is null) return;
         bool printed = await _receiptPrinter.PrintAsync(PreviewedReceipt);
-        if (!printed)
+        if (printed)
+        {
+            // 프린터로 전송까지 성공했으면(실제 용지 출력 여부까지는 알 수 없음) 미리보기를 자동으로 닫는다.
+            IsReceiptPreviewVisible = false;
+        }
+        else
         {
             IsStatusError = true;
-            StatusMessage = "프린터 연동은 지원 예정입니다";
+            StatusMessage = "영수증 인쇄에 실패했습니다";
         }
     }
 
