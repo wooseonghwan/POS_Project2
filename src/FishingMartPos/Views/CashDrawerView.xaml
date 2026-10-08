@@ -40,14 +40,51 @@
                         </TextBlock>
                     </Border>
 
-                    <Border Background="{DynamicResource CardBorder}" BorderBrush="{DynamicResource ErrorBorder}" BorderThickness="1"
-                            Padding="12,8" Margin="0,0,0,16"
-                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}">
-                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource ErrorIconBackground}" FontSize="12" FontWeight="Bold" />
-                    </Border>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="1,000원권 (장수)" FontSize="13" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Count1000Input, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="14" TextAlignment="Right" />
+                    </Grid>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="5,000원권 (장수)" FontSize="13" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Count5000Input, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="14" TextAlignment="Right" />
+                    </Grid>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="10,000원권 (장수)" FontSize="13" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Count10000Input, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="14" TextAlignment="Right" />
+                    </Grid>
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="100" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="50,000원권 (장수)" FontSize="13" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Count50000Input, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="14" TextAlignment="Right" />
+                    </Grid>
 
-                    <TextBlock Text="시작 현금 금액" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource MutedText}" Margin="0,0,0,6" />
-                    <TextBox Text="{Binding AmountInput, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,20" FontSize="16" />
+                    <Border Background="{DynamicResource LoginBackground}" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
+                            Padding="12,10" Margin="0,0,0,20">
+                        <Grid>
+                            <TextBlock Text="합계" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding TotalAmountStr}" FontSize="18" FontWeight="Bold"
+                                       Foreground="{DynamicResource Accent}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </Border>
 
                     <Button Content="저장" Padding="0,12" Background="{DynamicResource Accent}" Foreground="White"
                             FontSize="14" FontWeight="Bold" Command="{Binding SaveCommand}" />

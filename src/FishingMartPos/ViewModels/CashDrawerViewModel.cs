@@ -8,7 +8,8 @@ using FishingMartPos.Theme;
 
 namespace FishingMartPos.ViewModels;
 
-/// <summary>영업일 시작 현금(시재) 입력 화면. 하루에 한 번, 포스단말별로 시작할 때 넣어두는 금액.</summary>
+/// <summary>영업일 시작 현금(시재) 입력 화면. 지폐 종류별 매수를 입력하면 합계가 자동으로 계산된다.
+/// 하루에 한 번, 포스단말별로 시작할 때 넣어두는 금액.</summary>
 public sealed partial class CashDrawerViewModel : ObservableObject
 {
     private readonly ICashDrawerRepository _cashDrawerRepository;
@@ -17,14 +18,32 @@ public sealed partial class CashDrawerViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly MainMenuViewModel _returnTo;
 
-    private bool _isFormattingAmount;
+    private bool _isSanitizing;
 
     [ObservableProperty] private string _businessDateStr = string.Empty;
-    [ObservableProperty] private string _amountInput = string.Empty;
-    // 오늘 이미 입력해 둔 금액(없으면 null). 입력란과 별개로, 현재 저장돼 있는 값을 보여주는 용도.
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalAmountStr))]
+    private string _count1000Input = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalAmountStr))]
+    private string _count5000Input = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalAmountStr))]
+    private string _count10000Input = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalAmountStr))]
+    private string _count50000Input = string.Empty;
+
+    // 오늘 이미 저장해 둔 금액(없으면 null). 지폐별 매수는 저장하지 않으므로, 이미 저장된 날 다시 들어오면
+    // 매수 입력란은 비어 있고 이 합계만 참고용으로 보여준다.
     [ObservableProperty] private string? _savedAmountStr;
-    [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private string? _toastMessage;
+
+    public string TotalAmountStr => CurrencyFormat.Format(ComputeTotal());
 
     public CashDrawerViewModel(
         ICashDrawerRepository cashDrawerRepository,
@@ -45,47 +64,49 @@ public sealed partial class CashDrawerViewModel : ObservableObject
         var today = DateTime.Today;
         BusinessDateStr = today.ToString("yyyy-MM-dd");
 
+        Count1000Input = string.Empty;
+        Count5000Input = string.Empty;
+        Count10000Input = string.Empty;
+        Count50000Input = string.Empty;
+
         string posCd = _session.CurrentTerminal!.PosCode;
         var entry = await _cashDrawerRepository.GetAsync(posCd, today);
-
-        if (entry is not null)
-        {
-            AmountInput = entry.OpeningAmount.ToString("N0");
-            SavedAmountStr = CurrencyFormat.Format(entry.OpeningAmount);
-        }
-        else
-        {
-            AmountInput = string.Empty;
-            SavedAmountStr = null;
-        }
+        SavedAmountStr = entry is not null ? CurrencyFormat.Format(entry.OpeningAmount) : null;
     }
 
-    partial void OnAmountInputChanged(string value)
+    // 매수는 숫자만 의미가 있으므로(음수/소수 불가), 숫자 아닌 문자는 입력 즉시 제거한다.
+    // 네 입력란이 같은 로직을 쓰므로 공용 헬퍼로 묶었다 — Changed 콜백이 값을 다시 쓸 때 재귀적으로
+    // 또 Changed가 불리는 걸 _isSanitizing으로 막는다(InventoryFormViewModel의 PriceInput과 같은 패턴).
+    private void Sanitize(string rawValue, Action<string> setSanitized)
     {
-        if (_isFormattingAmount) return;
+        if (_isSanitizing) return;
 
-        string digitsOnly = new string(value.Where(char.IsDigit).ToArray());
-        string formatted = digitsOnly.Length == 0 ? string.Empty : decimal.Parse(digitsOnly).ToString("N0");
-
-        if (formatted != value)
+        string digitsOnly = new string(rawValue.Where(char.IsDigit).ToArray());
+        if (digitsOnly != rawValue)
         {
-            _isFormattingAmount = true;
-            AmountInput = formatted;
-            _isFormattingAmount = false;
+            _isSanitizing = true;
+            setSanitized(digitsOnly);
+            _isSanitizing = false;
         }
     }
+
+    partial void OnCount1000InputChanged(string value) => Sanitize(value, v => Count1000Input = v);
+    partial void OnCount5000InputChanged(string value) => Sanitize(value, v => Count5000Input = v);
+    partial void OnCount10000InputChanged(string value) => Sanitize(value, v => Count10000Input = v);
+    partial void OnCount50000InputChanged(string value) => Sanitize(value, v => Count50000Input = v);
+
+    private static int ParseCount(string input) => int.TryParse(input, out int n) && n >= 0 ? n : 0;
+
+    private decimal ComputeTotal() =>
+        ParseCount(Count1000Input) * 1000m +
+        ParseCount(Count5000Input) * 5000m +
+        ParseCount(Count10000Input) * 10000m +
+        ParseCount(Count50000Input) * 50000m;
 
     [RelayCommand]
     private async Task Save()
     {
-        ErrorMessage = null;
-
-        string digitsOnly = new string(AmountInput.Where(char.IsDigit).ToArray());
-        if (digitsOnly.Length == 0 || !decimal.TryParse(digitsOnly, out decimal amount) || amount < 0)
-        {
-            ErrorMessage = "시작 현금 금액을 올바르게 입력해주세요";
-            return;
-        }
+        decimal amount = ComputeTotal();
 
         string posCd = _session.CurrentTerminal!.PosCode;
         await _cashDrawerRepository.SaveOpeningAmountAsync(new CashDrawerEntry
