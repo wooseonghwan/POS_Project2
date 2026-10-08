@@ -73,4 +73,41 @@ public class ReceiptDocumentFactoryTests
 
         Assert.Null(document.CashReceiptTypeLabel);
     }
+
+    [Fact]
+    public void FromSale_CompletedSale_IsCancelledIsFalse()
+    {
+        var header = new SaleHeader
+        {
+            SaleNo = 4,
+            PosCd = "1",
+            SaleDt = DateTime.Now,
+            StaffCd = "ADMIN1",
+            TotalAmt = 5000m,
+            PayType = "CASH",
+        };
+
+        var document = ReceiptDocumentFactory.FromSale(header, new List<SaleDetailLine>());
+
+        Assert.False(document.IsCancelled);
+    }
+
+    [Fact]
+    public void FromSale_CancelledSale_IsCancelledIsTrue()
+    {
+        var header = new SaleHeader
+        {
+            SaleNo = 5,
+            PosCd = "1",
+            SaleDt = DateTime.Now,
+            StaffCd = "ADMIN1",
+            TotalAmt = 5000m,
+            PayType = "CASH",
+            Status = "CANCELLED",
+        };
+
+        var document = ReceiptDocumentFactory.FromSale(header, new List<SaleDetailLine>());
+
+        Assert.True(document.IsCancelled);
+    }
 }

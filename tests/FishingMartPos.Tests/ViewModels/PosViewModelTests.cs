@@ -1074,10 +1074,10 @@ public class PosViewModelTests
     }
 
     [Fact]
-    public async Task ShowLastTransaction_WhenNoCompletedSale_ShowsWarningToast()
+    public async Task ShowLastTransaction_WhenNoSaleExists_ShowsWarningToast()
     {
         var vm = CreateViewModel(out var sales, out _, out _, out _);
-        sales.SeedLastCompletedSale(null);
+        sales.SeedLastSale(null);
         var toastValues = new List<string?>();
         vm.PropertyChanged += (_, e) =>
         {
@@ -1104,7 +1104,7 @@ public class PosViewModelTests
             TotalAmt = 5000m,
             PayType = "CASH",
         };
-        sales.SeedLastCompletedSale(header);
+        sales.SeedLastSale(header);
         sales.SeedSaleWithLines(5, header, new List<SaleDetailLine>());
 
         await vm.ShowLastTransactionCommand.ExecuteAsync(null);
@@ -1112,5 +1112,33 @@ public class PosViewModelTests
         Assert.True(vm.IsLastTransactionVisible);
         Assert.NotNull(vm.LastTransactionDetail);
         Assert.Equal("5", vm.LastTransactionDetail!.SaleNoStr);
+    }
+
+    [Fact]
+    public async Task ShowLastTransaction_WhenLastSaleWasCancelled_StillOpensDetailPopupForReceiptReissue()
+    {
+        // 결제 취소된 거래도 "직전정보"로 열어서 영수증을 재발행할 수 있어야 한다 — 취소됐다는 이유로
+        // 조회 자체가 막히면 안 된다(실제 버그 회귀 테스트: 과거엔 status='COMPLETE' 필터 때문에
+        // 가장 최근 거래가 취소된 경우 직전정보가 전혀 열리지 않았음).
+        var vm = CreateViewModel(out var sales, out _, out _, out _);
+        var header = new SaleHeader
+        {
+            SaleNo = 6,
+            PosCd = "1",
+            SaleDt = DateTime.Now,
+            StaffCd = "ADMIN1",
+            TotalAmt = 5000m,
+            PayType = "CASH",
+            Status = "CANCELLED",
+        };
+        sales.SeedLastSale(header);
+        sales.SeedSaleWithLines(6, header, new List<SaleDetailLine>());
+
+        await vm.ShowLastTransactionCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsLastTransactionVisible);
+        Assert.NotNull(vm.LastTransactionDetail);
+        Assert.Equal("6", vm.LastTransactionDetail!.SaleNoStr);
+        Assert.Equal("취소됨", vm.LastTransactionDetail.StatusLabelStr);
     }
 }

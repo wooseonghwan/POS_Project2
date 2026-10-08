@@ -45,6 +45,14 @@ public static class EscPosReceiptFormatter
         Center("영 수 증");
         Cmd(Esc, (byte)'E', 0);
 
+        if (document.IsCancelled)
+        {
+            // 취소된 거래를 재발행할 때는 정상 영수증과 절대 헷갈리지 않도록 굵게 눈에 띄게 찍는다.
+            Cmd(Esc, (byte)'E', 1);
+            Center("*** 취소된 거래 ***");
+            Cmd(Esc, (byte)'E', 0);
+        }
+
         if (document.SaleDateTime is DateTime saleAt)
         {
             Line($"일    시: {saleAt:yyyy-MM-dd HH:mm:ss}");

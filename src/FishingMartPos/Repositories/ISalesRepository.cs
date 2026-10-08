@@ -8,7 +8,9 @@ public interface ISalesRepository
 
     Task<IReadOnlyList<SaleHeader>> GetCompletedSalesAsync(DateTime from, DateTime to);
 
-    Task<SaleHeader?> GetLastCompletedSaleAsync(string posCd);
+    /// <summary>해당 포스의 가장 최근 거래를 상태(완료/취소)와 무관하게 반환한다. "직전정보" 재발행에 쓰임 —
+    /// 마지막 거래가 취소된 경우에도 그 거래를 열어 영수증을 재발행할 수 있어야 한다.</summary>
+    Task<SaleHeader?> GetLastSaleAsync(string posCd);
 
     Task<IReadOnlyList<SaleHeader>> SearchSalesAsync(DateTime from, DateTime to, string? payType, string? approvalNo);
 

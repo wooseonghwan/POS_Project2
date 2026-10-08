@@ -867,7 +867,7 @@ public sealed partial class PosViewModel : ObservableObject
     [RelayCommand]
     private async Task ShowLastTransaction()
     {
-        var header = await _salesRepository.GetLastCompletedSaleAsync(_session.CurrentTerminal!.PosCode);
+        var header = await _salesRepository.GetLastSaleAsync(_session.CurrentTerminal!.PosCode);
         if (header is null)
         {
             IsToastWarning = true;

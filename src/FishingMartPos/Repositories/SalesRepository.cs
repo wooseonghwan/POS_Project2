@@ -85,13 +85,15 @@ public sealed class SalesRepository : ISalesRepository
         return rows.ToList();
     }
 
-    public async Task<SaleHeader?> GetLastCompletedSaleAsync(string posCd)
+    public async Task<SaleHeader?> GetLastSaleAsync(string posCd)
     {
         using var connection = await _connectionFactory.CreateOpenConnectionAsync();
+        // 상태(완료/취소) 필터 없이 가장 최근 거래를 그대로 가져온다 — 취소된 거래의 영수증도
+        // 재발행할 수 있어야 하므로, 취소됐다는 이유로 조회 결과에서 숨기면 안 된다.
         string sql = $"""
             SELECT {HeaderColumns}
             FROM sales_header_tb
-            WHERE pos_cd = @PosCd AND status = 'COMPLETE'
+            WHERE pos_cd = @PosCd
             ORDER BY sale_no DESC
             LIMIT 1
             """;

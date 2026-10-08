@@ -43,7 +43,7 @@ public class SalesRepositoryPaymentManagementTests
     };
 
     [Fact]
-    public async Task GetLastCompletedSaleAsync_ReturnsMostRecentSaleForPosCode()
+    public async Task GetLastSaleAsync_ReturnsMostRecentSaleForPosCode()
     {
         var factory = CreateConnectionFactory();
         var repo = new SalesRepository(factory);
@@ -52,7 +52,7 @@ public class SalesRepositoryPaymentManagementTests
 
         try
         {
-            var result = await repo.GetLastCompletedSaleAsync("9");
+            var result = await repo.GetLastSaleAsync("9");
 
             Assert.NotNull(result);
             Assert.Equal(secondSaleNo, result!.SaleNo);
@@ -65,6 +65,32 @@ public class SalesRepositoryPaymentManagementTests
                 "DELETE FROM sales_detail_tb WHERE sale_no IN (@A, @B)", new { A = firstSaleNo, B = secondSaleNo });
             await conn.ExecuteAsync(
                 "DELETE FROM sales_header_tb WHERE sale_no IN (@A, @B)", new { A = firstSaleNo, B = secondSaleNo });
+        }
+    }
+
+    [Fact]
+    public async Task GetLastSaleAsync_WhenMostRecentSaleWasCancelled_StillReturnsIt()
+    {
+        // 회귀 테스트: 과거엔 status='COMPLETE' 필터 때문에 가장 최근 거래가 취소된 경우 조회 자체가
+        // 안 됐다(직전정보로 취소된 거래의 영수증을 재발행할 수 없는 버그였음).
+        var factory = CreateConnectionFactory();
+        var repo = new SalesRepository(factory);
+        long saleNo = await repo.CreateSaleAsync(NewHeader(), OneLine());
+        await repo.CancelSaleAsync(saleNo);
+
+        try
+        {
+            var result = await repo.GetLastSaleAsync("9");
+
+            Assert.NotNull(result);
+            Assert.Equal(saleNo, result!.SaleNo);
+            Assert.Equal("CANCELLED", result.Status);
+        }
+        finally
+        {
+            using var conn = await factory.CreateOpenConnectionAsync();
+            await conn.ExecuteAsync("DELETE FROM sales_detail_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
+            await conn.ExecuteAsync("DELETE FROM sales_header_tb WHERE sale_no = @SaleNo", new { SaleNo = saleNo });
         }
     }
 

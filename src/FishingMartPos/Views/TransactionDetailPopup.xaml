@@ -199,6 +199,10 @@
                                Foreground="{DynamicResource TitleText}" HorizontalAlignment="Center" Margin="0,0,0,16" />
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="300">
                         <StackPanel DataContext="{Binding PreviewedReceipt}">
+                            <TextBlock Text="*** 취소된 거래 ***" FontSize="13" FontWeight="Bold"
+                                       Foreground="{DynamicResource ErrorIconBackground}" HorizontalAlignment="Center"
+                                       Margin="0,0,0,10"
+                                       Visibility="{Binding IsCancelled, Converter={StaticResource BooleanToVisibilityConverter}}" />
                             <ItemsControl ItemsSource="{Binding Lines}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>

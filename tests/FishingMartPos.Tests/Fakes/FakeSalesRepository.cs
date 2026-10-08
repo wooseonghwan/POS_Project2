@@ -15,7 +15,7 @@ public sealed class FakeSalesRepository : ISalesRepository
 
     private long _nextSaleNo = 1;
     private IReadOnlyList<SaleHeader> _completedSales = Array.Empty<SaleHeader>();
-    private SaleHeader? _lastCompletedSale;
+    private SaleHeader? _lastSale;
     private readonly Dictionary<long, (SaleHeader Header, IReadOnlyList<SaleDetailLine> Lines)> _salesByNo = new();
 
     public Task<long> CreateSaleAsync(SaleHeader header, IReadOnlyList<SaleDetailLine> lines)
@@ -29,9 +29,9 @@ public sealed class FakeSalesRepository : ISalesRepository
         _completedSales = sales;
     }
 
-    public void SeedLastCompletedSale(SaleHeader? sale)
+    public void SeedLastSale(SaleHeader? sale)
     {
-        _lastCompletedSale = sale;
+        _lastSale = sale;
     }
 
     public void SeedSaleWithLines(long saleNo, SaleHeader header, IReadOnlyList<SaleDetailLine> lines)
@@ -46,7 +46,7 @@ public sealed class FakeSalesRepository : ISalesRepository
         return Task.FromResult<IReadOnlyList<SaleHeader>>(filtered);
     }
 
-    public Task<SaleHeader?> GetLastCompletedSaleAsync(string posCd) => Task.FromResult(_lastCompletedSale);
+    public Task<SaleHeader?> GetLastSaleAsync(string posCd) => Task.FromResult(_lastSale);
 
     public Task<IReadOnlyList<SaleHeader>> SearchSalesAsync(DateTime from, DateTime to, string? payType, string? approvalNo)
     {

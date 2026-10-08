@@ -16,6 +16,7 @@ public static class ReceiptDocumentFactory
         CashReceiptApprovalNo = header.CashReceiptApprovalNo,
         SaleDateTime = header.SaleDt,
         SaleNo = header.SaleNo,
+        IsCancelled = header.Status == "CANCELLED",
     };
 
     private static string PayTypeLabel(string payType) => payType switch
