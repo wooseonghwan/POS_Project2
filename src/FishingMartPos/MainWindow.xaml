@@ -4,6 +4,7 @@
         xmlns:views="clr-namespace:FishingMartPos.Views"
         xmlns:vm="clr-namespace:FishingMartPos.ViewModels"
         Title="대원낚시 POS시스템" Width="1024" Height="768"
+        Icon="Assets/app.ico"
         Background="{DynamicResource OuterBackground}">
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:LoginViewModel}">
