@@ -59,6 +59,14 @@ public partial class PosView : UserControl
         if (e.Text.Length == 1 && char.IsDigit(e.Text[0]))
         {
             _scanBuffer.Append(e.Text);
+            // 이 숫자는 바코드 스캔버퍼가 이미 소비했다고 표시한다. 표시 안 하면 이벤트가 계속
+            // 터널링돼서 현재 포커스를 가진 컨트롤(예: 방금 누른 숫자패드 버튼)에도 전달되는데,
+            // 숫자패드 버튼이 포커스를 쥔 상태에서 바코드를 스캔하면 그 바코드 속 숫자/Enter가
+            // 거기로 새어들어가 "방금 선택한 상품"의 수량을 계속 바꿔버리는 실매장 버그가 있었다
+            // (예: 파워에이드 선택 후 수량 2로 설정 → 과자 바코드 스캔 → 파워에이드 수량이
+            // 엉뚱하게 치솟음). 결제 팝업이 열려 있을 때는(IsAnyPaymentPopupOpen) 이 분기 자체를
+            // 안 타므로, 할부 "기타개월" 입력창의 정상적인 숫자 입력은 전혀 영향받지 않는다.
+            e.Handled = true;
         }
     }
 
@@ -77,6 +85,9 @@ public partial class PosView : UserControl
 
         string barcode = _scanBuffer.ToString();
         _scanBuffer.Clear();
+        // 위와 같은 이유로, 스캔을 마무리짓는 Enter 키도 포커스를 가진 컨트롤로 새어나가지
+        // 않도록 막는다(그 컨트롤이 Enter를 자기 클릭으로 해석하는 경우를 방지).
+        e.Handled = true;
 
         if (DataContext is ViewModels.PosViewModel vm)
         {

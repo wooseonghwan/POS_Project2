@@ -247,6 +247,13 @@
                                 <Setter Property="Background" Value="{DynamicResource LogoutButtonBackground}" />
                                 <Setter Property="Foreground" Value="{DynamicResource KeypadText}" />
                                 <Setter Property="BorderBrush" Value="{DynamicResource InputBorder}" />
+                                <!-- 이 버튼이 키보드 포커스를 가져가면, 그 직후 바코드 스캐너가 보내는 숫자/Enter
+                                     키 입력이 (전역 스캔 버퍼 대신) 이 버튼으로 흘러들어가 수량이 엉뚱하게
+                                     바뀌는 문제가 있었다(예: 다음 상품을 스캔했는데 방금 선택했던 상품의
+                                     수량이 계속 올라감). 숫자패드는 항상 마우스/터치로만 누르므로 포커스를
+                                     받을 필요가 없다 — 포커스를 거부해서 키보드 입력은 계속 PosView 루트
+                                     (스캔 버퍼)로만 가도록 한다. -->
+                                <Setter Property="Focusable" Value="False" />
                             </Style>
                         </UniformGrid.Resources>
                         <Button Content="1" Command="{Binding PressKeyCommand}" CommandParameter="1" />
