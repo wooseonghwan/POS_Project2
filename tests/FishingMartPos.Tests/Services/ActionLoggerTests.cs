@@ -1,3 +1,4 @@
+using System.IO;
 using FishingMartPos.Models;
 using FishingMartPos.Services;
 using FishingMartPos.Tests.Fakes;
@@ -68,5 +69,25 @@ public class ActionLoggerTests
         await logger.LogAsync("PRODUCT_SAVE", "상품등록");
 
         Assert.Empty(repo.Inserted);
+    }
+
+    [Fact]
+    public async Task LogAsync_WhenRepositoryThrows_WritesDiagnosticFileNextToExe()
+    {
+        // action_log_tb가 아직 없거나 DB가 끊겼을 때 "왜 안 쌓이는지"를 현장에서 바로 확인할 수
+        // 있도록, 원인을 exe 옆 action-log-errors.txt에 남긴다.
+        var diagnosticPath = Path.Combine(AppContext.BaseDirectory, "action-log-errors.txt");
+        if (File.Exists(diagnosticPath)) File.Delete(diagnosticPath);
+        var (logger, repo, _) = Create();
+        repo.ThrowOnInsert = true;
+
+        await logger.LogAsync("PRODUCT_SAVE", "상품등록");
+
+        Assert.True(File.Exists(diagnosticPath));
+        var content = await File.ReadAllTextAsync(diagnosticPath);
+        Assert.Contains("PRODUCT_SAVE", content);
+        Assert.Contains("DB 연결 끊김(테스트용)", content);
+
+        File.Delete(diagnosticPath);
     }
 }
