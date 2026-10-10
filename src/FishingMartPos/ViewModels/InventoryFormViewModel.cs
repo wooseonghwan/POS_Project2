@@ -23,6 +23,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly InventoryViewModel _returnTo;
     private readonly string? _editingBarcode;
+    private readonly IActionLogger _actionLogger;
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
     private string? _pickedPhotoFilePath;
@@ -58,7 +59,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         IDelayProvider delay,
         INavigationService navigation,
         InventoryViewModel returnTo,
-        Product? editingProduct)
+        Product? editingProduct,
+        IActionLogger? actionLogger = null)
     {
         _productRepository = productRepository;
         _codeRepository = codeRepository;
@@ -68,6 +70,7 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         _navigation = navigation;
         _returnTo = returnTo;
         _editingBarcode = editingProduct?.Barcode;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
 
         if (editingProduct is not null)
         {
@@ -204,6 +207,8 @@ public sealed partial class InventoryFormViewModel : ObservableObject
         };
 
         await _productRepository.SaveAsync(product);
+        await _actionLogger.LogAsync("PRODUCT_SAVE",
+            $"{(IsEditMode ? "상품수정" : "상품등록")}: 바코드={barcode}, 상품명={Name}, 단가={price:N0}원, 재고={stock}");
 
         ToastMessage = IsEditMode ? "수정되었습니다" : "저장되었습니다";
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));

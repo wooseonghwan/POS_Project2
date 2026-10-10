@@ -17,7 +17,8 @@ public class LoginViewModelTests
     private static LoginViewModel CreateViewModel(
         out ICurrentSession session,
         out INavigationService navigation,
-        Dictionary<string, Staff>? staffByPin = null)
+        Dictionary<string, Staff>? staffByPin = null,
+        IActionLogger? actionLogger = null)
     {
         var repository = new FakeStaffRepository(staffByPin ?? new Dictionary<string, Staff> { ["0000"] = AdminStaff });
         session = new CurrentSession();
@@ -35,7 +36,8 @@ public class LoginViewModelTests
             CreateDummySalesReportViewModelFactory(session, navigation),
             CreateDummySettingsViewModelFactory(navigation),
             CreateDummyPaymentManagementViewModelFactory(session, navigation),
-            CreateDummyCashDrawerViewModelFactory(session, navigation));
+            CreateDummyCashDrawerViewModelFactory(session, navigation),
+            actionLogger);
     }
 
     private static Func<MainMenuViewModel, Task<PosViewModel>> CreateDummyPosViewModelFactory(
@@ -162,6 +164,23 @@ public class LoginViewModelTests
     }
 
     [Fact]
+    public async Task FourCorrectDigits_LogsLoginSuccess()
+    {
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(out _, out _, actionLogger: actionLogger);
+
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        vm.PressKeyCommand.Execute("0");
+        await Task.Delay(50);
+
+        var login = Assert.Single(actionLogger.Calls.Where(c => c.ActionType == "LOGIN"));
+        Assert.True(login.Success);
+        Assert.Contains("ADMIN1", login.Detail);
+    }
+
+    [Fact]
     public async Task FourWrongDigits_ShowsErrorAndClearsPin()
     {
         var vm = CreateViewModel(out var session, out var navigation);
@@ -176,6 +195,22 @@ public class LoginViewModelTests
         Assert.Null(navigation.CurrentViewModel);
         Assert.True(vm.IsLoginErrorVisible);
         Assert.Equal(string.Empty, vm.Pin);
+    }
+
+    [Fact]
+    public async Task FourWrongDigits_LogsLoginFailure()
+    {
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(out _, out _, actionLogger: actionLogger);
+
+        vm.PressKeyCommand.Execute("9");
+        vm.PressKeyCommand.Execute("9");
+        vm.PressKeyCommand.Execute("9");
+        vm.PressKeyCommand.Execute("9");
+        await Task.Delay(50);
+
+        var login = Assert.Single(actionLogger.Calls.Where(c => c.ActionType == "LOGIN"));
+        Assert.False(login.Success);
     }
 
     [Fact]

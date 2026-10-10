@@ -18,7 +18,9 @@ public class PosViewModelPaymentTests
         out FakeSalesRepository sales,
         out FakeHeldOrderRepository held,
         FakeCashReceiptGateway? cashReceiptGateway = null,
-        IReceiptPrinter? receiptPrinter = null)
+        IReceiptPrinter? receiptPrinter = null,
+        IActionLogger? actionLogger = null,
+        IVanPaymentGateway? vanGateway = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -37,7 +39,7 @@ public class PosViewModelPaymentTests
         return new PosViewModel(
             new FakeProductRepository(new[] { Bait1 }), new FakeCodeRepository(codes),
             sales, held, new FakeDelayProvider(), session, navigation, mainMenuViewModel,
-            new FakeVanPaymentGateway(new VanApprovalResult
+            vanGateway ?? new FakeVanPaymentGateway(new VanApprovalResult
             {
                 IsApproved = true,
                 ApprovalNo = "20260723120000",
@@ -56,7 +58,9 @@ public class PosViewModelPaymentTests
             _ => Task.FromResult(new PaymentManagementViewModel(
                 salesRepo, new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" }),
                 new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
-                new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenuViewModel)));
+                new StubReceiptPrinter(), new FakeDelayProvider(), session, navigation, mainMenuViewModel)),
+            kiccPosClient: null,
+            actionLogger: actionLogger);
     }
 
     [Fact]
@@ -98,6 +102,22 @@ public class PosViewModelPaymentTests
         Assert.Equal(5000, sale.Header.TotalAmt);
         Assert.False(vm.IsCashConfirmVisible);
         Assert.Empty(vm.CartLines);
+    }
+
+    [Fact]
+    public async Task ConfirmCashPayment_LogsSaleCashAction()
+    {
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(out _, out _, actionLogger: actionLogger);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("SALE_CASH", logged.ActionType);
+        Assert.True(logged.Success);
     }
 
     [Fact]
@@ -471,5 +491,23 @@ public class PosViewModelPaymentTests
         await vm.PrintReceiptCommand.ExecuteAsync(null);
 
         Assert.False(vm.IsReceiptPreviewVisible);
+    }
+
+    [Fact]
+    public async Task PrintReceipt_LogsReceiptPrintActionWithSuccessOrFailure()
+    {
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(out _, out _, receiptPrinter: new FakeReceiptPrinter(false), actionLogger: actionLogger);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+        await vm.PayCashCommand.ExecuteAsync(null);
+        await vm.ConfirmCashPaymentCommand.ExecuteAsync(null);
+        actionLogger.Calls.Clear(); // 결제 완료 로그(SALE_CASH)는 이 테스트 관심사가 아니므로 비운다
+
+        await vm.PrintReceiptCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("RECEIPT_PRINT", logged.ActionType);
+        Assert.False(logged.Success);
     }
 }

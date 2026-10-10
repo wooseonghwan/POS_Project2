@@ -9,7 +9,7 @@ namespace FishingMartPos.Tests.ViewModels;
 
 public class CashDrawerViewModelTests
 {
-    private static (CashDrawerViewModel vm, FakeCashDrawerRepository repository, INavigationService navigation, MainMenuViewModel mainMenu)
+    private static (CashDrawerViewModel vm, FakeCashDrawerRepository repository, INavigationService navigation, MainMenuViewModel mainMenu, FakeActionLogger actionLogger)
         Create(IEnumerable<CashDrawerEntry>? seed = null)
     {
         var session = new CurrentSession();
@@ -19,14 +19,15 @@ public class CashDrawerViewModelTests
         var navigation = new NavigationService();
         var mainMenu = new MainMenuViewModel(session, navigation);
         var repository = new FakeCashDrawerRepository(seed);
-        var vm = new CashDrawerViewModel(repository, session, new FakeDelayProvider(), navigation, mainMenu);
-        return (vm, repository, navigation, mainMenu);
+        var actionLogger = new FakeActionLogger();
+        var vm = new CashDrawerViewModel(repository, session, new FakeDelayProvider(), navigation, mainMenu, actionLogger);
+        return (vm, repository, navigation, mainMenu, actionLogger);
     }
 
     [Fact]
     public async Task LoadAsync_WithNoEntryForToday_LeavesCountsAndSavedAmountEmpty()
     {
-        var (vm, _, _, _) = Create();
+        var (vm, _, _, _, _) = Create();
 
         await vm.LoadAsync();
 
@@ -47,7 +48,7 @@ public class CashDrawerViewModelTests
         {
             new CashDrawerEntry { PosCd = "1", BusinessDate = DateTime.Today, OpeningAmount = 50000, StaffCd = "ADMIN1" },
         };
-        var (vm, _, _, _) = Create(seed);
+        var (vm, _, _, _, _) = Create(seed);
 
         await vm.LoadAsync();
 
@@ -62,7 +63,7 @@ public class CashDrawerViewModelTests
         {
             new CashDrawerEntry { PosCd = "1", BusinessDate = DateTime.Today.AddDays(-1), OpeningAmount = 30000, StaffCd = "ADMIN1" },
         };
-        var (vm, _, _, _) = Create(seed);
+        var (vm, _, _, _, _) = Create(seed);
 
         await vm.LoadAsync();
 
@@ -76,7 +77,7 @@ public class CashDrawerViewModelTests
         {
             new CashDrawerEntry { PosCd = "2", BusinessDate = DateTime.Today, OpeningAmount = 30000, StaffCd = "ADMIN1" },
         };
-        var (vm, _, _, _) = Create(seed);
+        var (vm, _, _, _, _) = Create(seed);
 
         await vm.LoadAsync();
 
@@ -90,7 +91,7 @@ public class CashDrawerViewModelTests
     [InlineData("-3", "3")]
     public async Task CountInput_StripsNonDigitCharacters(string typed, string expected)
     {
-        var (vm, _, _, _) = Create();
+        var (vm, _, _, _, _) = Create();
         await vm.LoadAsync();
 
         vm.Count1000Input = typed;
@@ -101,7 +102,7 @@ public class CashDrawerViewModelTests
     [Fact]
     public async Task TotalAmountStr_UpdatesAutomaticallyAsCountsChange()
     {
-        var (vm, _, _, _) = Create();
+        var (vm, _, _, _, _) = Create();
         await vm.LoadAsync();
 
         vm.Count1000Input = "3";   // 3,000
@@ -115,7 +116,7 @@ public class CashDrawerViewModelTests
     [Fact]
     public async Task TotalAmountStr_WithBlankCounts_IsZero()
     {
-        var (vm, _, _, _) = Create();
+        var (vm, _, _, _, _) = Create();
         await vm.LoadAsync();
 
         Assert.Equal("0원", vm.TotalAmountStr);
@@ -124,7 +125,7 @@ public class CashDrawerViewModelTests
     [Fact]
     public async Task Save_PersistsComputedTotalAndUpdatesSavedAmountAndShowsToast()
     {
-        var (vm, repository, _, _) = Create();
+        var (vm, repository, _, _, actionLogger) = Create();
         await vm.LoadAsync();
         vm.Count10000Input = "5";   // 50,000
         vm.Count50000Input = "1";   // 50,000
@@ -144,13 +145,17 @@ public class CashDrawerViewModelTests
         Assert.Equal("ADMIN1", saved.StaffCd);
         Assert.Equal("100,000원", vm.SavedAmountStr);
         Assert.Equal("저장되었습니다", Assert.Single(toastValues));
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("CASH_DRAWER_SAVE", logged.ActionType);
+        Assert.True(logged.Success);
     }
 
     [Fact]
     public async Task Save_WithAllCountsBlank_SavesZeroSuccessfully()
     {
         // 영업 시작 시 현금이 아예 없을 수도 있으므로(예: 전액 계좌 입금), 0원도 유효한 값이다.
-        var (vm, repository, _, _) = Create();
+        var (vm, repository, _, _, _) = Create();
         await vm.LoadAsync();
 
         await vm.SaveCommand.ExecuteAsync(null);
@@ -166,7 +171,7 @@ public class CashDrawerViewModelTests
         {
             new CashDrawerEntry { PosCd = "1", BusinessDate = DateTime.Today, OpeningAmount = 50000, StaffCd = "ADMIN1" },
         };
-        var (vm, repository, _, _) = Create(seed);
+        var (vm, repository, _, _, _) = Create(seed);
         await vm.LoadAsync();
 
         vm.Count10000Input = "7"; // 70,000
@@ -179,7 +184,7 @@ public class CashDrawerViewModelTests
     [Fact]
     public void GoToMainMenu_NavigatesToInjectedMainMenuViewModel()
     {
-        var (vm, _, navigation, mainMenu) = Create();
+        var (vm, _, navigation, mainMenu, _) = Create();
 
         vm.GoToMainMenuCommand.Execute(null);
 

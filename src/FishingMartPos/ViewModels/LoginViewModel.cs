@@ -18,6 +18,7 @@ public sealed partial class LoginViewModel : ObservableObject
     private readonly Func<MainMenuViewModel, Task<SettingsViewModel>> _settingsViewModelFactory;
     private readonly Func<MainMenuViewModel, Task<PaymentManagementViewModel>> _paymentManagementViewModelFactory;
     private readonly Func<MainMenuViewModel, Task<CashDrawerViewModel>> _cashDrawerViewModelFactory;
+    private readonly IActionLogger _actionLogger;
 
     [ObservableProperty]
     private string _pin = string.Empty;
@@ -44,7 +45,8 @@ public sealed partial class LoginViewModel : ObservableObject
         Func<MainMenuViewModel, Task<SalesReportViewModel>> salesReportViewModelFactory,
         Func<MainMenuViewModel, Task<SettingsViewModel>> settingsViewModelFactory,
         Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory,
-        Func<MainMenuViewModel, Task<CashDrawerViewModel>> cashDrawerViewModelFactory)
+        Func<MainMenuViewModel, Task<CashDrawerViewModel>> cashDrawerViewModelFactory,
+        IActionLogger? actionLogger = null)
     {
         _staffRepository = staffRepository;
         _session = session;
@@ -57,6 +59,7 @@ public sealed partial class LoginViewModel : ObservableObject
         _settingsViewModelFactory = settingsViewModelFactory;
         _paymentManagementViewModelFactory = paymentManagementViewModelFactory;
         _cashDrawerViewModelFactory = cashDrawerViewModelFactory;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
     }
 
     [RelayCommand]
@@ -103,16 +106,20 @@ public sealed partial class LoginViewModel : ObservableObject
 
         if (staff is null)
         {
+            // 어떤 PIN으로 로그인에 실패했는지는 남기지 않는다(PIN 자체가 민감정보) — 실패했다는 사실과
+            // 선택된 단말만 남긴다.
+            await _actionLogger.LogAsync("LOGIN", $"로그인 실패 (단말={SelectedTerminal.PosName})", success: false);
             IsLoginErrorVisible = true;
             Pin = string.Empty;
             return;
         }
 
         _session.SignIn(staff, SelectedTerminal);
+        await _actionLogger.LogAsync("LOGIN", $"로그인 성공: {staff.StaffName}({staff.StaffCode}), 단말={SelectedTerminal.PosName}");
 
-        var mainMenuViewModel = new MainMenuViewModel(_session, _navigation)
+        var mainMenuViewModel = new MainMenuViewModel(_session, _navigation, _actionLogger)
         {
-            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory, _salesReportViewModelFactory, _settingsViewModelFactory, _paymentManagementViewModelFactory, _cashDrawerViewModelFactory),
+            LoginViewModelFactory = () => new LoginViewModel(_staffRepository, _session, _navigation, Terminals, _posViewModelFactory, _inventoryViewModelFactory, _salesReportViewModelFactory, _settingsViewModelFactory, _paymentManagementViewModelFactory, _cashDrawerViewModelFactory, _actionLogger),
             PosViewModelFactory = _posViewModelFactory,
             InventoryViewModelFactory = _inventoryViewModelFactory,
             SalesReportViewModelFactory = _salesReportViewModelFactory,

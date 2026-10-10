@@ -9,7 +9,7 @@ namespace FishingMartPos.Tests.ViewModels;
 
 public class MainMenuViewModelTests
 {
-    private static (MainMenuViewModel vm, ICurrentSession session, INavigationService navigation) Create()
+    private static (MainMenuViewModel vm, ICurrentSession session, INavigationService navigation) Create(IActionLogger? actionLogger = null)
     {
         var session = new CurrentSession();
         session.SignIn(
@@ -70,7 +70,7 @@ public class MainMenuViewModelTests
         Func<MainMenuViewModel, Task<CashDrawerViewModel>> cashDrawerViewModelFactory = mainMenu =>
             Task.FromResult(new CashDrawerViewModel(new FakeCashDrawerRepository(), session, new FakeDelayProvider(), navigation, mainMenu));
 
-        var vm = new MainMenuViewModel(session, navigation)
+        var vm = new MainMenuViewModel(session, navigation, actionLogger)
         {
             LoginViewModelFactory = () => new LoginViewModel(staffRepository, session, navigation, terminals, posViewModelFactory, inventoryViewModelFactory, salesReportViewModelFactory, settingsViewModelFactory, paymentManagementViewModelFactory, cashDrawerViewModelFactory),
             PosViewModelFactory = posViewModelFactory,
@@ -208,13 +208,26 @@ public class MainMenuViewModelTests
     }
 
     [Fact]
-    public void Logout_ClearsSessionAndNavigatesToLogin()
+    public async Task Logout_ClearsSessionAndNavigatesToLogin()
     {
         var (vm, session, navigation) = Create();
 
-        vm.LogoutCommand.Execute(null);
+        await vm.LogoutCommand.ExecuteAsync(null);
 
         Assert.False(session.IsSignedIn);
         Assert.IsType<LoginViewModel>(navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task Logout_LogsLogoutActionBeforeClearingSession()
+    {
+        var actionLogger = new FakeActionLogger();
+        var (vm, _, _) = Create(actionLogger);
+
+        await vm.LogoutCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("LOGOUT", logged.ActionType);
+        Assert.Contains("ADMIN1", logged.Detail);
     }
 }

@@ -17,6 +17,7 @@ public sealed partial class CashDrawerViewModel : ObservableObject
     private readonly IDelayProvider _delay;
     private readonly INavigationService _navigation;
     private readonly MainMenuViewModel _returnTo;
+    private readonly IActionLogger _actionLogger;
 
     private bool _isSanitizing;
 
@@ -50,13 +51,15 @@ public sealed partial class CashDrawerViewModel : ObservableObject
         ICurrentSession session,
         IDelayProvider delay,
         INavigationService navigation,
-        MainMenuViewModel returnTo)
+        MainMenuViewModel returnTo,
+        IActionLogger? actionLogger = null)
     {
         _cashDrawerRepository = cashDrawerRepository;
         _session = session;
         _delay = delay;
         _navigation = navigation;
         _returnTo = returnTo;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
     }
 
     public async Task LoadAsync()
@@ -116,6 +119,8 @@ public sealed partial class CashDrawerViewModel : ObservableObject
             OpeningAmount = amount,
             StaffCd = _session.CurrentStaff?.StaffCode,
         });
+
+        await _actionLogger.LogAsync("CASH_DRAWER_SAVE", $"시재입력: 포스={posCd}, 금액={amount:N0}원");
 
         SavedAmountStr = CurrencyFormat.Format(amount);
         ToastMessage = "저장되었습니다";

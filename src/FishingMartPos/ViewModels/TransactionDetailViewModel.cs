@@ -15,6 +15,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     private readonly ICashReceiptGateway _cashReceiptGateway;
     private readonly IReceiptPrinter _receiptPrinter;
     private readonly IDelayProvider _delay;
+    private readonly IActionLogger _actionLogger;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanCancel))]
@@ -74,7 +75,8 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
         IVanPaymentGateway vanGateway,
         ICashReceiptGateway cashReceiptGateway,
         IReceiptPrinter receiptPrinter,
-        IDelayProvider delay)
+        IDelayProvider delay,
+        IActionLogger? actionLogger = null)
     {
         _header = header;
         Lines = lines;
@@ -84,6 +86,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
         _cashReceiptGateway = cashReceiptGateway;
         _receiptPrinter = receiptPrinter;
         _delay = delay;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
     }
 
     public bool CanCancel => Header.Status == "COMPLETE";
@@ -132,6 +135,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
                     {
                         IsStatusError = true;
                         StatusMessage = "원거래 승인정보가 없어 취소할 수 없습니다";
+                        await _actionLogger.LogAsync("SALE_CANCEL", $"거래번호={Header.SaleNo} 취소 실패", success: false, errorMessage: StatusMessage);
                         return;
                     }
 
@@ -142,6 +146,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
                     {
                         IsStatusError = true;
                         StatusMessage = result.ResponseMessage;
+                        await _actionLogger.LogAsync("SALE_CANCEL", $"거래번호={Header.SaleNo} 카드취소 거절", success: false, errorMessage: result.ResponseMessage);
                         return;
                     }
                     _gatewayCancelAlreadySucceeded = true;
@@ -152,6 +157,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
                     {
                         IsStatusError = true;
                         StatusMessage = "원거래 승인정보가 없어 취소할 수 없습니다";
+                        await _actionLogger.LogAsync("SALE_CANCEL", $"거래번호={Header.SaleNo} 취소 실패", success: false, errorMessage: StatusMessage);
                         return;
                     }
 
@@ -162,6 +168,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
                     {
                         IsStatusError = true;
                         StatusMessage = result.ResponseMessage;
+                        await _actionLogger.LogAsync("SALE_CANCEL", $"거래번호={Header.SaleNo} 현금영수증취소 거절", success: false, errorMessage: result.ResponseMessage);
                         return;
                     }
                     _gatewayCancelAlreadySucceeded = true;
@@ -172,18 +179,20 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
             {
                 await _salesRepository.CancelSaleAsync(Header.SaleNo);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 IsStatusError = true;
                 StatusMessage = _gatewayCancelAlreadySucceeded
                     ? "결제 취소는 완료됐지만 저장에 실패했습니다. 다시 시도해주세요"
                     : "취소 처리 중 오류가 발생했습니다. 담당자에게 문의하세요";
+                await _actionLogger.LogAsync("SALE_CANCEL", $"거래번호={Header.SaleNo} 저장 실패", success: false, errorMessage: ex.Message);
                 return;
             }
 
             Header = Header with { Status = "CANCELLED" };
             IsStatusError = false;
             StatusMessage = "취소되었습니다";
+            await _actionLogger.LogAsync("SALE_CANCEL", $"거래번호={Header.SaleNo} 취소 완료, 금액={Header.TotalAmt:N0}원");
             Changed?.Invoke();
         }
         finally
@@ -226,6 +235,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
             {
                 IsStatusError = true;
                 StatusMessage = result.ResponseMessage;
+                await _actionLogger.LogAsync("CASH_RECEIPT_ISSUE", $"거래번호={Header.SaleNo} 현금영수증 발급 거절", success: false, errorMessage: result.ResponseMessage);
                 return;
             }
 
@@ -233,10 +243,11 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
             {
                 await _salesRepository.UpdateCashReceiptAsync(Header.SaleNo, SelectedReceiptType, merchant, result.ApprovalNo!, result.ApprovalDateYyMmDd!);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 IsStatusError = true;
                 StatusMessage = "현금영수증 갱신 중 오류가 발생했습니다. 담당자에게 문의하세요";
+                await _actionLogger.LogAsync("CASH_RECEIPT_ISSUE", $"거래번호={Header.SaleNo} 저장 실패", success: false, errorMessage: ex.Message);
                 return;
             }
 
@@ -250,6 +261,7 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
             IsReceiptConversionVisible = false;
             IsStatusError = false;
             StatusMessage = "현금영수증이 발급되었습니다";
+            await _actionLogger.LogAsync("CASH_RECEIPT_ISSUE", $"거래번호={Header.SaleNo} 발급 완료");
             Changed?.Invoke();
         }
         finally
@@ -275,6 +287,8 @@ public sealed partial class TransactionDetailViewModel : ObservableObject
     {
         if (PreviewedReceipt is null) return;
         bool printed = await _receiptPrinter.PrintAsync(PreviewedReceipt);
+        await _actionLogger.LogAsync("RECEIPT_PRINT", $"거래번호={Header.SaleNo} 영수증 재인쇄", success: printed,
+            errorMessage: printed ? null : "프린터 전송 실패");
         if (printed)
         {
             // 프린터로 전송까지 성공했으면(실제 용지 출력 여부까지는 알 수 없음) 미리보기를 자동으로 닫는다.

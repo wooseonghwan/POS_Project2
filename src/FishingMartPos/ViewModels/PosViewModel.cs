@@ -27,6 +27,7 @@ public sealed partial class PosViewModel : ObservableObject
     private readonly ISignatureConverter _signatureConverter;
     private readonly IKiccPosClient? _kiccPosClient;
     private readonly Func<MainMenuViewModel, Task<PaymentManagementViewModel>> _paymentManagementViewModelFactory;
+    private readonly IActionLogger _actionLogger;
     private readonly Cart _cart = new();
 
     private IReadOnlyList<Product> _allProducts = Array.Empty<Product>();
@@ -133,7 +134,8 @@ public sealed partial class PosViewModel : ObservableObject
         IReceiptPrinter receiptPrinter,
         ISignatureConverter signatureConverter,
         Func<MainMenuViewModel, Task<PaymentManagementViewModel>> paymentManagementViewModelFactory,
-        IKiccPosClient? kiccPosClient = null)
+        IKiccPosClient? kiccPosClient = null,
+        IActionLogger? actionLogger = null)
     {
         _productRepository = productRepository;
         _codeRepository = codeRepository;
@@ -149,6 +151,7 @@ public sealed partial class PosViewModel : ObservableObject
         _signatureConverter = signatureConverter;
         _kiccPosClient = kiccPosClient;
         _paymentManagementViewModelFactory = paymentManagementViewModelFactory;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
 
         RefreshInstallmentOptions();
     }
@@ -529,6 +532,8 @@ public sealed partial class PosViewModel : ObservableObject
                 };
 
                 await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
+                await _actionLogger.LogAsync("SALE_CARD",
+                    $"카드결제 승인: {capturedPayType}, 금액={header.TotalAmt:N0}원, 할부={installmentMonths}개월, 승인번호={result.ApprovalNo}");
 
                 IsToastWarning = false;
                 ToastMessage = result.ResponseMessage;
@@ -542,6 +547,8 @@ public sealed partial class PosViewModel : ObservableObject
             }
             else
             {
+                await _actionLogger.LogAsync("SALE_CARD",
+                    $"카드결제 승인거절: {capturedPayType}, 금액={_cart.Total:N0}원", success: false, errorMessage: result.ResponseMessage);
                 IsToastWarning = true;
                 ToastMessage = result.ResponseMessage;
                 await _delay.Delay(TimeSpan.FromMilliseconds(1200));
@@ -657,6 +664,7 @@ public sealed partial class PosViewModel : ObservableObject
         };
 
         await _salesRepository.CreateSaleAsync(header, BuildDetailLines());
+        await _actionLogger.LogAsync("SALE_CASH", $"현금결제 완료: 금액={header.TotalAmt:N0}원, 받은돈={header.CashReceived:N0}원");
 
         _pendingCashReceiptResult = null;
         IsToastWarning = false;
@@ -847,6 +855,8 @@ public sealed partial class PosViewModel : ObservableObject
     {
         if (PreviewedReceipt is null) return;
         bool printed = await _receiptPrinter.PrintAsync(PreviewedReceipt);
+        await _actionLogger.LogAsync("RECEIPT_PRINT", $"영수증 인쇄: {PreviewedReceipt.PayTypeLabel}", success: printed,
+            errorMessage: printed ? null : "프린터 전송 실패");
         if (printed)
         {
             // 프린터로 전송까지 성공했으면(실제 용지 출력 여부까지는 알 수 없음) 미리보기를 자동으로 닫는다.
@@ -879,7 +889,7 @@ public sealed partial class PosViewModel : ObservableObject
 
         var detail = new TransactionDetailViewModel(
             result.Value.Header, result.Value.Lines, _session.CurrentTerminal!.PosCode,
-            _salesRepository, _vanGateway, _cashReceiptGateway, _receiptPrinter, _delay);
+            _salesRepository, _vanGateway, _cashReceiptGateway, _receiptPrinter, _delay, _actionLogger);
         detail.CloseRequested += () => IsLastTransactionVisible = false;
 
         LastTransactionDetail = detail;

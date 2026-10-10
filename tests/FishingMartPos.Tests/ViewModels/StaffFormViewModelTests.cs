@@ -10,7 +10,7 @@ namespace FishingMartPos.Tests.ViewModels;
 public class StaffFormViewModelTests
 {
     private static (StaffFormViewModel vm, FakeStaffRepository staff, INavigationService navigation, StaffListViewModel listVm)
-        CreateForAdd()
+        CreateForAdd(FakeActionLogger? actionLogger = null)
     {
         var staff = new FakeStaffRepository(new Dictionary<string, Staff>
         {
@@ -19,18 +19,18 @@ public class StaffFormViewModelTests
         var navigation = new NavigationService();
         var settings = new SettingsViewModel(navigation, new MainMenuViewModel(new CurrentSession(), navigation));
         var listVm = new StaffListViewModel(staff, navigation, settings);
-        var vm = new StaffFormViewModel(staff, new FakeDelayProvider(), navigation, listVm, editingStaff: null);
+        var vm = new StaffFormViewModel(staff, new FakeDelayProvider(), navigation, listVm, editingStaff: null, actionLogger);
         return (vm, staff, navigation, listVm);
     }
 
     private static (StaffFormViewModel vm, FakeStaffRepository staff, INavigationService navigation, StaffListViewModel listVm)
-        CreateForEdit(Staff editing)
+        CreateForEdit(Staff editing, FakeActionLogger? actionLogger = null)
     {
         var staff = new FakeStaffRepository(new Dictionary<string, Staff> { ["0000"] = editing });
         var navigation = new NavigationService();
         var settings = new SettingsViewModel(navigation, new MainMenuViewModel(new CurrentSession(), navigation));
         var listVm = new StaffListViewModel(staff, navigation, settings);
-        var vm = new StaffFormViewModel(staff, new FakeDelayProvider(), navigation, listVm, editingStaff: editing);
+        var vm = new StaffFormViewModel(staff, new FakeDelayProvider(), navigation, listVm, editingStaff: editing, actionLogger);
         return (vm, staff, navigation, listVm);
     }
 
@@ -121,6 +121,23 @@ public class StaffFormViewModelTests
         Assert.Equal("STAFF2", created.Staff.StaffCode);
         Assert.Equal("1234", created.Pin);
         Assert.Same(listVm, navigation.CurrentViewModel);
+    }
+
+    [Fact]
+    public async Task Save_AddMode_LogsStaffSaveAction()
+    {
+        var actionLogger = new FakeActionLogger();
+        var (vm, _, _, _) = CreateForAdd(actionLogger);
+        await vm.LoadAsync();
+        vm.StaffCode = "STAFF2";
+        vm.StaffName = "김신입";
+        vm.PinInput = "1234";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("STAFF_SAVE", logged.ActionType);
+        Assert.Contains("직원등록", logged.Detail);
     }
 
     [Fact]

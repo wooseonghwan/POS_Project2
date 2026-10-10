@@ -14,6 +14,7 @@ public sealed partial class StaffFormViewModel : ObservableObject
     private readonly INavigationService _navigation;
     private readonly StaffListViewModel _returnTo;
     private readonly string? _editingStaffCode;
+    private readonly IActionLogger _actionLogger;
 
     private IReadOnlyList<Staff> _allStaff = Array.Empty<Staff>();
 
@@ -40,13 +41,15 @@ public sealed partial class StaffFormViewModel : ObservableObject
         IDelayProvider delay,
         INavigationService navigation,
         StaffListViewModel returnTo,
-        Staff? editingStaff)
+        Staff? editingStaff,
+        IActionLogger? actionLogger = null)
     {
         _staffRepository = staffRepository;
         _delay = delay;
         _navigation = navigation;
         _returnTo = returnTo;
         _editingStaffCode = editingStaff?.StaffCode;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
 
         SelectedRole = editingStaff is not null
             ? RoleOptions.First(r => r.Code == editingStaff.Role)
@@ -112,6 +115,9 @@ public sealed partial class StaffFormViewModel : ObservableObject
         {
             await _staffRepository.CreateAsync(staff, PinInput);
         }
+
+        await _actionLogger.LogAsync("STAFF_SAVE",
+            $"{(IsEditMode ? "직원수정" : "직원등록")}: 직원코드={StaffCode}, 이름={StaffName}, 권한={SelectedRole.Code}, 사용={IsActive}");
 
         ToastMessage = IsEditMode ? "수정되었습니다" : "등록되었습니다";
         await _delay.Delay(TimeSpan.FromMilliseconds(1200));

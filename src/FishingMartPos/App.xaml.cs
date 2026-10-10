@@ -58,6 +58,8 @@ public partial class App : Application
         services.AddSingleton<IStaffRepository, StaffRepository>();
         services.AddSingleton<IPosTerminalRepository, PosTerminalRepository>();
         services.AddSingleton<ICurrentSession, CurrentSession>();
+        services.AddSingleton<IActionLogRepository, ActionLogRepository>();
+        services.AddSingleton<IActionLogger, ActionLogger>();
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IProductRepository, ProductRepository>();
         services.AddSingleton<ICodeRepository, CodeRepository>();
@@ -80,6 +82,40 @@ public partial class App : Application
         _services = services.BuildServiceProvider();
         Log("DI 컨테이너 빌드 완료");
 
+        // 처리되지 않은 예외도 action_log_tb에 남긴다 — 어떤 액션 직후에 앱이 죽었는지 바로 추적할 수 있도록.
+        // 여기서는 로그만 남기고 기존 동작(결국 앱이 종료되는 것)은 그대로 둔다 — 복구 로직을 새로 넣는 건
+        // 이 작업의 범위가 아니다. 로그 적재는 블로킹으로 기다린다(비동기로 던지면 프로세스가 먼저
+        // 죽어버려 INSERT가 끝까지 실행되지 못할 수 있음).
+        void LogCrash(string source, Exception? ex)
+        {
+            try
+            {
+                var logger = _services?.GetService<IActionLogger>();
+                logger?.LogAsync("UNHANDLED_EXCEPTION", source, success: false, errorMessage: ex?.ToString())
+                    .GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // 크래시 로깅 자체가 실패해도 원래 크래시 처리를 막으면 안 된다.
+            }
+        }
+
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log($"DispatcherUnhandledException: {args.Exception}");
+            LogCrash("UI 스레드 처리되지 않은 예외", args.Exception);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            Log($"AppDomain.UnhandledException: {args.ExceptionObject}");
+            LogCrash("처리되지 않은 예외(AppDomain)", args.ExceptionObject as Exception);
+        };
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Log($"TaskScheduler.UnobservedTaskException: {args.Exception}");
+            LogCrash("관찰되지 않은 Task 예외", args.Exception);
+        };
+
         var terminalRepository = _services.GetRequiredService<IPosTerminalRepository>();
         IReadOnlyList<PosTerminal> terminals = await terminalRepository.GetAllAsync();
         Log($"단말 목록 조회 완료 ({terminals.Count}건)");
@@ -87,6 +123,7 @@ public partial class App : Application
         var staffRepository = _services.GetRequiredService<IStaffRepository>();
         var session = _services.GetRequiredService<ICurrentSession>();
         var navigation = _services.GetRequiredService<INavigationService>();
+        var actionLogger = _services.GetRequiredService<IActionLogger>();
         var productRepository = _services.GetRequiredService<IProductRepository>();
         var codeRepository = _services.GetRequiredService<ICodeRepository>();
         var salesRepository = _services.GetRequiredService<ISalesRepository>();
@@ -111,7 +148,7 @@ public partial class App : Application
         async Task<PosViewModel> CreatePosViewModelAsync(MainMenuViewModel mainMenu)
         {
             await kiccInitTask;
-            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, signatureConverter, CreatePaymentManagementViewModelAsync, kiccPosClient);
+            var vm = new PosViewModel(productRepository, codeRepository, salesRepository, heldOrderRepository, delayProvider, session, navigation, mainMenu, vanGateway, cashReceiptGateway, receiptPrinter, signatureConverter, CreatePaymentManagementViewModelAsync, kiccPosClient, actionLogger);
             await vm.LoadAsync();
             return vm;
         }
@@ -120,7 +157,7 @@ public partial class App : Application
         {
             var vm = new InventoryViewModel(productRepository, codeRepository, session, navigation, mainMenu);
             vm.InventoryFormViewModelFactory = (inv, product) =>
-                Task.FromResult(new InventoryFormViewModel(productRepository, codeRepository, photoPicker, photoStorage, delayProvider, navigation, inv, product));
+                Task.FromResult(new InventoryFormViewModel(productRepository, codeRepository, photoPicker, photoStorage, delayProvider, navigation, inv, product, actionLogger));
             await vm.LoadAsync();
             return vm;
         }
@@ -136,7 +173,7 @@ public partial class App : Application
         {
             var vm = new StaffListViewModel(staffRepository, navigation, settings);
             vm.StaffFormViewModelFactory = (list, staff) =>
-                Task.FromResult(new StaffFormViewModel(staffRepository, delayProvider, navigation, list, staff));
+                Task.FromResult(new StaffFormViewModel(staffRepository, delayProvider, navigation, list, staff, actionLogger));
             await vm.LoadAsync();
             return vm;
         }
@@ -185,20 +222,20 @@ public partial class App : Application
         async Task<PaymentManagementViewModel> CreatePaymentManagementViewModelAsync(MainMenuViewModel mainMenu)
         {
             await kiccInitTask;
-            var vm = new PaymentManagementViewModel(salesRepository, vanGateway, cashReceiptGateway, receiptPrinter, delayProvider, session, navigation, mainMenu);
+            var vm = new PaymentManagementViewModel(salesRepository, vanGateway, cashReceiptGateway, receiptPrinter, delayProvider, session, navigation, mainMenu, actionLogger);
             await vm.LoadAsync();
             return vm;
         }
 
         async Task<CashDrawerViewModel> CreateCashDrawerViewModelAsync(MainMenuViewModel mainMenu)
         {
-            var vm = new CashDrawerViewModel(cashDrawerRepository, session, delayProvider, navigation, mainMenu);
+            var vm = new CashDrawerViewModel(cashDrawerRepository, session, delayProvider, navigation, mainMenu, actionLogger);
             await vm.LoadAsync();
             return vm;
         }
 
         LoginViewModel CreateLoginViewModel() =>
-            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync, CreatePaymentManagementViewModelAsync, CreateCashDrawerViewModelAsync);
+            new(staffRepository, session, navigation, terminals, CreatePosViewModelAsync, CreateInventoryViewModelAsync, CreateSalesReportViewModelAsync, CreateSettingsViewModelAsync, CreatePaymentManagementViewModelAsync, CreateCashDrawerViewModelAsync, actionLogger);
 
         Log("LoginViewModel 생성 직전");
         navigation.NavigateTo(CreateLoginViewModel());

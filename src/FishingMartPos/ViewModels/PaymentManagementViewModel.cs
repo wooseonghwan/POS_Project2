@@ -18,6 +18,7 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
     private readonly ICurrentSession _session;
     private readonly INavigationService _navigation;
     private readonly MainMenuViewModel _returnTo;
+    private readonly IActionLogger _actionLogger;
 
     [ObservableProperty]
     private DateTime? _dateFrom;
@@ -53,7 +54,8 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
         IDelayProvider delay,
         ICurrentSession session,
         INavigationService navigation,
-        MainMenuViewModel returnTo)
+        MainMenuViewModel returnTo,
+        IActionLogger? actionLogger = null)
     {
         _salesRepository = salesRepository;
         _vanGateway = vanGateway;
@@ -63,6 +65,7 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
         _session = session;
         _navigation = navigation;
         _returnTo = returnTo;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
         DateTo = DateTime.Today;
         DateFrom = DateTime.Today;
     }
@@ -136,7 +139,7 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
 
         var detail = new TransactionDetailViewModel(
             result.Value.Header, result.Value.Lines, _session.CurrentTerminal!.PosCode,
-            _salesRepository, _vanGateway, _cashReceiptGateway, _receiptPrinter, _delay);
+            _salesRepository, _vanGateway, _cashReceiptGateway, _receiptPrinter, _delay, _actionLogger);
         detail.Changed += async () =>
         {
             try

@@ -23,7 +23,7 @@ public class InventoryFormViewModelTests
     };
 
     private static (InventoryFormViewModel vm, FakeProductRepository products, FakeCodeRepository codes, FakeProductPhotoStorage photoStorage, FakePhotoPicker photoPicker, INavigationService navigation, InventoryViewModel inventoryVm)
-        CreateForAdd()
+        CreateForAdd(FakeActionLogger? actionLogger = null)
     {
         var products = new FakeProductRepository(new List<Product>
         {
@@ -40,12 +40,12 @@ public class InventoryFormViewModelTests
         var mainMenu = new MainMenuViewModel(session, navigation);
         var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
 
-        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: null);
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: null, actionLogger);
         return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
     }
 
     private static (InventoryFormViewModel vm, FakeProductRepository products, FakeCodeRepository codes, FakeProductPhotoStorage photoStorage, FakePhotoPicker photoPicker, INavigationService navigation, InventoryViewModel inventoryVm)
-        CreateForEdit(Product editing)
+        CreateForEdit(Product editing, FakeActionLogger? actionLogger = null)
     {
         var products = new FakeProductRepository(new List<Product> { editing });
         var codes = new FakeCodeRepository(SampleCodes());
@@ -59,7 +59,7 @@ public class InventoryFormViewModelTests
         var mainMenu = new MainMenuViewModel(session, navigation);
         var inventoryVm = new InventoryViewModel(products, codes, session, navigation, mainMenu);
 
-        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: editing);
+        var vm = new InventoryFormViewModel(products, codes, photoPicker, photoStorage, new FakeDelayProvider(), navigation, inventoryVm, editingProduct: editing, actionLogger);
         return (vm, products, codes, photoStorage, photoPicker, navigation, inventoryVm);
     }
 
@@ -384,6 +384,56 @@ public class InventoryFormViewModelTests
         await vm.SaveCommand.ExecuteAsync(null);
 
         Assert.Equal("저장되었습니다", Assert.Single(toastValues));
+    }
+
+    [Fact]
+    public async Task Save_AddMode_LogsProductSaveAction()
+    {
+        var actionLogger = new FakeActionLogger();
+        var (vm, _, _, _, _, _, _) = CreateForAdd(actionLogger);
+        await vm.LoadAsync();
+        vm.Name = "새우";
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("PRODUCT_SAVE", logged.ActionType);
+        Assert.True(logged.Success);
+        Assert.Contains("상품등록", logged.Detail);
+    }
+
+    [Fact]
+    public async Task Save_EditMode_LogsProductSaveActionAsModification()
+    {
+        var editing = new Product
+        {
+            Barcode = "8800000020001", PosCatCd = "BAIT", Name = "지렁이", Price = 5000, StockQty = 10,
+        };
+        var actionLogger = new FakeActionLogger();
+        var (vm, _, _, _, _, _, _) = CreateForEdit(editing, actionLogger);
+        await vm.LoadAsync();
+        vm.PriceInput = "6000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("PRODUCT_SAVE", logged.ActionType);
+        Assert.Contains("상품수정", logged.Detail);
+    }
+
+    [Fact]
+    public async Task Save_WithoutName_DoesNotLogAnything()
+    {
+        // 검증에서 막혀 저장 자체가 안 일어난 경우엔 로그도 남기지 않아야 한다.
+        var actionLogger = new FakeActionLogger();
+        var (vm, _, _, _, _, _, _) = CreateForAdd(actionLogger);
+        await vm.LoadAsync();
+        vm.PriceInput = "3000";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Empty(actionLogger.Calls);
     }
 
     [Fact]

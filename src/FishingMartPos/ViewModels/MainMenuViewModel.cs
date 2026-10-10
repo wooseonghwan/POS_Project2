@@ -9,14 +9,16 @@ public sealed partial class MainMenuViewModel : ObservableObject
 {
     private readonly ICurrentSession _session;
     private readonly INavigationService _navigation;
+    private readonly IActionLogger _actionLogger;
 
     [ObservableProperty]
     private DateTime _now = DateTime.Now;
 
-    public MainMenuViewModel(ICurrentSession session, INavigationService navigation)
+    public MainMenuViewModel(ICurrentSession session, INavigationService navigation, IActionLogger? actionLogger = null)
     {
         _session = session;
         _navigation = navigation;
+        _actionLogger = actionLogger ?? NullActionLogger.Instance;
     }
 
     public string PosLabel => _session.CurrentTerminal?.PosName ?? string.Empty;
@@ -89,8 +91,10 @@ public sealed partial class MainMenuViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Logout()
+    private async Task Logout()
     {
+        // 세션 정보가 지워지기 전에 누가 로그아웃했는지 남긴다.
+        await _actionLogger.LogAsync("LOGOUT", $"로그아웃: {_session.CurrentStaff?.StaffName}({_session.CurrentStaff?.StaffCode})");
         _session.SignOut();
         _navigation.NavigateTo(LoginViewModelFactory!.Invoke());
     }

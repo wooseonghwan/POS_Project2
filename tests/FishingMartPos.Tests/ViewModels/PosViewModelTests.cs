@@ -40,7 +40,8 @@ public class PosViewModelTests
         ICashReceiptGateway? cashReceiptGateway = null,
         IReceiptPrinter? receiptPrinter = null,
         ISignatureConverter? signatureConverter = null,
-        IReadOnlyList<CodeItem>? posCatCodes = null)
+        IReadOnlyList<CodeItem>? posCatCodes = null,
+        IActionLogger? actionLogger = null)
     {
         sales = new FakeSalesRepository();
         held = new FakeHeldOrderRepository();
@@ -83,7 +84,8 @@ public class PosViewModelTests
                 salesRepo, vanGateway ?? new FakeVanPaymentGateway(ApprovedResult),
                 cashReceiptGateway ?? new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" }),
                 receiptPrinter ?? new StubReceiptPrinter(), new FakeDelayProvider(), session, navigationService, mainMenu)),
-            kiccPosClient);
+            kiccPosClient,
+            actionLogger);
     }
 
     [Fact]
@@ -581,6 +583,43 @@ public class PosViewModelTests
         Assert.Equal(3, header.InstallmentMonths);
         Assert.Empty(vm.CartLines);
         Assert.False(vm.IsCardPaymentVisible);
+    }
+
+    [Fact]
+    public async Task RequestCardApproval_WhenApproved_LogsSaleCardAction()
+    {
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(out _, out _, out _, out _, new FakeVanPaymentGateway(ApprovedResult), actionLogger: actionLogger);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("SALE_CARD", logged.ActionType);
+        Assert.True(logged.Success);
+    }
+
+    [Fact]
+    public async Task RequestCardApproval_WhenDeclined_LogsSaleCardActionAsFailure()
+    {
+        var declinedGateway = new FakeVanPaymentGateway(new VanApprovalResult
+        {
+            IsApproved = false, ResponseMessage = "한도초과",
+        });
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(out _, out _, out _, out _, declinedGateway, actionLogger: actionLogger);
+        await vm.LoadAsync();
+        vm.VisibleProducts[0].AddCommand.Execute(null);
+
+        await vm.PayCard1Command.ExecuteAsync(null);
+        await vm.RequestCardApprovalCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("SALE_CARD", logged.ActionType);
+        Assert.False(logged.Success);
+        Assert.Equal("한도초과", logged.ErrorMessage);
     }
 
     [Fact]

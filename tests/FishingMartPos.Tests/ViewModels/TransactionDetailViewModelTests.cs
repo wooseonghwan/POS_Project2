@@ -53,14 +53,15 @@ public class TransactionDetailViewModelTests
         out FakeSalesRepository sales,
         out FakeVanPaymentGateway van,
         out FakeCashReceiptGateway cashReceipt,
-        IReceiptPrinter? receiptPrinter = null)
+        IReceiptPrinter? receiptPrinter = null,
+        IActionLogger? actionLogger = null)
     {
         sales = new FakeSalesRepository();
         van = new FakeVanPaymentGateway(new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" });
         cashReceipt = new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ApprovalNo = "APR1", ApprovalDateYyMmDd = "260726", ResponseMessage = "발급완료" });
         return new TransactionDetailViewModel(
             header, new List<SaleDetailLine>(), "1", sales, van, cashReceipt,
-            receiptPrinter ?? new FakeReceiptPrinter(true), new FakeDelayProvider());
+            receiptPrinter ?? new FakeReceiptPrinter(true), new FakeDelayProvider(), actionLogger);
     }
 
     [Fact]
@@ -103,6 +104,40 @@ public class TransactionDetailViewModelTests
         Assert.Equal("260726", request.OriginalApprovalDateYyMmDd);
         Assert.Single(sales.CancelledSaleNos, 10L);
         Assert.False(vm.CanCancel);
+    }
+
+    [Fact]
+    public async Task ConfirmCancelCommand_ForCardSale_LogsSaleCancelAction()
+    {
+        var actionLogger = new FakeActionLogger();
+        var vm = CreateViewModel(CardHeader(), out _, out _, out _, actionLogger: actionLogger);
+
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("SALE_CANCEL", logged.ActionType);
+        Assert.True(logged.Success);
+    }
+
+    [Fact]
+    public async Task ConfirmCancelCommand_WhenVanDeclinesCancel_LogsSaleCancelActionAsFailure()
+    {
+        var declinedVan = new FakeVanPaymentGateway(
+            new VanApprovalResult { IsApproved = true, ResponseMessage = "ok" },
+            new VanCancelResult { IsCancelled = false, ResponseMessage = "원거래 없음" });
+        var actionLogger = new FakeActionLogger();
+        var sales = new FakeSalesRepository();
+        var cashReceipt = new FakeCashReceiptGateway(new CashReceiptResult { IsIssued = true, ResponseMessage = "ok" });
+        var vm = new TransactionDetailViewModel(
+            CardHeader(), new List<SaleDetailLine>(), "1", sales, declinedVan, cashReceipt,
+            new FakeReceiptPrinter(true), new FakeDelayProvider(), actionLogger);
+
+        await vm.ConfirmCancelCommand.ExecuteAsync(null);
+
+        var logged = Assert.Single(actionLogger.Calls);
+        Assert.Equal("SALE_CANCEL", logged.ActionType);
+        Assert.False(logged.Success);
+        Assert.Equal("원거래 없음", logged.ErrorMessage);
     }
 
     [Fact]
