@@ -26,6 +26,9 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
     private DateTime? _dateTo;
 
     [ObservableProperty]
+    private string _selectedPeriod = "TODAY";
+
+    [ObservableProperty]
     private string _payTypeFilter = "ALL";
 
     [ObservableProperty]
@@ -61,7 +64,7 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
         _navigation = navigation;
         _returnTo = returnTo;
         DateTo = DateTime.Today;
-        DateFrom = DateTime.Today.AddDays(-6);
+        DateFrom = DateTime.Today;
     }
 
     public async Task LoadAsync() => await RefreshAsync();
@@ -73,6 +76,23 @@ public sealed partial class PaymentManagementViewModel : ObservableObject
     private async Task SelectPayTypeFilter(string payType)
     {
         PayTypeFilter = payType;
+        await RefreshAsync();
+    }
+
+    // 날짜 선택기 옆 빠른조회 버튼(당일/전일/3일/7일/당월). period는 아래 매핑 중 하나의 키.
+    [RelayCommand]
+    private async Task SelectPeriod(string period)
+    {
+        var today = DateTime.Today;
+        (DateFrom, DateTo) = period switch
+        {
+            "YESTERDAY" => (today.AddDays(-1), today.AddDays(-1)),
+            "3DAYS" => (today.AddDays(-2), today),
+            "7DAYS" => (today.AddDays(-6), today),
+            "MONTH" => (new DateTime(today.Year, today.Month, 1), today),
+            _ => (today, today), // "TODAY"
+        };
+        SelectedPeriod = period;
         await RefreshAsync();
     }
 

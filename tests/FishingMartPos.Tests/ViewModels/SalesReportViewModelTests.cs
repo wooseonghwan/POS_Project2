@@ -28,15 +28,45 @@ public class SalesReportViewModelTests
     };
 
     [Fact]
-    public async Task LoadAsync_DefaultsToDailyTabLast7Days()
+    public async Task LoadAsync_DefaultsToDailyTabToday()
     {
         var (vm, _, _, _) = Create();
 
         await vm.LoadAsync();
 
         Assert.True(vm.IsDailyTab);
+        Assert.Equal("TODAY", vm.SelectedPeriod);
         Assert.Equal(DateTime.Today, vm.DateTo!.Value.Date);
-        Assert.Equal(DateTime.Today.AddDays(-6), vm.DateFrom!.Value.Date);
+        Assert.Equal(DateTime.Today, vm.DateFrom!.Value.Date);
+    }
+
+    [Theory]
+    [InlineData("TODAY", 0, 0)]
+    [InlineData("YESTERDAY", -1, -1)]
+    [InlineData("3DAYS", -2, 0)]
+    [InlineData("7DAYS", -6, 0)]
+    public async Task SelectPeriodCommand_SetsDateRangeAndRefreshes(string period, int fromOffsetDays, int toOffsetDays)
+    {
+        var (vm, _, _, _) = Create();
+
+        await vm.SelectPeriodCommand.ExecuteAsync(period);
+
+        Assert.Equal(period, vm.SelectedPeriod);
+        Assert.Equal(DateTime.Today.AddDays(fromOffsetDays), vm.DateFrom!.Value.Date);
+        Assert.Equal(DateTime.Today.AddDays(toOffsetDays), vm.DateTo!.Value.Date);
+    }
+
+    [Fact]
+    public async Task SelectPeriodCommand_Month_SetsRangeFromFirstOfMonthToToday()
+    {
+        var (vm, _, _, _) = Create();
+
+        await vm.SelectPeriodCommand.ExecuteAsync("MONTH");
+
+        var today = DateTime.Today;
+        Assert.Equal("MONTH", vm.SelectedPeriod);
+        Assert.Equal(new DateTime(today.Year, today.Month, 1), vm.DateFrom!.Value.Date);
+        Assert.Equal(today, vm.DateTo!.Value.Date);
     }
 
     [Fact]

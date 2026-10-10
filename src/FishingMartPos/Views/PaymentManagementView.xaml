@@ -12,6 +12,11 @@
             <Setter Property="Margin" Value="0,0,4,0" />
             <Setter Property="Padding" Value="10,4" />
         </Style>
+        <Style x:Key="PeriodFilterButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
     </UserControl.Resources>
     <Grid Background="{DynamicResource MenuBackground}">
         <Grid.RowDefinitions>
@@ -36,6 +41,73 @@
                     <DatePicker SelectedDate="{Binding DateFrom}" Width="130" Margin="0,0,4,0" />
                     <TextBlock Text="~" VerticalAlignment="Center" Margin="4,0" />
                     <DatePicker SelectedDate="{Binding DateTo}" Width="130" Margin="0,0,16,0" />
+
+                    <Button Content="당일" Margin="0,0,4,0"
+                            Command="{Binding SelectPeriodCommand}" CommandParameter="TODAY">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PeriodFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPeriod}" Value="TODAY">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="전일"
+                            Command="{Binding SelectPeriodCommand}" CommandParameter="YESTERDAY">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PeriodFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPeriod}" Value="YESTERDAY">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="3일"
+                            Command="{Binding SelectPeriodCommand}" CommandParameter="3DAYS">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PeriodFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPeriod}" Value="3DAYS">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="7일"
+                            Command="{Binding SelectPeriodCommand}" CommandParameter="7DAYS">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PeriodFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPeriod}" Value="7DAYS">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="당월" Margin="4,0,16,0"
+                            Command="{Binding SelectPeriodCommand}" CommandParameter="MONTH">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PeriodFilterButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedPeriod}" Value="MONTH">
+                                        <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
                     <TextBlock Text="승인번호" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" />
                     <TextBox Text="{Binding ApprovalNoFilter, UpdateSourceTrigger=PropertyChanged}" Width="160" Margin="0,0,16,0" />
                     <Button Content="조회" Command="{Binding SearchCommand}" Padding="14,4"
